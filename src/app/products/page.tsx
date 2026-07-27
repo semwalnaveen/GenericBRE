@@ -1,14 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useAccessibleProducts } from "@/lib/store";
 import { Product } from "@/lib/types";
 import { ProductHubGrid } from "@/components/products/product-hub-grid";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ProductsPage() {
   const router = useRouter();
-  const products = useAppStore((s) => s.products);
+  // Role-scoped per Configuration Studio → Access → Product Access — default
+  // allow-all until an admin explicitly restricts this role.
+  const products = useAccessibleProducts();
   const industries = useAppStore((s) => s.industries);
   const rules = useAppStore((s) => s.rules);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);

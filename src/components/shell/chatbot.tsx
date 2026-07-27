@@ -3,24 +3,45 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Sparkles, ThumbsUp, ThumbsDown, Bot } from "lucide-react";
+import { MessageCircle, X, Send, Sparkles, ThumbsUp, ThumbsDown, Bot, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { GUIDE_CATEGORIES, OPEN_GUIDE_EVENT, type OpenGuideDetail } from "./help-desk";
+import { useAppStore, hasCapability } from "@/lib/store";
+import { NAV_ITEMS, NAV_ITEMS_SECONDARY } from "@/lib/nav";
+
+// Same capability requirements the Sidebar already hides restricted nav
+// items by (see visibleNavItems in nav.ts) — a quick reply is never allowed
+// to offer a page the current role can't actually open, so the assistant
+// can't accidentally suggest a shortcut around real RBAC.
+const ROUTE_CAPABILITIES = new Map([...NAV_ITEMS, ...NAV_ITEMS_SECONDARY].map((i) => [i.href, i.requiredCapability]));
+
+interface QuickReply {
+  label: string;
+  href?: string;
+  /** Deep-links into Help & Support's Knowledge Center — see OPEN_GUIDE_EVENT in help-desk.tsx. */
+  guideId?: string;
+  searchTerm?: string;
+}
 
 interface Message {
   id: string;
   role: "bot" | "user";
   text: string;
-  quickReplies?: { label: string; href?: string }[];
+  quickReplies?: QuickReply[];
   feedbackGiven?: "up" | "down";
 }
 
 interface KbEntry {
   keywords: string[];
   reply: string;
-  quickReplies?: { label: string; href?: string }[];
+  quickReplies?: QuickReply[];
 }
 
+// Curated, action-first answers for the handful of things people ask most —
+// each links straight to the screen, not just an explanation. Anything this
+// doesn't cover falls through to the Knowledge Center search below, so the
+// assistant's actual knowledge isn't capped at these eight topics.
 const KNOWLEDGE_BASE: KbEntry[] = [
   {
     keywords: ["create", "new rule", "add rule"],
@@ -64,14 +85,82 @@ const KNOWLEDGE_BASE: KbEntry[] = [
 
 const FALLBACK: KbEntry = {
   keywords: [],
-  reply: "I couldn't find an exact match for that. I can help with Rule Builder, Decision Matrix, Repository, Simulator, or Appearance Studio — or I can hand you off to Help Desk.",
+  reply: "I couldn't find a close match for that. Try rephrasing, or browse the Knowledge Center directly — it covers everything from rule authoring to production checklists.",
   quickReplies: [{ label: "Talk to Help Desk" }],
 };
 
+// Trained directly on the Knowledge Center's own guides (help-desk.tsx) —
+// same source of truth, so the assistant never says something the written
+// docs don't already back up, and adding a guide there teaches the assistant
+// automatically with no duplicate content to maintain here.
+const ALL_GUIDES = GUIDE_CATEGORIES.flatMap((c) => c.guides);
+// Title/description matches are a much stronger signal than a guide merely
+// cross-referencing a term once in passing prose — without this weighting, a
+// guide that just *mentions* "Audit Log" in one sentence could outscore the
+// actual Audit Log guide on a tie.
+const GUIDE_FIELDS = new Map(
+  ALL_GUIDES.map((g) => [
+    g.id,
+    {
+      title: g.title.toLowerCase(),
+      description: g.description.toLowerCase(),
+      rest: `${g.module} ${(g.content ?? []).join(" ")}`.toLowerCase(),
+    },
+  ])
+);
+const STOPWORDS = new Set([
+  "the", "a", "an", "is", "are", "to", "of", "in", "on", "for", "and", "or",
+  "how", "do", "does", "did", "can", "could", "what", "where", "when", "why", "my", "me", "it", "this", "that",
+]);
+
+function tokenize(input: string): string[] {
+  return input
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+}
+
+// Below this, the best match is more likely a coincidental single mention
+// somewhere in a guide's body text than a real answer — e.g. a query about
+// a feature the Knowledge Center has no guide for yet shouldn't confidently
+// return whichever unrelated guide happens to reference one of its words in
+// passing. A lone title hit (weight 4) always clears this; a lone incidental
+// content mention (weight 1-2) does not.
+const MIN_CONFIDENT_SCORE = 3;
+
+function findGuideMatch(input: string) {
+  const tokens = tokenize(input);
+  if (tokens.length === 0) return null;
+  let best: { guide: (typeof ALL_GUIDES)[number]; score: number } | null = null;
+  for (const guide of ALL_GUIDES) {
+    const fields = GUIDE_FIELDS.get(guide.id)!;
+    const score = tokens.reduce((acc, t) => {
+      if (fields.title.includes(t)) return acc + 4;
+      if (fields.description.includes(t)) return acc + 2;
+      if (fields.rest.includes(t)) return acc + 1;
+      return acc;
+    }, 0);
+    if (score >= MIN_CONFIDENT_SCORE && (!best || score > best.score)) best = { guide, score };
+  }
+  return best;
+}
+
 function findAnswer(input: string): KbEntry {
   const lower = input.toLowerCase();
-  const hit = KNOWLEDGE_BASE.find((entry) => entry.keywords.some((k) => lower.includes(k)));
-  return hit ?? FALLBACK;
+  const curated = KNOWLEDGE_BASE.find((entry) => entry.keywords.some((k) => lower.includes(k)));
+  if (curated) return curated;
+
+  const match = findGuideMatch(input);
+  if (match) {
+    const { guide } = match;
+    return {
+      keywords: [],
+      reply: guide.content?.[0] ?? guide.description,
+      quickReplies: [{ label: `Read: ${guide.title}`, guideId: guide.id, searchTerm: guide.title }],
+    };
+  }
+
+  return FALLBACK;
 }
 
 const GREETING: Message = {
@@ -91,13 +180,18 @@ export function ChatBot() {
   const [input, setInput] = useState("");
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const roles = useAppStore((s) => s.roles);
+  const roleId = useAppStore((s) => s.currentUser.role);
+
+  const canAccessHref = (href: string) => {
+    const requiredCapability = ROUTE_CAPABILITIES.get(href);
+    return !requiredCapability || hasCapability(roles, roleId, requiredCapability);
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, open]);
 
-  // send() only ever runs from a click/submit handler, never during render,
-  // so Date.now() here doesn't affect render purity.
   /* eslint-disable react-hooks/purity */
   const send = (text: string) => {
     if (!text.trim()) return;
@@ -109,9 +203,27 @@ export function ChatBot() {
     /* eslint-enable react-hooks/purity */
   };
 
-  const handleQuickReply = (qr: { label: string; href?: string }) => {
+  const handleQuickReply = (qr: QuickReply) => {
     if (qr.href) {
+      // Defensive re-check — e.g. a role switch between render and click —
+      // even though restricted links are already filtered out of the quick
+      // reply list itself below.
+      if (!canAccessHref(qr.href)) {
+        setMessages((m) => [
+          ...m,
+          { id: `u-${Date.now()}`, role: "user", text: qr.label },
+          { id: `b-${Date.now()}`, role: "bot", text: "Your current role doesn't include permission to open that screen." },
+        ]);
+        return;
+      }
       router.push(qr.href);
+      setOpen(false);
+      return;
+    }
+    if (qr.guideId && qr.searchTerm) {
+      window.dispatchEvent(
+        new CustomEvent<OpenGuideDetail>(OPEN_GUIDE_EVENT, { detail: { guideId: qr.guideId, searchTerm: qr.searchTerm } })
+      );
       setOpen(false);
       return;
     }
@@ -129,7 +241,9 @@ export function ChatBot() {
   return (
     <>
       <motion.div
-        className="fixed bottom-5 right-5 z-40"
+        drag
+        dragMomentum={false}
+        className="fixed bottom-5 right-5 z-50 cursor-grab active:cursor-grabbing"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.4, type: "spring", stiffness: 260, damping: 20 }}
@@ -157,24 +271,27 @@ export function ChatBot() {
       <AnimatePresence>
         {open && (
           <motion.div
+            drag
+            dragMomentum={false}
             initial={{ opacity: 0, y: 16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.16 }}
             className={cn(
-              "fixed z-40 flex flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl",
+              "fixed z-50 flex flex-col overflow-hidden rounded-2xl border bg-card shadow-2xl",
               "bottom-22 right-5 h-[min(560px,70vh)] w-[min(380px,calc(100vw-2.5rem))]"
             )}
           >
-            <div className="flex items-center gap-2.5 border-b bg-gradient-to-r from-primary/10 to-transparent px-4 py-3">
-              <div className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Bot className="size-4" />
+            <div className="flex items-center gap-2 border-b bg-gradient-to-r from-primary/10 to-transparent px-3.5 py-2.5 cursor-grab active:cursor-grabbing select-none" title="Drag to move BRE Assistant">
+              <GripHorizontal className="size-4 text-muted-foreground/60 shrink-0" />
+              <div className="flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
+                <Bot className="size-3.5" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold leading-none">BRE Assistant</p>
-                <p className="text-sm text-muted-foreground mt-0.5">Guided help · role-aware</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-none truncate">BRE Assistant</p>
+                <p className="text-sm text-muted-foreground mt-0.5 truncate">Guided help · role-aware</p>
               </div>
-              <Sparkles className="size-4 text-primary/60" />
+              <Sparkles className="size-3.5 text-primary/60 shrink-0" />
             </div>
 
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-3.5 py-3.5">
@@ -188,9 +305,9 @@ export function ChatBot() {
                   >
                     {m.text}
                   </div>
-                  {m.role === "bot" && m.quickReplies && (
+                  {m.role === "bot" && m.quickReplies && m.quickReplies.filter((qr) => !qr.href || canAccessHref(qr.href)).length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {m.quickReplies.map((qr) => (
+                      {m.quickReplies.filter((qr) => !qr.href || canAccessHref(qr.href)).map((qr) => (
                         <button
                           key={qr.label}
                           onClick={() => handleQuickReply(qr)}

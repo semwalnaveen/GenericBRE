@@ -53,7 +53,7 @@ function CheckboxPicker({
   onToggle: (id: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
       {allIds.map((id) => (
         <label
           key={id}
@@ -165,8 +165,6 @@ export function DashboardManagementManager() {
                       <span>{landingLabel}</span>
                       <span className="text-muted-foreground/40">·</span>
                       <span>{kpis.length} KPI{kpis.length === 1 ? "" : "s"}</span>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span>{visibleWidgetCount} widget{visibleWidgetCount === 1 ? "" : "s"}</span>
                     </div>
                   </div>
                 </AccordionTrigger>
@@ -174,7 +172,11 @@ export function DashboardManagementManager() {
                   <div className="space-y-4 border-t pt-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-foreground">Landing Route</label>
-                      <Select value={config.landingRoute} onValueChange={(v) => setLandingRoute((v as string) ?? "/dashboard")}>
+                      <Select
+                        items={Object.fromEntries(LANDING_ROUTES.map((r) => [r.value, r.label]))}
+                        value={config.landingRoute}
+                        onValueChange={(v) => setLandingRoute((v as string) ?? "/dashboard")}
+                      >
                         <SelectTrigger className="w-full text-sm bg-background"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {LANDING_ROUTES.map((r) => (
@@ -187,18 +189,6 @@ export function DashboardManagementManager() {
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-foreground">KPI Cards</label>
                       <CheckboxPicker allIds={ALL_KPI_IDS} labels={KPI_LABELS} selected={kpis} onToggle={toggleKpi} />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-foreground">Quick Actions</label>
-                      <CheckboxPicker allIds={ALL_ACTION_IDS} labels={ACTION_LABELS} selected={actions} onToggle={toggleAction} />
-                    </div>
-
-                    <div className="space-y-1.5 border-t pt-3">
-                      <label className="text-sm font-semibold text-foreground">Default Widgets</label>
-                      <div className="max-h-72 overflow-y-auto pr-1">
-                        <WidgetReorderList items={config.widgets} labels={WIDGET_LABELS} onReorder={reorder} onToggleVisible={toggleVisible} />
-                      </div>
                     </div>
                   </div>
                 </AccordionContent>

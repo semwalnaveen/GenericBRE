@@ -83,7 +83,7 @@ export function MappedRulesReorder({
       <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2.5">
         {ordered.map((r, i) => (
           <div
-            key={r.id}
+            key={`${r.id}-${i}`}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(r.id)}
             className={cn(
@@ -260,7 +260,7 @@ export function MappedRulesChecklist({
             <div className="divide-y">
               {filteredRules.map((r, i) => (
                 <label
-                  key={r.id}
+                  key={`${r.id}-${i}`}
                   className={cn(
                     "flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition-colors hover:bg-primary/5",
                     activeSelection.has(r.id) ? "bg-primary/5" : i % 2 === 1 ? "bg-muted/20" : ""

@@ -690,6 +690,18 @@ export interface DashboardConfig {
   quickActions?: string[];
 }
 
+// Per-role Product visibility — admin-configured via Configuration Studio →
+// Access → Roles. No entry (or an absent roleId key) means default-allow-all:
+// the role sees every product, same as before this feature existed. Applies
+// only to operational/consumption surfaces (Products Hub, Rule Simulator's
+// product picker) — Product Master and Product-Rule Mapping stay unfiltered
+// since they're config.manage-gated admin authoring surfaces, and a role
+// locked out of a product there could never configure it in the first place.
+export interface ProductAccessConfig {
+  roleId: string;
+  productIds: string[];
+}
+
 // Generic per-user, per-device dashboard customization — layered on top of
 // DashboardConfig above (which is the admin-set default per role). A page
 // declares its own catalog of WidgetDef entries; useDashboardLayout resolves

@@ -44,6 +44,7 @@ import {
   NotifyWorkflow,
   NotifyWorkflowTemplate,
   Product,
+  ProductAccessConfig,
   ProductRuleMapping,
   RuleCategory,
   MatrixRow,
@@ -158,8 +159,18 @@ interface AppState {
   resetDashboardLayout: (key: string) => void;
   dashboardConfigs: Record<string, DashboardConfig>;
   setDashboardConfig: (roleId: string, config: DashboardConfig) => void;
+  // Absent roleId key = default-allow-all (role sees every product) — see
+  // ProductAccessConfig's doc comment in types.ts.
+  productAccessConfigs: Record<string, ProductAccessConfig>;
+  setProductAccessConfig: (roleId: string, productIds: string[]) => void;
+  clearProductAccessConfig: (roleId: string) => void;
   currentUser: CurrentUser;
   sidebarCollapsed: boolean;
+  // Separate from sidebarCollapsed above (the global app-shell rail) — this
+  // is Configuration Studio's own section nav, collapsed/expanded and
+  // persisted independently.
+  configStudioNavCollapsed: boolean;
+  setConfigStudioNavCollapsed: (collapsed: boolean) => void;
   globalFilters: GlobalFilters;
   setGlobalFilters: (patch: Partial<GlobalFilters>) => void;
   resetGlobalFilters: () => void;
@@ -356,6 +367,7 @@ export const useAppStore = create<AppState>()(
       dashboardLayouts: {},
       currentUser: DEFAULT_USER,
       sidebarCollapsed: false,
+      configStudioNavCollapsed: false,
       globalFilters: DEFAULT_GLOBAL_FILTERS,
       setGlobalFilters: (patch) => set((s) => ({ globalFilters: { ...s.globalFilters, ...patch } })),
       resetGlobalFilters: () => set({ globalFilters: DEFAULT_GLOBAL_FILTERS }),
@@ -1151,6 +1163,36 @@ export const useAppStore = create<AppState>()(
         });
       },
 
+      productAccessConfigs: {},
+      setProductAccessConfig: (roleId, productIds) => {
+        const { currentUser, roles } = get();
+        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        set((s) => ({ productAccessConfigs: { ...s.productAccessConfigs, [roleId]: { roleId, productIds } } }));
+        get().logAudit({
+          user: currentUser.name,
+          action: "Updated Product Access",
+          entity: "ProductAccessConfig",
+          entityId: roleId,
+          details: `Product access for role "${roleId}" updated — ${productIds.length} product${productIds.length === 1 ? "" : "s"} allowed.`,
+        });
+      },
+      clearProductAccessConfig: (roleId) => {
+        const { currentUser, roles } = get();
+        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        set((s) => {
+          const next = { ...s.productAccessConfigs };
+          delete next[roleId];
+          return { productAccessConfigs: next };
+        });
+        get().logAudit({
+          user: currentUser.name,
+          action: "Updated Product Access",
+          entity: "ProductAccessConfig",
+          entityId: roleId,
+          details: `Product access for role "${roleId}" reset to all products (including any added later).`,
+        });
+      },
+
       // "Logs in" as the role's demo persona — Demo Mode picks a named person,
       // not just a permission set, matching the Universal CRM pattern.
       setUserRole: (roleId) =>
@@ -1172,12 +1214,33 @@ export const useAppStore = create<AppState>()(
         }),
 
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      setConfigStudioNavCollapsed: (collapsed) => set({ configStudioNavCollapsed: collapsed }),
     }),
     {
       name: "bre-prototype-store",
-      version: 40,
+      version: 41,
       skipHydration: true,
       migrate: (persistedState) => {
+        // v40 -> v41 fixed a content mismatch: Kavita Rao (Credit/Risk
+        // Manager) and Arjun Nair (Underwriter/Claims) had approvalCategories
+        // that didn't match their job title (Arjun could approve "Risk &
+        // Fraud"/"Collateral" but not "Underwriting" — confusing in a demo).
+        // Re-seeds both users' approvalCategories from DEFAULT_USERS by id,
+        // leaving every other user (and any custom user an admin added)
+        // untouched.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.users) {
+            const defaultsById = new Map(DEFAULT_USERS.map((u) => [u.id, u]));
+            for (const user of s.users) {
+              const seed = defaultsById.get(user.id);
+              if (seed && (user.id === "usr-kavita-rao" || user.id === "usr-arjun-nair")) {
+                user.approvalCategories = seed.approvalCategories;
+              }
+            }
+          }
+        }
+
         // v39 -> v40 wired the Field Catalog to the Entity Catalog: every seed
         // field now carries an `entity` reference (previously all undefined,
         // which made Entity Catalog's field counts and Rule Builder's
@@ -1614,4 +1677,19 @@ export function useScopedRules(): BusinessRule[] {
   const rules = useAppStore((s) => s.rules);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
   return domainFilter.length ? rules.filter((r) => domainFilter.includes(r.domain)) : rules;
+}
+
+// Products visible to the logged-in user's role, per Configuration Studio →
+// Access → Roles' Product Access config. No entry for the current role =
+// default-allow-all (every product), so this is a no-op until an admin
+// explicitly restricts a role. Deliberately NOT applied in Product Master or
+// Product-Rule Mapping — those are config.manage-gated admin authoring
+// surfaces, where restricting an admin's own view could lock them out of
+// configuring the very product they'd need to grant access to.
+export function useAccessibleProducts(): Product[] {
+  const products = useAppStore((s) => s.products);
+  const roleId = useAppStore((s) => s.currentUser.role);
+  const access = useAppStore((s) => s.productAccessConfigs[roleId]);
+  if (!access) return products;
+  return products.filter((p) => access.productIds.includes(p.id));
 }

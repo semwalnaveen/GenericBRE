@@ -235,22 +235,7 @@ export function RuleCategoryManager() {
                 className="text-sm"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Domain</Label>
-              <Select
-                items={{ "": "Shared across all domains", ...Object.fromEntries(industries.map((i) => [i.id, i.name])) }}
-                value={draft.industry ?? ""}
-                onValueChange={(v) => setDraft((d) => ({ ...d, industry: v ? (v as string) : undefined }))}
-              >
-                <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Shared across all domains</SelectItem>
-                  {industries.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
             <div className="space-y-1.5">
               <Label className="text-sm">Description</Label>
               <Textarea

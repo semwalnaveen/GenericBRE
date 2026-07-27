@@ -21,7 +21,7 @@ export function MetadataForm({ data, onChange, errors = {} }: MetadataFormProps)
 
   return (
     <div className="rounded-xl border bg-card p-4">
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
           <Label className={cn(errors.name && "text-destructive")}>Rule Name *</Label>
           <Input
@@ -36,18 +36,6 @@ export function MetadataForm({ data, onChange, errors = {} }: MetadataFormProps)
         <div className="space-y-1.5">
           <Label>Rule ID</Label>
           <Input value={data.id} disabled className="font-mono text-muted-foreground" />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label>Domain *</Label>
-          <Select value={data.domain} onValueChange={(v) => onChange({ domain: v as Domain })}>
-            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {industries.map((d) => (
-                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="space-y-1.5">
@@ -69,7 +57,7 @@ export function MetadataForm({ data, onChange, errors = {} }: MetadataFormProps)
           </div>
         </div>
 
-        <div className="space-y-1.5 sm:col-span-2 lg:col-span-5">
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
           <Label>Description</Label>
           <Textarea
             value={data.description ?? ""}

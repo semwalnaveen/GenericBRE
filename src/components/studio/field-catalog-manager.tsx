@@ -463,6 +463,7 @@ export function FieldCatalogManager() {
             <DialogTitle>{editingKey ? "Edit Field" : "Add Business Field"}</DialogTitle>
           </DialogHeader>
           <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Label *</Label>
               <Input
@@ -471,35 +472,22 @@ export function FieldCatalogManager() {
                 placeholder="e.g. Policy Term (Months)"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Domain *</Label>
-                <Select value={draft.domain} onValueChange={(v) => setDraft((d) => ({ ...d, domain: v ?? "Common" }))}>
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Common">Common (all domains)</SelectItem>
-                    {industries.map((i) => (
-                      <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Entity</Label>
-                <Select
-                  items={{ "": "None", ...Object.fromEntries(entities.map((e) => [e.id, e.name])) }}
-                  value={draft.entity ?? ""}
-                  onValueChange={(v) => setDraft((d) => ({ ...d, entity: v ? (v as string) : undefined }))}
-                >
-                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {entities.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1.5">
+              <Label>Entity</Label>
+              <Select
+                items={{ "": "None", ...Object.fromEntries(entities.map((e) => [e.id, e.name])) }}
+                value={draft.entity ?? ""}
+                onValueChange={(v) => setDraft((d) => ({ ...d, entity: v ? (v as string) : undefined }))}
+              >
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {entities.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

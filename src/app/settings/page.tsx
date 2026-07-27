@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { IndustriesManager } from "@/components/studio/industries-manager";
 import { FieldCatalogManager } from "@/components/studio/field-catalog-manager";
@@ -46,6 +45,7 @@ import { ListManager } from "@/components/studio/list-manager";
 import { RolesManager } from "@/components/studio/roles-manager";
 import { UserManager } from "@/components/studio/user-manager";
 import { NotifyXManager } from "@/components/studio/notify-x-manager";
+import { ConfigStudioNav } from "@/components/studio/config-studio-nav";
 
 type SectionId =
   | "fields"
@@ -92,15 +92,9 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Experience",
-    items: [
-      { id: "dashboard-management", label: "Dashboard Management", icon: LayoutDashboard },
-    ],
-  },
-  {
     label: "Access",
     items: [
-      { id: "roles", label: "Roles", icon: KeyRound },
+      { id: "roles", label: "Product Access", icon: KeyRound },
       { id: "users", label: "User Management", icon: Users },
     ],
   },
@@ -110,13 +104,12 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "notifyx", label: "NotifyX", icon: Workflow },
     ],
   },
-];
-
-const ROADMAP = [
-  { icon: Compass, label: "Metadata Explorer — Dependency Graph", desc: "Visual impact analysis; the overview list already exists" },
-  { icon: CheckSquare, label: "Validation Rules", desc: "Cross-field validation independent of business rules" },
-  { icon: BookOpen, label: "Lookup Manager", desc: "Shared reference/lookup tables beyond enum field options" },
-  { icon: Plug, label: "API Mapping (OpenAPI Import)", desc: "Auto-generate a JSON Mapping set from a Swagger/OpenAPI spec" },
+  {
+    label: "Experience",
+    items: [
+      { id: "dashboard-management", label: "Dashboard Management", icon: LayoutDashboard },
+    ],
+  },
 ];
 
 const SECTION_DESCRIPTIONS: Record<SectionId, string> = {
@@ -129,7 +122,7 @@ const SECTION_DESCRIPTIONS: Record<SectionId, string> = {
   "product-rule-mapping": "Map each product to the rules that should execute for it — many-to-many. This is what /api/decision uses to identify and run only the rules mapped to the request's product.",
   "dashboard-management": "Controls where each role lands after sign-in, and which KPI cards, quick actions and widgets show on their Dashboard by default — configurable per role, no code required.",
   industries: "Every business domain/vertical the platform supports.",
-  roles: "Reusable capability templates several users can share — who can do what, enforced both in the UI and at the data layer.",
+  roles: "Configure which products each existing role can see across the app (Products Hub, Rule Simulator). Roles themselves are read-only here — managed as capability templates elsewhere in the system, not created/edited/deleted on this page.",
   users: "Every named person on the roster — their Role, System Permissions, and which Rule Categories they're authorized to approve under Maker-Checker.",
   notifyx: "Automate reminders, escalations, and notifications with trigger -> condition -> action workflows.",
 };
@@ -175,44 +168,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <ScrollArea className="w-64 shrink-0 border-r">
-          <nav className="space-y-4 p-3">
-            {NAV_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="mb-1.5 px-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {group.label}
-                </p>
-                <div className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSection(item.id)}
-                      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm font-medium transition-colors ${
-                        section === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      }`}
-                    >
-                      <item.icon className="size-3.5 shrink-0" />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            <div>
-              <p className="mb-1.5 px-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Roadmap</p>
-              <div className="space-y-0.5">
-                {ROADMAP.map((u) => (
-                  <div key={u.label} className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-muted-foreground/50">
-                    <u.icon className="size-3.5 shrink-0" />
-                    <span className="truncate">{u.label}</span>
-                    <Badge variant="secondary" className="ml-auto shrink-0 text-sm opacity-70">Planned</Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </nav>
-        </ScrollArea>
+        <ConfigStudioNav groups={NAV_GROUPS} roadmap={[]} activeSection={section} onSelect={setSection} />
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">
           <div className="mx-auto max-w-350 space-y-3 px-5 py-5 sm:px-6">

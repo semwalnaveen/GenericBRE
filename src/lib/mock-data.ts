@@ -138,7 +138,7 @@ export const CORE_RULES: BusinessRule[] = [
     updatedDaysAgo: 40,
   }),
   makeRule({
-    id: "RL-110",
+    id: "RL-118",
     name: "Young Adult Fast-Track Approval",
     domain: "Lending",
     category: "Eligibility",
@@ -1416,8 +1416,9 @@ export const AUDIT_LOG: AuditEntry[] = buildHashChain([
 
 // Mirrors what store.ts's submitForReview() creates for a real submission —
 // one entry per RL-509…RL-513 above, all still awaiting their assigned
-// reviewer (see DEFAULT_USERS' approvalCategories: Kavita Rao→Eligibility,
-// Arjun Nair→Risk & Fraud/Collateral, Rohan Mehta→Pricing).
+// reviewer (see DEFAULT_USERS' approvalCategories: Kavita Rao (Credit/Risk
+// Manager)→Eligibility/Risk & Fraud, Arjun Nair (Underwriter/Claims)→
+// Underwriting/Claims/Collateral, Rohan Mehta (Product Manager)→Pricing).
 export const DEFAULT_APPROVAL_REQUESTS: ApprovalRequest[] = [
   { id: "AR-1", ruleId: "RL-509", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(2) },
   { id: "AR-2", ruleId: "RL-510", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(1) },
@@ -1738,7 +1739,7 @@ export const DEFAULT_USERS: AppUser[] = [
     department: "Credit Risk",
     status: "Active",
     permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
-    approvalCategories: ["Eligibility"],
+    approvalCategories: ["Eligibility", "Risk & Fraud"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
   },
@@ -1750,7 +1751,7 @@ export const DEFAULT_USERS: AppUser[] = [
     department: "Underwriting & Claims",
     status: "Active",
     permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
-    approvalCategories: ["Risk & Fraud", "Collateral"],
+    approvalCategories: ["Underwriting", "Claims", "Collateral"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
   },

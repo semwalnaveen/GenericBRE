@@ -53,6 +53,8 @@ export default function LoginPage() {
   const simulations = useAppStore((s) => s.simulations);
   const appName = useAppStore((s) => s.appearance.appName);
   const tagline = useAppStore((s) => s.appearance.tagline);
+  const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
+  const currentUserRole = useAppStore((s) => s.currentUser.role);
 
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
@@ -62,8 +64,10 @@ export default function LoginPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
-    if (hasHydrated && isAuthenticated) router.replace("/dashboard");
-  }, [hasHydrated, isAuthenticated, router]);
+    if (hasHydrated && isAuthenticated) {
+      router.replace(dashboardConfigs[currentUserRole]?.landingRoute ?? "/dashboard");
+    }
+  }, [hasHydrated, isAuthenticated, dashboardConfigs, currentUserRole, router]);
 
   const totalRules = rules.length;
   const activeRules = rules.filter((r) => r.status === "Active").length;
@@ -78,7 +82,7 @@ export default function LoginPage() {
     setError("");
     login();
     toast.success("Signed in successfully");
-    router.push("/dashboard");
+    router.push(dashboardConfigs[currentUserRole]?.landingRoute ?? "/dashboard");
   };
 
   return (

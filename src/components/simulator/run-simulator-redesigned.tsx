@@ -446,9 +446,11 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
               payloads for technical audiences, demoted from top-level cards
               that used to compete for attention with the Decision. */}
           <Accordion>
-            <AccordionItem value="dev-view">
-              <AccordionTrigger className="text-sm font-semibold">Developer View — API Request &amp; Response</AccordionTrigger>
-              <AccordionContent>
+            <AccordionItem value="dev-view" className="rounded-xl border bg-muted/30 overflow-hidden">
+              <AccordionTrigger className="w-full px-4 py-3 text-sm font-semibold text-foreground bg-muted/40 hover:bg-accent/60 hover:no-underline transition-colors cursor-pointer select-none flex items-center justify-between min-h-11">
+                Developer View — API Request &amp; Response
+              </AccordionTrigger>
+              <AccordionContent className="p-4 border-t bg-card">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">

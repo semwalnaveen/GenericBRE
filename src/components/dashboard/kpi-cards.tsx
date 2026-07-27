@@ -169,7 +169,7 @@ export function KpiCards() {
   const kpis = ids.map((id) => registry[id]).filter((k): k is Kpi => !!k);
 
   return (
-    <div className="grid grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2.5 p-1 overflow-visible sm:grid-cols-3 lg:grid-cols-6">
       {kpis.map((k, i) => (
         <motion.button
           key={k.label}
@@ -177,8 +177,9 @@ export function KpiCards() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.03, duration: 0.2 }}
-          whileHover={{ y: -1 }}
-          className="group flex h-22 flex-col justify-between gap-1 rounded-lg border bg-card px-2.5 py-2 text-left shadow-sm transition-shadow hover:shadow-md"
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          className="group flex h-22 flex-col justify-between gap-1 rounded-lg border bg-card px-2.5 py-2 text-left shadow-2xs transition-all duration-150 ease-out hover:bg-accent/60 hover:border-primary/40 hover:shadow-md"
         >
           <div className="flex items-center justify-between gap-1.5">
             <span className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{k.label}</span>

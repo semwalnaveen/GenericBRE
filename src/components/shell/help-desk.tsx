@@ -40,6 +40,10 @@ import {
   Tag,
   AlertTriangle,
   ListChecks,
+  Boxes,
+  Database,
+  FileJson,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,9 +54,9 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
-type GuideDifficulty = "Beginner" | "Intermediate" | "Advanced";
+export type GuideDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
-interface Guide {
+export interface Guide {
   id: string;
   title: string;
   description: string;
@@ -65,7 +69,7 @@ interface Guide {
   content?: string[];
 }
 
-interface GuideCategory {
+export interface GuideCategory {
   id: string;
   label: string;
   icon: LucideIcon;
@@ -76,7 +80,10 @@ interface GuideCategory {
 // Pega / ServiceNow help panels — categorized, scannable, each entry a
 // 2-5 minute read. Guides with a `content` array expand inline in the drawer
 // (no new route); guides without one yet fall back to a "coming soon" toast.
-const GUIDE_CATEGORIES: GuideCategory[] = [
+// Exported so the BRE Assistant chatbot (chatbot.tsx) is trained directly on
+// this same content instead of maintaining a separate, thinner knowledge base
+// that could drift out of sync with what's actually written here.
+export const GUIDE_CATEGORIES: GuideCategory[] = [
   {
     id: "getting-started",
     label: "Getting Started",
@@ -150,7 +157,7 @@ const GUIDE_CATEGORIES: GuideCategory[] = [
     guides: [
       {
         id: "rm-1",
-        title: "Creating Your First Rule",
+        title: "Creating a Rule",
         description: "Step-by-step: naming, conditions, actions, and saving a draft.",
         difficulty: "Beginner",
         readingTime: "5 min",
@@ -449,6 +456,90 @@ const GUIDE_CATEGORIES: GuideCategory[] = [
           "This is the record a compliance review or an incident investigation starts from — it's descriptive, not something you edit.",
         ],
       },
+      {
+        id: "cf-5",
+        title: "Entity Catalog",
+        description: "Business entities that Field Catalog fields attach to, and how that groups Rule Builder's attribute list.",
+        difficulty: "Beginner",
+        readingTime: "3 min",
+        module: "Entity Catalog",
+        icon: Boxes,
+        content: [
+          "An entity is the business object a field actually describes — Applicant, Loan Account, Policy, Collateral, and so on. Every field in the Field Catalog can be tagged to one, so the field vocabulary stays organized by what it describes instead of one long flat list.",
+          "The payoff shows up in Rule Builder: its Available Attributes panel groups fields into collapsible sections by entity, so a large field catalog stays scannable instead of one long unsorted dropdown.",
+          "Entities themselves are managed here — add, edit, delete — but assigning a field to one happens back in Field Catalog's own Entity picker, not on this page.",
+        ],
+      },
+      {
+        id: "cf-6",
+        title: "Field Catalog",
+        description: "The business field vocabulary — every field a rule can reference, with its type, domain, and entity.",
+        difficulty: "Beginner",
+        readingTime: "3 min",
+        module: "Field Catalog",
+        icon: Database,
+        content: [
+          "Field Catalog is where the field vocabulary itself lives: every field usable in a Rule Builder condition or the Simulator's dynamic input form is defined here first, with its data type (number, currency, enum, boolean...) and which domain it applies to.",
+          "Tagging a field to an Entity Catalog entity groups it into that entity's section in Rule Builder's attribute panel — untagged fields fall into a catch-all \"Other\" bucket.",
+          "A field's \"Used By\" count shows how many rules currently reference it — deleting a field that's still referenced is blocked, so a rule is never left pointing at a field that no longer exists.",
+        ],
+      },
+      {
+        id: "cf-7",
+        title: "JSON Mapping",
+        description: "Map incoming/outgoing API JSON attributes to internal BRE fields — the foundation for integrating a real source system.",
+        difficulty: "Intermediate",
+        readingTime: "4 min",
+        module: "JSON Mapping",
+        icon: FileJson,
+        content: [
+          "JSON Mapping translates between an external system's JSON shape and the platform's own internal field names, so a real source system's payload format never has to match the BRE's field vocabulary exactly.",
+          "Build a mapping set from a pasted or uploaded sample payload — each attribute gets matched to (or created as) an internal field, in either direction: incoming request or outgoing response.",
+          "This is the layer a real integration is built on top of — the Simulator's own request/response envelope already reflects the live field vocabulary, and JSON Mapping is what connects that vocabulary to an actual external system's format.",
+        ],
+      },
+      {
+        id: "cf-8",
+        title: "Dashboard Management",
+        description: "Configure which page each role lands on after sign-in, and their default KPI cards, quick actions and widgets.",
+        difficulty: "Intermediate",
+        readingTime: "3 min",
+        module: "Dashboard Management",
+        icon: LayoutDashboard,
+        content: [
+          "Every role has its own Dashboard defaults: which KPI cards appear, which Quick Actions show, which widgets are visible, and — most importantly — its Landing Route, the page a user is dropped onto right after signing in or switching roles.",
+          "This is what lets each role's starting point match what that role actually does — an Underwriter might land straight on Rule Simulator instead of the generic Dashboard, since that's the tool they use most.",
+          "Changes here take effect the next time that role signs in or switches — an already-signed-in session doesn't retroactively jump anywhere.",
+        ],
+      },
+      {
+        id: "cf-9",
+        title: "Product Access",
+        description: "Configure which products each existing role can see across Products Hub and Rule Simulator.",
+        difficulty: "Intermediate",
+        readingTime: "3 min",
+        module: "Product Access",
+        icon: KeyRound,
+        content: [
+          "Product Access controls which products a role can see in the Products Hub and Rule Simulator's product picker — by default every role sees every product, until an admin explicitly restricts one.",
+          "Roles themselves are read-only here — this page only manages product visibility, not role definitions, capabilities, or permissions.",
+          "It doesn't affect Product Master or Product–Rule Mapping — those stay fully visible to anyone with configuration access, so an admin can never be locked out of managing a product they can't otherwise \"see.\"",
+        ],
+      },
+      {
+        id: "cf-10",
+        title: "NotifyX",
+        description: "Automate reminders, escalations, and notifications with trigger → condition → action workflows.",
+        difficulty: "Intermediate",
+        readingTime: "4 min",
+        module: "NotifyX",
+        icon: Workflow,
+        content: [
+          "NotifyX automates notifications without writing code: pick a trigger (a rule reaching Testing, an approval sitting pending too long), an optional condition, and an action — an email, an in-app notification, or an escalation.",
+          "It's built for exactly the kind of thing that's easy to forget manually: reminding a checker about a pending approval, or escalating a rule that's been sitting in Draft too long.",
+          "Workflows are reusable templates — build one once and apply it to multiple trigger conditions, and every notification sent stays traceable back to the workflow that produced it.",
+        ],
+      },
     ],
   },
   {
@@ -538,6 +629,19 @@ const DIFFICULTY_STYLES: Record<GuideDifficulty, string> = {
 
 const PIN_STORAGE_KEY = "bre-help-pinned-guides";
 
+// Lets the BRE Assistant chatbot deep-link straight to the guide it answered
+// from, instead of just gesturing at "see Help & Support." A window event
+// (not a Zustand store field) because this is transient UI coordination
+// between two independent widgets, not app state worth persisting.
+export const OPEN_GUIDE_EVENT = "bre-open-guide";
+export interface OpenGuideDetail {
+  guideId: string;
+  /** Reuses the existing search box so the guide surfaces in the flat,
+   *  always-visible search-results view — no need to also track/force-open
+   *  the right accordion category. */
+  searchTerm: string;
+}
+
 function GuideCard({
   guide,
   pinned,
@@ -625,6 +729,20 @@ export function HelpDesk() {
 
   const toggleExpand = (id: string) => setExpandedGuideId((prev) => (prev === id ? null : id));
 
+  // Lets the chatbot open this panel straight to the guide it just answered
+  // from — see OPEN_GUIDE_EVENT above.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<OpenGuideDetail>).detail;
+      if (!detail) return;
+      setOpen(true);
+      setQuery(detail.searchTerm);
+      setExpandedGuideId(detail.guideId);
+    };
+    window.addEventListener(OPEN_GUIDE_EVENT, handler);
+    return () => window.removeEventListener(OPEN_GUIDE_EVENT, handler);
+  }, []);
+
   // Pinning is a lightweight, self-contained "future-ready" affordance — it
   // lives in its own localStorage key, not the app's Zustand store, so it
   // can't collide with a real persisted-state migration later.
@@ -687,7 +805,9 @@ export function HelpDesk() {
             <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="size-4 text-muted-foreground" />
-                <span>+91 22 6142 7788</span>
+                <a href="tel:+912261427788" className="hover:underline">
+                  +91 22 6142 7788
+                </a>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="size-4 text-muted-foreground" />

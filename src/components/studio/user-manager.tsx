@@ -164,54 +164,41 @@ export function UserManager() {
             key={user.id}
             className="group relative flex flex-col justify-between rounded-xl border bg-card p-3.5 transition-all duration-150 hover:border-primary/40 hover:shadow-xs"
           >
-            <div>
-              <div className="flex items-start gap-2.5 justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shadow-2xs">
-                    {user.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase() || "?"}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="truncate text-sm font-semibold tracking-tight text-foreground">{user.name}</p>
-                      <Badge
-                        variant={user.status === "Active" ? "outline" : "secondary"}
-                        className={cn(
-                          "shrink-0 text-sm py-0 h-5",
-                          user.status === "Active" && "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                        )}
-                      >
-                        {user.status}
-                      </Badge>
-                    </div>
-                    <p className="truncate text-sm font-medium text-muted-foreground">{user.role}</p>
+            <div className="flex items-start gap-2.5 justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shadow-2xs">
+                  {user.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase() || "?"}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="truncate text-sm font-semibold tracking-tight text-foreground">{user.name}</p>
+                    <Badge
+                      variant={user.status === "Active" ? "outline" : "secondary"}
+                      className={cn(
+                        "shrink-0 text-sm py-0 h-5",
+                        user.status === "Active" && "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                      )}
+                    >
+                      {user.status}
+                    </Badge>
                   </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity group-hover:opacity-100">
-                  <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(user)} title="Edit User">
-                    <Pencil className="size-3 text-muted-foreground hover:text-foreground" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="size-7"
-                    onClick={() => setPendingDelete(user)}
-                    title="Delete User"
-                  >
-                    <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
-                  </Button>
+                  <p className="truncate text-sm font-medium text-muted-foreground">{user.role}</p>
                 </div>
               </div>
 
-              <div className="mt-2.5 space-y-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Mail className="size-3 shrink-0 text-muted-foreground/70" />
-                  <span className="truncate">{user.email}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="size-3 shrink-0 text-muted-foreground/70" />
-                  <span className="truncate">{user.department || "—"}</span>
-                </div>
+              <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(user)} title="Edit User">
+                  <Pencil className="size-3 text-muted-foreground hover:text-foreground" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="size-7"
+                  onClick={() => setPendingDelete(user)}
+                  title="Delete User"
+                >
+                  <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
+                </Button>
               </div>
             </div>
 
@@ -328,42 +315,7 @@ export function UserManager() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Products</Label>
-              <p className="text-sm text-muted-foreground">
-                Select products this user manages. Click a product to configure category approvals for it.
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {products.map((product) => (
-                  <button
-                    key={product.id}
-                    onClick={() => setSelectedProduct(selectedProduct === product.id ? null : product.id)}
-                    className={cn(
-                      "rounded-lg border-2 p-2.5 text-left transition-all",
-                      selectedProduct === product.id
-                        ? "border-primary bg-primary/5"
-                        : "border-muted hover:border-primary/50"
-                    )}
-                  >
-                    <p className="text-sm font-semibold truncate">{product.name}</p>
-                    <p className="text-sm text-muted-foreground truncate">{product.domain}</p>
-                  </button>
-                ))}
-              </div>
-              {selectedProduct && (
-                <div className="rounded-lg border bg-muted/20 p-3 mt-3">
-                  <p className="text-sm font-semibold mb-2">{products.find((p) => p.id === selectedProduct)?.name} — Approval Categories</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ruleCategories.map((cat) => (
-                      <label key={cat.id} className="flex items-center gap-2 text-sm">
-                        <Checkbox checked={draft.approvalCategories.includes(cat.name)} onCheckedChange={() => toggleApprovalCategory(cat.name)} />
-                        {cat.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+
 
             <div className="rounded-lg border bg-muted/20 p-3">
               <Label className="text-sm">Category</Label>
