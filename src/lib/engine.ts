@@ -156,7 +156,7 @@ export function evaluateRule(
   const start = performance.now();
   const details: ConditionEvalDetail[] = [];
 
-  if (rule.status !== "Active" && !opts.forceEvaluate) {
+  if (rule.status !== "Published" && !opts.forceEvaluate) {
     return {
       ruleId: rule.id,
       ruleName: rule.name,
@@ -195,7 +195,7 @@ export function evaluateRule(
     actionsApplied: passed ? rule.actions : hasElse ? rule.elseActions! : [],
     branch: passed ? "then" : hasElse ? "else" : undefined,
     durationMs,
-    sandbox: rule.status !== "Active" && opts.forceEvaluate ? true : undefined,
+    sandbox: rule.status !== "Published" && opts.forceEvaluate ? true : undefined,
   };
 }
 
@@ -263,8 +263,8 @@ export function runRulesForCase(
     // where it's been promoted to. Otherwise a rule only fires once it's
     // Active AND has reached this simulation's environment tier.
     const sandboxed = sandboxRuleIds.includes(rule.id);
-    // FUTURE: restore environment gate: sandboxed || (rule.status === "Active" && isPromotedTo(rule.environment, environment))
-    const eligible = sandboxed || rule.status === "Active";
+    // FUTURE: restore environment gate: sandboxed || (rule.status === "Published" && isPromotedTo(rule.environment, environment))
+    const eligible = sandboxed || rule.status === "Published";
     if (!eligible) {
       trace.push({
         ruleId: rule.id,

@@ -45,7 +45,7 @@ export function NotifyXManager() {
   const categories = useAppStore((s) => s.notifyCategories);
   const triggers = useAppStore((s) => s.notifyTriggers);
   const templates = useAppStore((s) => s.notifyWorkflowTemplates);
-  const roles = useAppStore((s) => s.roles);
+  const jobTitles = useAppStore((s) => s.jobTitles);
   const currentUser = useAppStore((s) => s.currentUser);
   const addNotifyWorkflow = useAppStore((s) => s.addNotifyWorkflow);
   const updateNotifyWorkflow = useAppStore((s) => s.updateNotifyWorkflow);
@@ -59,7 +59,7 @@ export function NotifyXManager() {
   const canEdit = useHasCapability("notifyx.edit");
   const canToggle = useHasCapability("notifyx.toggle");
 
-  const recipients = [...roles.map((r) => r.name), "All Stakeholders"];
+  const recipients = [...jobTitles.map((jt) => jt.name), "All Stakeholders"];
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [builderTarget, setBuilderTarget] = useState<{ workflow: NotifyWorkflow; isNew: boolean } | null>(null);

@@ -1,9 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, Undo2, CheckCheck, MoreHorizontal, TestTube2, ArrowUpCircle, Trash2 } from "lucide-react";
+import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, Undo2, CheckCheck, MoreHorizontal, TestTube2, Trash2, Rocket } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { BusinessRule, RuleGroup } from "@/lib/types";
+import { ApprovalRequest, BusinessRule, Product, ProductRuleMapping, RuleGroup } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -33,6 +33,7 @@ export interface RepositoryActions {
   onSubmitForReview: (r: BusinessRule) => void;
   onApprove: (r: BusinessRule) => void;
   onReject: (r: BusinessRule) => void;
+  onPublish: (r: BusinessRule) => void;
   onReactivate: (r: BusinessRule) => void;
   onTestInSimulator: (r: BusinessRule) => void;
   onPromote: (r: BusinessRule) => void;
@@ -48,6 +49,16 @@ export interface RepositoryColumnContext {
   canEdit: boolean;
   canDelete: boolean;
   ruleGroups: RuleGroup[];
+  products: Product[];
+  productRuleMappings: ProductRuleMapping[];
+  approvalRequests: ApprovalRequest[];
+}
+
+// Latest submission + approval records for a rule, powering the governance
+// columns (Submitted By/Date, Approved By/Date).
+function govFor(ruleId: string, approvalRequests: ApprovalRequest[]) {
+  const ars = approvalRequests.filter((a) => a.ruleId === ruleId);
+  return { submitted: ars[0], approved: ars.find((a) => a.stage === "Approved") };
 }
 
 export function buildColumns(actions: RepositoryActions, context: RepositoryColumnContext): ColumnDef<BusinessRule>[] {
@@ -90,33 +101,65 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
       size: 260,
     },
     {
-      accessorKey: "domain",
-      header: "Domain",
-      size: 90,
-    },
-    {
       accessorKey: "category",
       header: "Category",
       size: 120,
     },
     {
-      id: "group",
-      header: "Rule Group",
+      id: "mappedProducts",
+      header: "Mapped Product(s)",
       cell: ({ row }) => {
-        const group = context.ruleGroups.find((g) => g.id === row.original.groupId);
-        return group ? (
-          <span className="text-sm text-muted-foreground">{group.name}</span>
+        const names = context.productRuleMappings
+          .filter((m) => m.ruleId === row.original.id)
+          .map((m) => context.products.find((p) => p.id === m.productId)?.name ?? m.productId);
+        if (names.length === 0) return <span className="text-sm text-muted-foreground/50">Unmapped</span>;
+        return (
+          <div className="flex max-w-56 flex-wrap gap-1">
+            {names.map((n) => (
+              <span key={n} className="rounded-md border border-border/80 bg-muted/60 px-1.5 py-0.5 text-sm">{n}</span>
+            ))}
+          </div>
+        );
+      },
+      size: 180,
+    },
+    {
+      accessorKey: "status",
+      header: "Approval Status",
+      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      size: 130,
+    },
+    {
+      id: "submittedBy",
+      header: "Submitted By",
+      cell: ({ row }) => {
+        const { submitted } = govFor(row.original.id, context.approvalRequests);
+        return submitted ? (
+          <span className="text-sm">
+            {submitted.requestedBy}
+            <span className="block text-sm text-muted-foreground">{formatDistanceToNow(new Date(submitted.requestedAt), { addSuffix: true })}</span>
+          </span>
         ) : (
           <span className="text-sm text-muted-foreground/50">—</span>
         );
       },
-      size: 160,
+      size: 150,
     },
     {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
-      size: 100,
+      id: "approvedBy",
+      header: "Approved By",
+      cell: ({ row }) => {
+        const { approved } = govFor(row.original.id, context.approvalRequests);
+        return approved?.decidedBy ? (
+          <span className="text-sm">
+            {approved.decidedBy}
+            <span className="block text-sm text-muted-foreground">{approved.decidedAt ? formatDistanceToNow(new Date(approved.decidedAt), { addSuffix: true }) : ""}</span>
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground/50">—</span>
+        );
+      },
+      size: 150,
     },
     // FUTURE: Environment column removed for demo. Restore column definition:
     // { accessorKey: "environment", header: "Environment", cell: ({ row }) => <EnvironmentBadge environment={row.original.environment} />, size: 110 },
@@ -164,31 +207,35 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
               )}
               <DropdownMenuSeparator />
 
-              {r.status === "Draft" && context.canEdit && (
+              {(r.status === "Draft" || r.status === "Rejected") && context.canEdit && (
                 <DropdownMenuItem onClick={() => actions.onSubmitForReview(r)}>
-                  <FlaskConical className="size-3.5" /> Submit for Review
+                  <FlaskConical className="size-3.5" /> Submit Rule
                 </DropdownMenuItem>
               )}
-              {r.status === "Testing" && (
+              {r.status === "Pending Approval" && (
                 <>
                   <DropdownMenuItem onClick={() => actions.onTestInSimulator(r)}>
                     <TestTube2 className="size-3.5" /> Test in Simulator
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => actions.onApprove(r)} disabled={!context.canPublish}>
-                    <CheckCheck className="size-3.5" /> Approve &amp; Publish
+                    <CheckCheck className="size-3.5" /> Approve
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => actions.onReject(r)} disabled={!context.canPublish}>
-                    <Undo2 className="size-3.5" /> Send Back to Draft
+                    <Undo2 className="size-3.5" /> Reject
                   </DropdownMenuItem>
                 </>
               )}
-              {/* FUTURE: Promote action removed for demo. Restore when environment promotion is reintroduced.
-              {r.status === "Active" && NEXT_ENV[r.environment] && (
-                <DropdownMenuItem onClick={() => actions.onPromote(r)} disabled={!context.canPublish}>
-                  <ArrowUpCircle className="size-3.5" /> Promote to {NEXT_ENV[r.environment]}
-                </DropdownMenuItem>
-              )} */}
-              {r.status === "Active" && (
+              {r.status === "Approved" && (
+                <>
+                  <DropdownMenuItem onClick={() => actions.onPublish(r)} disabled={!context.canPublish}>
+                    <Rocket className="size-3.5" /> Publish
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.onReject(r)} disabled={!context.canPublish}>
+                    <Undo2 className="size-3.5" /> Reject
+                  </DropdownMenuItem>
+                </>
+              )}
+              {r.status === "Published" && (
                 <DropdownMenuItem onClick={() => actions.onDisable(r)} disabled={!context.canPublish}>
                   <Ban className="size-3.5" /> Disable
                 </DropdownMenuItem>
@@ -199,22 +246,15 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
                 </DropdownMenuItem>
               )}
 
+              <DropdownMenuSeparator />
               {r.status !== "Archived" && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => actions.onArchive(r)} disabled={!context.canPublish}>
-                    <Archive className="size-3.5" /> Archive
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={() => actions.onArchive(r)} disabled={!context.canPublish}>
+                  <Archive className="size-3.5" /> Archive
+                </DropdownMenuItem>
               )}
-              {r.status === "Archived" && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onClick={() => actions.onDelete(r)} disabled={!context.canDelete}>
-                    <Trash2 className="size-3.5" /> Delete Permanently
-                  </DropdownMenuItem>
-                </>
-              )}
+              <DropdownMenuItem variant="destructive" onClick={() => actions.onDelete(r)} disabled={!context.canDelete}>
+                <Trash2 className="size-3.5" /> Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Compass, Building2, Tag, Database, Layers, LayoutTemplate, ShieldCheck, ArrowRight } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, effectiveCapabilities } from "@/lib/store";
 import { iconForIndustry } from "@/lib/industries";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -55,7 +55,8 @@ export default function MetadataExplorerPage() {
   const fieldCatalog = useAppStore((s) => s.fieldCatalog);
   const ruleGroups = useAppStore((s) => s.ruleGroups);
   const ruleTemplates = useAppStore((s) => s.ruleTemplates);
-  const roles = useAppStore((s) => s.roles);
+  const users = useAppStore((s) => s.users);
+  const userAccessMappings = useAppStore((s) => s.userAccessMappings);
   const rules = useAppStore((s) => s.rules);
   const matrices = useAppStore((s) => s.matrices);
 
@@ -76,7 +77,7 @@ export default function MetadataExplorerPage() {
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="mx-auto grid max-w-350 grid-cols-1 gap-5 px-5 py-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-3">
-          <SectionCard icon={Building2} title="Industries" count={industries.length} manageHref="/settings">
+          <SectionCard icon={Building2} title="Industries" count={industries.length} manageHref="/configuration-studio">
             <div className="space-y-1.5">
               {industries.map((ind) => {
                 const Icon = iconForIndustry(ind.icon);
@@ -95,7 +96,7 @@ export default function MetadataExplorerPage() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={Tag} title="Categories" count={ruleCategories.length} manageHref="/settings">
+          <SectionCard icon={Tag} title="Categories" count={ruleCategories.length} manageHref="/configuration-studio">
             <div className="flex flex-wrap gap-1.5">
               {ruleCategories.map((c) => (
                 <Badge key={c.id} variant="secondary" className="text-sm">
@@ -106,7 +107,7 @@ export default function MetadataExplorerPage() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={Database} title="Field Catalog" count={fieldCatalog.length} manageHref="/settings">
+          <SectionCard icon={Database} title="Field Catalog" count={fieldCatalog.length} manageHref="/configuration-studio">
             <div className="space-y-1.5">
               {fieldCatalog.map((f) => (
                 <div key={f.key} className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2">
@@ -145,19 +146,26 @@ export default function MetadataExplorerPage() {
             </div>
           </SectionCard>
 
-          <SectionCard icon={ShieldCheck} title="Roles & Capabilities" count={roles.length} manageHref="/settings">
+          <SectionCard icon={ShieldCheck} title="Users & Access" count={users.length} manageHref="/configuration-studio">
             <div className="space-y-1.5">
-              {roles.map((r) => (
-                <div key={r.id} className="rounded-lg border px-2.5 py-2">
-                  <span className="text-sm font-medium">{r.name}</span>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {r.capabilities.map((c) => (
-                      <Badge key={c} variant="outline" className="text-sm">{c}</Badge>
-                    ))}
+              {users.map((u) => {
+                const caps = [...effectiveCapabilities(users, userAccessMappings, u.id)];
+                return (
+                  <div key={u.id} className="rounded-lg border px-2.5 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium">{u.name}</span>
+                      <span className="text-sm text-muted-foreground">· {u.role}</span>
+                      {u.isAdmin && <Badge variant="outline" className="text-sm">Admin</Badge>}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {caps.map((c) => (
+                        <Badge key={c} variant="outline" className="text-sm">{c}</Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {roles.length === 0 && <EmptyRow label="No roles configured yet." />}
+                );
+              })}
+              {users.length === 0 && <EmptyRow label="No users configured yet." />}
             </div>
           </SectionCard>
         </div>

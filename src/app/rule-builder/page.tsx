@@ -56,6 +56,7 @@ import { CaseBuilder } from "@/components/rule-builder/case-builder";
 import { RulePreviewPanel } from "@/components/rule-builder/rule-preview-panel";
 import { InlineTestPanel } from "@/components/rule-builder/inline-test-panel";
 import { TemplatePicker } from "@/components/rule-builder/template-picker";
+import { MapToProductDialog } from "@/components/rule-builder/map-to-product-dialog";
 import { SampleJsonPanel } from "@/components/rule-builder/sample-json-panel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -132,7 +133,6 @@ function RuleBuilderContent() {
   const addRule = useAppStore((s) => s.addRule);
   const updateRule = useAppStore((s) => s.updateRule);
   const cloneRule = useAppStore((s) => s.cloneRule);
-  const submitForReview = useAppStore((s) => s.submitForReview);
   const logAudit = useAppStore((s) => s.logAudit);
   const currentUser = useAppStore((s) => s.currentUser);
   const industries = useAppStore((s) => s.industries);
@@ -146,7 +146,7 @@ function RuleBuilderContent() {
   const existingRule = useMemo(() => rules.find((r) => r.id === editId), [rules, editId]);
 
   const [rule, setRule] = useState<BusinessRule>(() => {
-    if (typeof window !== "undefined") {
+    if (editId && typeof window !== "undefined") {
       const saved = window.localStorage.getItem(draftKeyFor(editId));
       if (saved) {
         try {
@@ -160,6 +160,9 @@ function RuleBuilderContent() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  // After "Submit Rule" saves the draft, the Map-to-Product dialog opens with
+  // the just-saved rule so the Maker can map it before submitting for approval.
+  const [mapDialogRule, setMapDialogRule] = useState<BusinessRule | null>(null);
   const [showElseBranch, setShowElseBranch] = useState(() => !!existingRule?.elseActions?.length);
   // Additive CASE Builder visibility — independent of the ELSE branch above
   // (that one belongs to the normal condition tree; this one to the CASE block).
@@ -179,21 +182,14 @@ function RuleBuilderContent() {
     // stored rule (e.g. navigating from one rule's edit page to another's).
     historyRef.current = { past: [], future: [] };
     if (existingRule) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setRule(existingRule);
       setShowElseBranch(!!existingRule.elseActions?.length);
       setCaseBuilderOpen(!!existingRule.caseWhens?.length);
+      /* eslint-enable react-hooks/set-state-in-effect */
     } else {
-      const saved = typeof window !== "undefined" ? window.localStorage.getItem(draftKeyFor(null)) : null;
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as BusinessRule;
-          setRule(parsed);
-          setShowElseBranch(!!parsed.elseActions?.length);
-          setCaseBuilderOpen(!!parsed.caseWhens?.length);
-          return;
-        } catch {
-          window.localStorage.removeItem(draftKeyFor(null));
-        }
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(draftKeyFor(null));
       }
       const freshRule = blankRule(nextRuleId(rules), industries[0]?.id ?? "", owners[0] ?? "");
       setRule(freshRule);
@@ -203,15 +199,16 @@ function RuleBuilderContent() {
   }, [editId, existingRule?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (window.localStorage.getItem(draftKeyFor(editId))) {
+    if (editId && typeof window !== "undefined" && window.localStorage.getItem(draftKeyFor(editId))) {
       toast.info("Draft restored", { description: "Your in-progress edit was restored from autosave." });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
-  // Auto Save Draft — debounced, keyed per rule (or "new"), separate from the
+  // Auto Save Draft — debounced, keyed per existing rule, separate from the
   // Draft RuleStatus lifecycle and the Zustand-persisted store.
   useEffect(() => {
+    if (!editId) return;
     const handle = setTimeout(() => {
       window.localStorage.setItem(draftKeyFor(editId), JSON.stringify(rule));
     }, 1500);
@@ -501,11 +498,10 @@ function RuleBuilderContent() {
     router.push("/repository");
   };
 
-  // Every role submits into the Testing/review queue — there is no
-  // straight-to-Active shortcut here, even for roles that also hold
-  // rule.publish. Publishing only ever happens from the Repository's
-  // Approve & Publish action, which enforces maker-checker (a reviewer
-  // can't approve their own submission) at the store level.
+  // "Submit Rule" first persists the Draft, then opens the Map-to-Product
+  // dialog. The rule only enters the approval queue (Pending Approval) once a
+  // product mapping is configured and the Maker clicks "Submit for Approval"
+  // inside that dialog — the Checker then reviews the complete configuration.
   const handleSubmitForReview = () => {
     if (!validate()) return;
     const saved = persistRule("Draft");
@@ -513,13 +509,7 @@ function RuleBuilderContent() {
       toast.error("Couldn't save", { description: saved.reason });
       return;
     }
-    const result = submitForReview(saved.rule.id);
-    if (!result.ok) {
-      toast.error("Couldn't submit for review", { description: result.reason });
-      return;
-    }
-    toast.success("Submitted for review", { description: `${saved.rule.id} · ${saved.rule.name} moved to Testing.` });
-    router.push("/repository");
+    setMapDialogRule(saved.rule);
   };
 
   const handleDuplicate = () => {
@@ -655,10 +645,17 @@ function RuleBuilderContent() {
             <Save className="size-3.5" /> Save Draft
           </Button>
           <Button size="sm" className="gap-1.5" onClick={handleSubmitForReview}>
-            <FlaskConical className="size-3.5" /> Submit for Review
+            <FlaskConical className="size-3.5" /> Submit Rule
           </Button>
         </div>
       </div>
+
+      <MapToProductDialog
+        open={!!mapDialogRule}
+        onOpenChange={(v) => !v && setMapDialogRule(null)}
+        rule={mapDialogRule}
+        onSubmitted={() => router.push("/repository")}
+      />
 
       <TemplatePicker
         open={templatePickerOpen}

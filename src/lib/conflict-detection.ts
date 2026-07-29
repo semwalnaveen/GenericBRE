@@ -179,7 +179,7 @@ function candidatePairs(active: BusinessRule[]): [BusinessRule, BusinessRule][] 
 // review"), not a hard validation error, since two rules can legitimately
 // reference the same field without truly conflicting.
 export function detectRuleConflicts(rules: BusinessRule[]): RuleConflict[] {
-  const active = rules.filter((r) => r.status === "Active" && r.simulatable !== false);
+  const active = rules.filter((r) => r.status === "Published" && r.simulatable !== false);
   const conflicts: RuleConflict[] = [];
 
   for (const [a, b] of candidatePairs(active)) {
@@ -195,7 +195,7 @@ export function detectRuleConflicts(rules: BusinessRule[]): RuleConflict[] {
 // on the Repository's reactive banner.
 export function detectConflictsForCandidate(candidate: BusinessRule, rules: BusinessRule[]): RuleConflict[] {
   if (candidate.simulatable === false) return [];
-  const active = rules.filter((r) => r.status === "Active" && r.simulatable !== false && r.id !== candidate.id);
+  const active = rules.filter((r) => r.status === "Published" && r.simulatable !== false && r.id !== candidate.id);
   const conflicts: RuleConflict[] = [];
   for (const other of active) {
     conflicts.push(...pairConflicts(candidate, other));

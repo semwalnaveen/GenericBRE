@@ -10,10 +10,11 @@ import {
   DEFAULT_NOTIFY_TRIGGERS,
   DEFAULT_NOTIFY_WORKFLOWS,
   DEFAULT_NOTIFY_WORKFLOW_TEMPLATES,
+  DEFAULT_JOB_TITLES,
+  DEFAULT_USER_ACCESS_MAPPINGS,
   DEFAULT_JSON_MAPPINGS,
   DEFAULT_PRODUCTS,
   DEFAULT_PRODUCT_RULE_MAPPINGS,
-  DEFAULT_ROLES,
   DEFAULT_RULE_GROUPS,
   DEFAULT_RULE_TEMPLATES,
   DEFAULT_SIMULATIONS,
@@ -38,17 +39,18 @@ import {
   Entity,
   ExecutionSettings,
   Industry,
+  JobTitle,
   JsonMapping,
   NotifyCategory,
   NotifyTrigger,
   NotifyWorkflow,
   NotifyWorkflowTemplate,
+  Priority,
   Product,
-  ProductAccessConfig,
   ProductRuleMapping,
+  UserProductAccess,
   RuleCategory,
   MatrixRow,
-  Role,
   // RuleEnvironment, // FUTURE: restore when environment promotion is reintroduced
   RuleGroup,
   RuleStatus,
@@ -63,6 +65,14 @@ import { DEFAULT_DASHBOARD_CONFIGS } from "./dashboards";
 // DEFAULT_REQUEST_PARAMETER_DEFS import removed — Execution Manager deleted
 import { DEFAULT_DECISION_RESPONSE_CONFIG } from "./decision-response";
 import { hashAuditEntry, buildHashChain } from "./audit-chain";
+import { ALL_CAPABILITIES, CATEGORY_SCOPABLE_CAPABILITIES } from "./capabilities";
+
+// The config/admin capabilities — everything that isn't a category-scopable
+// rule.* action. Granted only to Administrators (AppUser.isAdmin); never
+// assignable per product/category.
+const ADMIN_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
+  (c) => !CATEGORY_SCOPABLE_CAPABILITIES.includes(c)
+);
 
 export type {
   ThemePreset,
@@ -127,7 +137,7 @@ function snapshotFromRule(
   };
 }
 
-const DEFAULT_USER: CurrentUser = { name: "Ananya Verma", role: "business-analyst", initials: "AV" };
+const DEFAULT_USER: CurrentUser = { userId: "usr-ananya-verma", name: "Ananya Verma", role: "Business Analyst", initials: "AV" };
 
 // Caps in-browser audit history so a long-running demo session can't grow
 // auditLog (persisted whole into one localStorage key) past the origin's
@@ -158,12 +168,7 @@ interface AppState {
   setDashboardLayout: (key: string, layout: DashboardWidgetLayoutState[]) => void;
   resetDashboardLayout: (key: string) => void;
   dashboardConfigs: Record<string, DashboardConfig>;
-  setDashboardConfig: (roleId: string, config: DashboardConfig) => void;
-  // Absent roleId key = default-allow-all (role sees every product) — see
-  // ProductAccessConfig's doc comment in types.ts.
-  productAccessConfigs: Record<string, ProductAccessConfig>;
-  setProductAccessConfig: (roleId: string, productIds: string[]) => void;
-  clearProductAccessConfig: (roleId: string) => void;
+  setDashboardConfig: (userId: string, config: DashboardConfig) => void;
   currentUser: CurrentUser;
   sidebarCollapsed: boolean;
   // Separate from sidebarCollapsed above (the global app-shell rail) — this
@@ -181,7 +186,8 @@ interface AppState {
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
-  login: (roleId?: string) => void;
+  login: () => void;
+  loginAsUser: (userId: string) => void;
   logout: () => void;
 
   // configuration studio — the "no hardcoding" layer. Every industry/vertical,
@@ -225,18 +231,37 @@ interface AppState {
   decisionResponseSettings: Record<string, DecisionResponseConfig>;
   setDecisionResponseConfig: (scope: string, config: DecisionResponseConfig) => void;
 
-  // roles & capabilities — client-side RBAC preview (no backend enforcement)
-  roles: Role[];
-  addRole: (role: Role) => void;
-  updateRole: (id: string, patch: Partial<Role>) => void;
-  deleteRole: (id: string) => void;
+  // Job Titles & Permissions — a reusable named-title catalog (see JobTitle
+  // in types.ts) that populates the Job Title dropdown in Add/Edit User.
+  // addJobTitle returns ok:false on a duplicate name (case-insensitive),
+  // matching addUserAccessMapping's result-object convention.
+  jobTitles: JobTitle[];
+  addJobTitle: (jobTitle: { name: string }) => { ok: boolean; reason?: string };
+  updateJobTitle: (id: string, patch: Partial<JobTitle>) => void;
+  deleteJobTitle: (id: string) => void;
 
-  // user roster — named individuals, each pointing at a Role; also carries
-  // per-user Maker-Checker rule-approval category responsibilities
+  // user roster — named individuals. The single source of truth for access:
+  // isAdmin grants config/admin caps, UserProductAccess rows grant rule.*
+  // caps, and approvalCategories drive Maker-Checker.
   users: AppUser[];
   addUser: (user: AppUser) => void;
   updateUser: (id: string, patch: Partial<AppUser>) => void;
   deleteUser: (id: string) => void;
+
+  // User Access Mapping — per-user, per-Product, per-Category System
+  // Permissions (see UserProductAccess in types.ts). addUserAccessMapping
+  // returns ok:false with a message on a duplicate (userId+productId+categoryId)
+  // instead of throwing, matching submitForReview/approveRule's result-object
+  // convention elsewhere in this store.
+  userAccessMappings: UserProductAccess[];
+  addUserAccessMapping: (mapping: {
+    userId: string;
+    productId: string;
+    categoryId: string;
+    capabilities: Capability[];
+  }) => { ok: boolean; reason?: string };
+  updateUserAccessMapping: (id: string, patch: Partial<UserProductAccess>) => void;
+  deleteUserAccessMapping: (id: string) => void;
 
   // rule groups (organizational collections, independent of Category)
   ruleGroups: RuleGroup[];
@@ -295,6 +320,18 @@ interface AppState {
   submitForReview: (ruleId: string) => { ok: boolean; reason?: string };
   approveRule: (ruleId: string) => { ok: boolean; reason?: string };
   rejectRule: (ruleId: string, comment?: string) => { ok: boolean; reason?: string };
+  publishRule: (ruleId: string) => { ok: boolean; reason?: string };
+  mapRuleToProducts: (
+    ruleId: string,
+    config: {
+      productIds: string[];
+      categoryId?: string;
+      priority?: Priority;
+      sequence?: number;
+      effectiveDate?: string;
+      remarks?: string;
+    }
+  ) => { ok: boolean; reason?: string };
 
   // FUTURE: promoteRuleEnvironment removed for demo. Restore when environment promotion is reintroduced.
   // promoteRuleEnvironment: (ruleId: string) => { ok: boolean; reason?: string };
@@ -333,7 +370,6 @@ interface AppState {
   resetAppearance: () => void;
 
   // user
-  setUserRole: (roleId: string) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
@@ -375,11 +411,23 @@ export const useAppStore = create<AppState>()(
       isAuthenticated: false,
       hasHydrated: false,
       setHasHydrated: (v) => set({ hasHydrated: v }),
-      login: (roleId) => {
-        if (roleId) get().setUserRole(roleId);
+      login: () => {
         set({ isAuthenticated: true });
         const { name, role } = get().currentUser;
         get().logAudit({ user: name, action: "Signed In", entity: "Session", entityId: role, details: `${name} signed in.` });
+      },
+      // "Logs in" as a specific person from the User roster — Demo Mode picks
+      // a named user (not a role/persona), and access resolves from that
+      // user's isAdmin flag + their UserProductAccess rows.
+      loginAsUser: (userId) => {
+        const user = get().users.find((u) => u.id === userId);
+        if (!user) return;
+        const initials = user.name.split(/[\s/]+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+        set({
+          isAuthenticated: true,
+          currentUser: { userId: user.id, name: user.name, role: user.role, initials },
+        });
+        get().logAudit({ user: user.name, action: "Signed In", entity: "Session", entityId: user.id, details: `${user.name} signed in.` });
       },
       logout: () => {
         get().logAudit({ user: get().currentUser.name, action: "Signed Out", entity: "Session", entityId: get().currentUser.role, details: `${get().currentUser.name} signed out.` });
@@ -397,73 +445,64 @@ export const useAppStore = create<AppState>()(
       decisionResponseSettings: { default: DEFAULT_DECISION_RESPONSE_CONFIG },
 
       addIndustry: (industry) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ industries: [...s.industries, industry] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Industry", entity: "Industry", entityId: industry.id, details: `Added "${industry.name}" as a new configurable industry.` });
       },
       updateIndustry: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ industries: s.industries.map((i) => (i.id === id ? { ...i, ...patch } : i)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated Industry", entity: "Industry", entityId: id, details: `Industry "${id}" updated.` });
       },
       deleteIndustry: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ industries: s.industries.filter((i) => i.id !== id) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Industry", entity: "Industry", entityId: id, details: `Industry "${id}" removed.` });
       },
 
       addEntity: (entity) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ entities: [...s.entities, entity] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Entity", entity: "Entity", entityId: entity.id, details: `Added entity "${entity.name}" to the catalog.` });
       },
       updateEntity: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ entities: s.entities.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated Entity", entity: "Entity", entityId: id, details: `Entity "${id}" updated.` });
       },
       deleteEntity: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ entities: s.entities.filter((e) => e.id !== id) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Entity", entity: "Entity", entityId: id, details: `Entity "${id}" removed.` });
       },
 
       addField: (field) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         const stamped: BusinessField = { ...field, updatedAt: new Date().toISOString(), updatedBy: currentUser.name };
         set((s) => ({ fieldCatalog: [...s.fieldCatalog, stamped] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Field", entity: "BusinessField", entityId: field.key, details: `Added field "${field.label}" to the catalog.` });
       },
       updateField: (key, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         const stampedPatch = { ...patch, updatedAt: new Date().toISOString(), updatedBy: currentUser.name };
         set((s) => ({ fieldCatalog: s.fieldCatalog.map((f) => (f.key === key ? { ...f, ...stampedPatch } : f)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated Field", entity: "BusinessField", entityId: key, details: `Field "${key}" updated.` });
       },
       deleteField: (key) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ fieldCatalog: s.fieldCatalog.filter((f) => f.key !== key) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Field", entity: "BusinessField", entityId: key, details: `Field "${key}" removed from the catalog.` });
       },
 
       addRuleCategory: (category) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleCategories: [...s.ruleCategories, category] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Category", entity: "RuleCategory", entityId: category.id, details: `Added category "${category.name}".` });
       },
       updateRuleCategory: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         const oldName = get().ruleCategories.find((c) => c.id === id)?.name;
         const renamed = patch.name !== undefined && oldName !== undefined && patch.name !== oldName;
         set((s) => ({
@@ -494,22 +533,20 @@ export const useAppStore = create<AppState>()(
         });
       },
       deleteRuleCategory: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleCategories: s.ruleCategories.filter((c) => c.id !== id) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Category", entity: "RuleCategory", entityId: id, details: `Category "${id}" removed.` });
       },
 
       setExecutionSettings: (scope, settings) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ executionSettings: { ...s.executionSettings, [scope]: settings } }));
         get().logAudit({ user: get().currentUser.name, action: "Updated Execution Settings", entity: "ExecutionSettings", entityId: scope, details: `Conflict resolution for "${scope}" set to ${settings.conflictResolution}.` });
       },
 
       addJsonMapping: (mapping) => {
-        const { currentUser, roles, jsonMappings } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { jsonMappings } = get();
+        if (!can(get(), "config.manage")) return;
         // Defensive: at most one mapping per product+direction — the product-scoped
         // JSON Mapping screen only ever auto-creates when one doesn't already exist,
         // but guard here too in case another caller is added later.
@@ -518,14 +555,12 @@ export const useAppStore = create<AppState>()(
         get().logAudit({ user: get().currentUser.name, action: "Created JSON Mapping", entity: "JsonMapping", entityId: mapping.id, details: `Added mapping "${mapping.name}".` });
       },
       updateJsonMapping: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ jsonMappings: s.jsonMappings.map((m) => (m.id === id ? { ...m, ...patch, updatedAt: new Date().toISOString() } : m)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated JSON Mapping", entity: "JsonMapping", entityId: id, details: `Mapping "${id}" updated.` });
       },
       deleteJsonMapping: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ jsonMappings: s.jsonMappings.filter((m) => m.id !== id) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted JSON Mapping", entity: "JsonMapping", entityId: id, details: `Mapping "${id}" removed.` });
       },
@@ -533,83 +568,168 @@ export const useAppStore = create<AppState>()(
       // Execution Manager actions (add/update/delete RequestParameterDef/RuleExecutionMapping) removed
 
       setDecisionResponseConfig: (scope, config) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ decisionResponseSettings: { ...s.decisionResponseSettings, [scope]: config } }));
         get().logAudit({ user: currentUser.name, action: "Updated Decision Response Config", entity: "DecisionResponseConfig", entityId: scope, details: `Decision response settings for "${scope}" updated.` });
       },
 
       addOwner: (name) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => (s.owners.includes(name) ? s : { owners: [...s.owners, name] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Owner", entity: "Owner", entityId: name, details: `Added owner "${name}".` });
       },
       deleteOwner: (name) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ owners: s.owners.filter((o) => o !== name) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Owner", entity: "Owner", entityId: name, details: `Removed owner "${name}".` });
       },
 
-      roles: DEFAULT_ROLES,
-      addRole: (role) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ roles: [...s.roles, role] }));
-        get().logAudit({ user: get().currentUser.name, action: "Created Role", entity: "Role", entityId: role.id, details: `Added role "${role.name}".` });
+      jobTitles: DEFAULT_JOB_TITLES,
+      addJobTitle: (jobTitle) => {
+        const { currentUser, jobTitles } = get();
+        if (!can(get(), "config.manage")) {
+          return { ok: false, reason: `${currentUser.name} doesn't have permission to manage job titles.` };
+        }
+        const duplicate = jobTitles.some((jt) => jt.name.trim().toLowerCase() === jobTitle.name.trim().toLowerCase());
+        if (duplicate) {
+          return { ok: false, reason: `A job title named "${jobTitle.name}" already exists.` };
+        }
+        const id = `jt-${jobTitle.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now().toString(36)}`;
+        const now = new Date().toISOString();
+        const entry: JobTitle = { id, name: jobTitle.name.trim(), createdAt: now, updatedAt: now };
+        set((s) => ({ jobTitles: [...s.jobTitles, entry] }));
+        get().logAudit({ user: currentUser.name, action: "Created Job Title", entity: "JobTitle", entityId: id, details: `Added job title "${entry.name}".` });
+        return { ok: true };
       },
-      updateRole: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ roles: s.roles.map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
-        get().logAudit({ user: get().currentUser.name, action: "Updated Role", entity: "Role", entityId: id, details: `Role "${id}" updated.` });
+      updateJobTitle: (id, patch) => {
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
+        set((s) => ({
+          jobTitles: s.jobTitles.map((jt) => (jt.id === id ? { ...jt, ...patch, updatedAt: new Date().toISOString() } : jt)),
+        }));
+        get().logAudit({ user: currentUser.name, action: "Updated Job Title", entity: "JobTitle", entityId: id, details: `Job title "${id}" updated.` });
       },
-      deleteRole: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ roles: s.roles.filter((r) => r.id !== id) }));
-        get().logAudit({ user: get().currentUser.name, action: "Deleted Role", entity: "Role", entityId: id, details: `Role "${id}" removed.` });
+      deleteJobTitle: (id) => {
+        const { currentUser, jobTitles } = get();
+        if (!can(get(), "config.manage")) return;
+        const existing = jobTitles.find((jt) => jt.id === id);
+        set((s) => ({ jobTitles: s.jobTitles.filter((jt) => jt.id !== id) }));
+        get().logAudit({ user: currentUser.name, action: "Deleted Job Title", entity: "JobTitle", entityId: id, details: `Removed job title "${existing?.name ?? id}".` });
       },
 
       users: DEFAULT_USERS,
       addUser: (userToAdd) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ users: [...s.users, userToAdd] }));
         get().logAudit({ user: get().currentUser.name, action: "Created User", entity: "User", entityId: userToAdd.id, details: `Added user "${userToAdd.name}".` });
       },
       updateUser: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch, updatedAt: new Date().toISOString() } : u)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated User", entity: "User", entityId: id, details: `User "${id}" updated.` });
       },
       deleteUser: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ users: s.users.filter((u) => u.id !== id) }));
+        if (!can(get(), "config.manage")) return;
+        // Cascade — a deleted user's access mappings and dashboard config
+        // would otherwise linger pointing at a userId nothing resolves to.
+        set((s) => {
+          const dashboardConfigs = { ...s.dashboardConfigs };
+          delete dashboardConfigs[id];
+          return {
+            users: s.users.filter((u) => u.id !== id),
+            userAccessMappings: s.userAccessMappings.filter((m) => m.userId !== id),
+            dashboardConfigs,
+          };
+        });
         get().logAudit({ user: get().currentUser.name, action: "Deleted User", entity: "User", entityId: id, details: `User "${id}" removed.` });
+      },
+
+      userAccessMappings: DEFAULT_USER_ACCESS_MAPPINGS,
+      addUserAccessMapping: (mapping) => {
+        const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
+        if (!can(get(), "config.manage")) {
+          return { ok: false, reason: `${currentUser.name} doesn't have permission to manage user access.` };
+        }
+        const duplicate = userAccessMappings.some(
+          (m) => m.userId === mapping.userId && m.productId === mapping.productId && m.categoryId === mapping.categoryId
+        );
+        if (duplicate) {
+          return { ok: false, reason: "This access already exists. Please edit the existing permission." };
+        }
+        const id = `uam-${Date.now().toString(36)}`;
+        const now = new Date().toISOString();
+        const entry: UserProductAccess = { id, ...mapping, createdBy: currentUser.name, createdAt: now, status: "Active" };
+        set((s) => ({ userAccessMappings: [entry, ...s.userAccessMappings] }));
+        const userName = users.find((u) => u.id === mapping.userId)?.name ?? mapping.userId;
+        const productName = products.find((p) => p.id === mapping.productId)?.name ?? mapping.productId;
+        const categoryName = ruleCategories.find((c) => c.id === mapping.categoryId)?.name ?? mapping.categoryId;
+        get().logAudit({
+          user: currentUser.name,
+          action: "Access Added",
+          entity: "UserProductAccess",
+          entityId: id,
+          details: `Granted ${userName} ${mapping.capabilities.length} permission(s) on "${productName}" / "${categoryName}".`,
+        });
+        return { ok: true };
+      },
+      updateUserAccessMapping: (id, patch) => {
+        const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
+        if (!can(get(), "config.manage")) return;
+        const existing = userAccessMappings.find((m) => m.id === id);
+        if (!existing) return;
+        set((s) => ({
+          userAccessMappings: s.userAccessMappings.map((m) =>
+            m.id === id ? { ...m, ...patch, updatedAt: new Date().toISOString() } : m
+          ),
+        }));
+        const userName = users.find((u) => u.id === existing.userId)?.name ?? existing.userId;
+        const productName = products.find((p) => p.id === existing.productId)?.name ?? existing.productId;
+        const categoryName = ruleCategories.find((c) => c.id === existing.categoryId)?.name ?? existing.categoryId;
+        get().logAudit({
+          user: currentUser.name,
+          action: "Access Updated",
+          entity: "UserProductAccess",
+          entityId: id,
+          details: `Updated ${userName}'s access to "${productName}" / "${categoryName}"${patch.capabilities ? ` — now ${patch.capabilities.length} permission(s)` : ""}.`,
+        });
+      },
+      deleteUserAccessMapping: (id) => {
+        const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
+        if (!can(get(), "config.manage")) return;
+        const existing = userAccessMappings.find((m) => m.id === id);
+        if (!existing) return;
+        set((s) => ({ userAccessMappings: s.userAccessMappings.filter((m) => m.id !== id) }));
+        const userName = users.find((u) => u.id === existing.userId)?.name ?? existing.userId;
+        const productName = products.find((p) => p.id === existing.productId)?.name ?? existing.productId;
+        const categoryName = ruleCategories.find((c) => c.id === existing.categoryId)?.name ?? existing.categoryId;
+        get().logAudit({
+          user: currentUser.name,
+          action: "Access Deleted",
+          entity: "UserProductAccess",
+          entityId: id,
+          details: `Removed ${userName}'s access (${existing.capabilities.length} permission(s)) to "${productName}" / "${categoryName}".`,
+        });
       },
 
       products: DEFAULT_PRODUCTS,
       addProduct: (product) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ products: [...s.products, product] }));
         get().logAudit({ user: currentUser.name, action: "Created Product", entity: "Product", entityId: product.id, details: `Added product "${product.name}" (${product.code}).` });
       },
       updateProduct: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({
           products: s.products.map((p) => (p.id === id ? { ...p, ...patch, updatedAt: new Date().toISOString(), updatedBy: currentUser.name } : p)),
         }));
         get().logAudit({ user: currentUser.name, action: "Updated Product", entity: "Product", entityId: id, details: `Product "${id}" updated.` });
       },
       publishProduct: (id) => {
-        const { currentUser, roles, products } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) {
+        const { currentUser, products } = get();
+        if (!can(get(), "config.manage")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to publish products.` };
         }
         const product = products.find((p) => p.id === id);
@@ -634,8 +754,8 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteProduct: (id) => {
-        const { currentUser, roles, products, productRuleMappings, simulations } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) {
+        const { currentUser, products, productRuleMappings, simulations } = get();
+        if (!can(get(), "config.manage")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to delete products.` };
         }
         const product = products.find((p) => p.id === id);
@@ -652,9 +772,16 @@ export const useAppStore = create<AppState>()(
 
       productRuleMappings: DEFAULT_PRODUCT_RULE_MAPPINGS,
       saveProductRuleMapping: (productId, ruleIds) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         const now = new Date().toISOString();
+        // Rules whose membership in THIS product changed (added or removed) —
+        // used below to trigger re-approval on any already-live rule.
+        const beforeIds = new Set(get().productRuleMappings.filter((m) => m.productId === productId).map((m) => m.ruleId));
+        const afterIds = new Set(ruleIds);
+        const changedRuleIds = new Set(
+          [...beforeIds, ...afterIds].filter((rid) => beforeIds.has(rid) !== afterIds.has(rid))
+        );
         set((s) => ({
           productRuleMappings: [
             ...s.productRuleMappings.filter((m) => m.productId !== productId),
@@ -668,8 +795,17 @@ export const useAppStore = create<AppState>()(
               createdBy: currentUser.name,
             })),
           ],
+          // A mapping change on an already Approved/Published rule invalidates
+          // its approval — return it to Draft (requirement: any mapping change
+          // triggers the approval workflow).
+          rules: s.rules.map((r) =>
+            changedRuleIds.has(r.id) && (r.status === "Approved" || r.status === "Published")
+              ? { ...r, status: "Draft", updatedAt: now }
+              : r
+          ),
         }));
-        get().logAudit({ user: currentUser.name, action: "Mapped Rules to Product", entity: "Product", entityId: productId, details: `${ruleIds.length} rule(s) mapped.` });
+        const reverted = get().rules.filter((r) => changedRuleIds.has(r.id) && r.status === "Draft").length;
+        get().logAudit({ user: currentUser.name, action: "Mapped Rules to Product", entity: "Product", entityId: productId, details: `${ruleIds.length} rule(s) mapped${reverted ? ` — ${reverted} live rule(s) returned to Draft for re-approval` : ""}.` });
       },
 
       recentProductIds: [],
@@ -681,30 +817,30 @@ export const useAppStore = create<AppState>()(
       notifyWorkflows: DEFAULT_NOTIFY_WORKFLOWS,
       notifyWorkflowTemplates: DEFAULT_NOTIFY_WORKFLOW_TEMPLATES,
       addNotifyWorkflow: (workflow) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.create")) return;
+        const { currentUser } = get();
+        if (!can(get(), "notifyx.create")) return;
         set((s) => ({ notifyWorkflows: [...s.notifyWorkflows, workflow] }));
         get().logAudit({ user: currentUser.name, action: "Created Workflow", entity: "NotifyWorkflow", entityId: workflow.id, details: `Added workflow "${workflow.name}".` });
       },
       updateNotifyWorkflow: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "notifyx.edit")) return;
         set((s) => ({
           notifyWorkflows: s.notifyWorkflows.map((w) => (w.id === id ? { ...w, ...patch, updatedAt: new Date().toISOString() } : w)),
         }));
         get().logAudit({ user: currentUser.name, action: "Updated Workflow", entity: "NotifyWorkflow", entityId: id, details: `Workflow "${id}" updated.` });
       },
       deleteNotifyWorkflow: (id) => {
-        const { currentUser, roles, notifyWorkflows } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.edit")) return;
+        const { currentUser, notifyWorkflows } = get();
+        if (!can(get(), "notifyx.edit")) return;
         const workflow = notifyWorkflows.find((w) => w.id === id);
         if (!workflow || workflow.status !== "Draft") return;
         set((s) => ({ notifyWorkflows: s.notifyWorkflows.filter((w) => w.id !== id) }));
         get().logAudit({ user: currentUser.name, action: "Deleted Workflow", entity: "NotifyWorkflow", entityId: id, details: `Draft workflow "${workflow.name}" deleted.` });
       },
       toggleNotifyWorkflowStatus: (id) => {
-        const { currentUser, roles, notifyWorkflows } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.toggle")) return;
+        const { currentUser, notifyWorkflows } = get();
+        if (!can(get(), "notifyx.toggle")) return;
         const workflow = notifyWorkflows.find((w) => w.id === id);
         if (!workflow) return;
         // Active -> Paused; anything else (Draft or Paused) -> Active — same
@@ -717,8 +853,8 @@ export const useAppStore = create<AppState>()(
         get().logAudit({ user: currentUser.name, action: nextStatus === "Active" ? "Activated Workflow" : "Paused Workflow", entity: "NotifyWorkflow", entityId: id, details: `Workflow "${workflow.name}" is now ${nextStatus}.` });
       },
       cloneNotifyWorkflow: (id) => {
-        const { currentUser, roles, notifyWorkflows } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.create")) return;
+        const { currentUser, notifyWorkflows } = get();
+        if (!can(get(), "notifyx.create")) return;
         const source = notifyWorkflows.find((w) => w.id === id);
         if (!source) return;
         const now = new Date().toISOString();
@@ -738,8 +874,8 @@ export const useAppStore = create<AppState>()(
         get().logAudit({ user: currentUser.name, action: "Cloned Workflow", entity: "NotifyWorkflow", entityId: clone.id, details: `Cloned "${source.name}" to "${clone.name}" as Draft.` });
       },
       importNotifyWorkflowTemplate: (templateId) => {
-        const { currentUser, roles, notifyWorkflowTemplates } = get();
-        if (!hasCapability(roles, currentUser.role, "notifyx.create")) return;
+        const { currentUser, notifyWorkflowTemplates } = get();
+        if (!can(get(), "notifyx.create")) return;
         const template = notifyWorkflowTemplates.find((t) => t.id === templateId);
         if (!template) return;
         const now = new Date().toISOString();
@@ -762,40 +898,37 @@ export const useAppStore = create<AppState>()(
 
       ruleGroups: DEFAULT_RULE_GROUPS,
       addRuleGroup: (group) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleGroups: [...s.ruleGroups, group] }));
         get().logAudit({ user: get().currentUser.name, action: "Created Rule Group", entity: "RuleGroup", entityId: group.id, details: `Added rule group "${group.name}".` });
       },
       updateRuleGroup: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleGroups: s.ruleGroups.map((g) => (g.id === id ? { ...g, ...patch } : g)) }));
         get().logAudit({ user: get().currentUser.name, action: "Updated Rule Group", entity: "RuleGroup", entityId: id, details: `Rule group "${id}" updated.` });
       },
       deleteRuleGroup: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleGroups: s.ruleGroups.filter((g) => g.id !== id) }));
         get().logAudit({ user: get().currentUser.name, action: "Deleted Rule Group", entity: "RuleGroup", entityId: id, details: `Rule group "${id}" removed.` });
       },
 
       ruleTemplates: DEFAULT_RULE_TEMPLATES,
       addRuleTemplate: (template) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleTemplates: [...s.ruleTemplates, template] }));
         get().logAudit({ user: currentUser.name, action: "Created Rule Template", entity: "RuleTemplate", entityId: template.id, details: `Added rule template "${template.name}".` });
       },
       updateRuleTemplate: (id, patch) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleTemplates: s.ruleTemplates.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
         get().logAudit({ user: currentUser.name, action: "Updated Rule Template", entity: "RuleTemplate", entityId: id, details: `Rule template "${id}" updated.` });
       },
       deleteRuleTemplate: (id) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
         set((s) => ({ ruleTemplates: s.ruleTemplates.filter((t) => t.id !== id) }));
         get().logAudit({ user: currentUser.name, action: "Deleted Rule Template", entity: "RuleTemplate", entityId: id, details: `Rule template "${id}" removed.` });
       },
@@ -804,29 +937,42 @@ export const useAppStore = create<AppState>()(
       submitForReview: (ruleId) => {
         const rule = get().rules.find((r) => r.id === ruleId);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to submit rules for review.` };
+        }
+        // Maker-Checker: a rule can't enter approval without a product mapping —
+        // the Checker reviews the complete configuration (rule + mapping).
+        const hasMapping = get().productRuleMappings.some((m) => m.ruleId === ruleId);
+        if (!hasMapping) {
+          return { ok: false, reason: "Map at least one product to this rule before submitting for approval." };
         }
 
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Testing", updatedAt: new Date().toISOString() } : r)),
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Pending Approval", updatedAt: new Date().toISOString() } : r)),
           approvalRequests: [
             { id: `AR-${Date.now()}`, ruleId, stage: "Pending Review", requestedBy: currentUser.name, requestedAt: new Date().toISOString() },
             ...s.approvalRequests,
           ],
         }));
-        get().logAudit({ user: currentUser.name, action: "Submitted for Review", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} moved to Testing and queued for review.` });
+        get().logAudit({ user: currentUser.name, action: "Submitted for Approval", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} submitted with its product mapping and queued for Checker review.` });
         return { ok: true };
       },
       approveRule: (ruleId) => {
         const rule = get().rules.find((r) => r.id === ruleId);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles, approvalRequests, users } = get();
+        const { currentUser, approvalRequests, users } = get();
 
-        if (!hasCapability(roles, currentUser.role, "rule.publish")) {
+        if (!can(get(), "rule.publish")) {
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to approve ${rule.name} without the rule.publish capability.` });
-          return { ok: false, reason: `${currentUser.name} doesn't have permission to publish rules.` };
+          return { ok: false, reason: `${currentUser.name} doesn't have permission to approve rules.` };
+        }
+        if (rule.status !== "Pending Approval") {
+          return { ok: false, reason: `Only rules Pending Approval can be approved — "${rule.name}" is ${rule.status}.` };
+        }
+        // A rule can't be approved unless a product mapping exists.
+        if (!get().productRuleMappings.some((m) => m.ruleId === ruleId)) {
+          return { ok: false, reason: "This rule has no product mapping — it can't be approved." };
         }
         // Maker-Checker category scoping — an empty approvalCategories list
         // means "unrestricted" (e.g. a System Administrator persona), a
@@ -838,47 +984,115 @@ export const useAppStore = create<AppState>()(
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to approve ${rule.name} (category "${rule.category}") outside their approval responsibilities (${approver.approvalCategories.join(", ")}).` });
           return { ok: false, reason: `Your approval responsibilities don't include the "${rule.category}" category.` };
         }
+        // Segregation of duties — the approver may not be the rule's creator
+        // or its submitter. The same person can never create/map and approve.
         const pending = approvalRequests.find((a) => a.ruleId === ruleId && a.stage === "Pending Review");
-        if (pending && pending.requestedBy === currentUser.name) {
-          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} cannot approve ${rule.name} — they also requested the review (maker-checker).` });
-          return { ok: false, reason: "You submitted this rule for review — switch to a different reviewer role to approve it." };
+        if (rule.createdBy === currentUser.name || (pending && pending.requestedBy === currentUser.name)) {
+          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} cannot approve ${rule.name} — they created or submitted it (segregation of duties).` });
+          return { ok: false, reason: "You created or submitted this rule — a different Checker must approve it." };
         }
 
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Active", updatedAt: new Date().toISOString() } : r)),
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Approved", updatedAt: new Date().toISOString() } : r)),
           approvalRequests: s.approvalRequests.map((a) =>
             a.ruleId === ruleId && a.stage === "Pending Review"
               ? { ...a, stage: "Approved", decidedBy: currentUser.name, decidedAt: new Date().toISOString() }
               : a
           ),
         }));
-        get().logAudit({ user: currentUser.name, action: "Approved & Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved and published to Active.` });
+        get().logAudit({ user: currentUser.name, action: "Approved Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved — awaiting publish.` });
         return { ok: true };
       },
       rejectRule: (ruleId, comment) => {
         const rule = get().rules.find((r) => r.id === ruleId);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles, users } = get();
+        const { currentUser, users } = get();
 
-        if (!hasCapability(roles, currentUser.role, "rule.publish")) {
-          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to send back ${rule.name} without the rule.publish capability.` });
+        if (!can(get(), "rule.publish")) {
+          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to reject ${rule.name} without the rule.publish capability.` });
           return { ok: false, reason: `${currentUser.name} doesn't have permission to make review decisions.` };
         }
         const approver = users.find((u) => u.name === currentUser.name);
         if (approver && approver.approvalCategories.length > 0 && !approver.approvalCategories.includes(rule.category)) {
-          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to send back ${rule.name} (category "${rule.category}") outside their approval responsibilities (${approver.approvalCategories.join(", ")}).` });
+          get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to reject ${rule.name} (category "${rule.category}") outside their approval responsibilities (${approver.approvalCategories.join(", ")}).` });
           return { ok: false, reason: `Your approval responsibilities don't include the "${rule.category}" category.` };
         }
 
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Draft", updatedAt: new Date().toISOString() } : r)),
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Rejected", updatedAt: new Date().toISOString() } : r)),
           approvalRequests: s.approvalRequests.map((a) =>
             a.ruleId === ruleId && a.stage === "Pending Review"
               ? { ...a, stage: "Rejected", decidedBy: currentUser.name, decidedAt: new Date().toISOString(), comment }
               : a
           ),
         }));
-        get().logAudit({ user: currentUser.name, action: "Sent Back to Draft", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} rejected during review${comment ? `: ${comment}` : "."}` });
+        get().logAudit({ user: currentUser.name, action: "Rejected Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} rejected during review${comment ? `: ${comment}` : "."}` });
+        return { ok: true };
+      },
+      publishRule: (ruleId) => {
+        const rule = get().rules.find((r) => r.id === ruleId);
+        if (!rule) return { ok: false, reason: "Rule not found." };
+        const { currentUser } = get();
+        if (!can(get(), "rule.publish")) {
+          return { ok: false, reason: `${currentUser.name} doesn't have permission to publish rules.` };
+        }
+        if (rule.status !== "Approved") {
+          return { ok: false, reason: `Only Approved rules can be published — "${rule.name}" is ${rule.status}.` };
+        }
+        set((s) => ({
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Published", updatedAt: new Date().toISOString() } : r)),
+        }));
+        get().logAudit({ user: currentUser.name, action: "Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} published — now live.` });
+        return { ok: true };
+      },
+      // Rule-centric product mapping used by the Map-to-Product dialog during
+      // submission (distinct from the product-centric saveProductRuleMapping in
+      // Configuration Studio). Replaces this rule's mappings with one per
+      // product, and — since the mapping is part of the approved configuration
+      // — reverts an already Approved/Published rule to Draft for re-approval.
+      mapRuleToProducts: (ruleId, config) => {
+        const rule = get().rules.find((r) => r.id === ruleId);
+        if (!rule) return { ok: false, reason: "Rule not found." };
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) {
+          return { ok: false, reason: `${currentUser.name} doesn't have permission to map rules.` };
+        }
+        if (config.productIds.length === 0) {
+          return { ok: false, reason: "Select at least one product to map." };
+        }
+        const now = new Date().toISOString();
+        const seq = config.sequence;
+        set((s) => ({
+          productRuleMappings: [
+            ...s.productRuleMappings.filter((m) => m.ruleId !== ruleId),
+            ...config.productIds.map((productId, i) => ({
+              id: `prm-${ruleId}-${productId}-${Date.now()}-${i}`,
+              productId,
+              ruleId,
+              active: true,
+              order: seq ?? i,
+              effectiveDate: config.effectiveDate,
+              remarks: config.remarks,
+              createdAt: now,
+              createdBy: currentUser.name,
+            })),
+          ],
+          rules: s.rules.map((r) =>
+            r.id === ruleId
+              ? {
+                  ...r,
+                  category: config.categoryId ?? r.category,
+                  priority: config.priority ?? r.priority,
+                  // A mapping change on an already-approved/published rule
+                  // invalidates its approval — return to Draft.
+                  status: r.status === "Approved" || r.status === "Published" ? "Draft" : r.status,
+                  updatedAt: now,
+                }
+              : r
+          ),
+        }));
+        const wasLive = rule.status === "Approved" || rule.status === "Published";
+        get().logAudit({ user: currentUser.name, action: "Mapped Rule to Product(s)", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} mapped to ${config.productIds.length} product(s)${wasLive ? " — returned to Draft for re-approval" : ""}.` });
         return { ok: true };
       },
 
@@ -889,8 +1103,8 @@ export const useAppStore = create<AppState>()(
       ruleVersions: [],
 
       addRule: (rule) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.create")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.create")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to create rules.` };
         }
         // Guard against a duplicate id entering the store — without this the
@@ -899,21 +1113,40 @@ export const useAppStore = create<AppState>()(
         if (get().rules.some((r) => r.id === rule.id)) {
           return { ok: false, reason: `A rule with id ${rule.id} already exists.` };
         }
+        // Stamp the creator for Maker-Checker segregation of duties (the
+        // approver may not be the person who authored the rule).
+        const withCreator: BusinessRule = { ...rule, createdBy: rule.createdBy ?? currentUser.name };
         set((s) => ({
-          rules: [rule, ...s.rules],
-          ruleVersions: [snapshotFromRule(rule, currentUser.name, "created"), ...s.ruleVersions],
+          rules: [withCreator, ...s.rules],
+          ruleVersions: [snapshotFromRule(withCreator, currentUser.name, "created"), ...s.ruleVersions],
         }));
         return { ok: true };
       },
 
       updateRule: (id, updater) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to edit rules.` };
         }
+        const before = get().rules.find((r) => r.id === id);
         set((s) => ({
           rules: s.rules.map((r) => (r.id === id ? updater(r) : r)),
         }));
+        // Governance: editing a rule that was already Approved/Published (or
+        // mid-review) invalidates that approval — send it back to Draft and
+        // close any open approval request. Re-submission is required.
+        const REAPPROVAL_STATES: RuleStatus[] = ["Pending Approval", "Approved", "Published"];
+        if (before && REAPPROVAL_STATES.includes(before.status)) {
+          set((s) => ({
+            rules: s.rules.map((r) => (r.id === id ? { ...r, status: "Draft" } : r)),
+            approvalRequests: s.approvalRequests.map((a) =>
+              a.ruleId === id && a.stage === "Pending Review"
+                ? { ...a, stage: "Rejected", decidedBy: currentUser.name, decidedAt: new Date().toISOString(), comment: "Superseded by an edit — re-approval required." }
+                : a
+            ),
+          }));
+          get().logAudit({ user: currentUser.name, action: "Edit reset rule to Draft", entity: "BusinessRule", entityId: id, details: `${before.name} was ${before.status}; editing it requires re-approval, so it returned to Draft.` });
+        }
         const updated = get().rules.find((r) => r.id === id);
         if (updated) {
           set((s) => ({
@@ -964,8 +1197,8 @@ export const useAppStore = create<AppState>()(
       setRuleStatus: (id, status) => {
         const rule = get().rules.find((r) => r.id === id);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.publish")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.publish")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to change a rule's status.` };
         }
 
@@ -987,8 +1220,8 @@ export const useAppStore = create<AppState>()(
       cloneRule: (id) => {
         const source = get().rules.find((r) => r.id === id);
         if (!source) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.create")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.create")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to create rules.` };
         }
 
@@ -998,6 +1231,7 @@ export const useAppStore = create<AppState>()(
           id: newId,
           name: `${source.name} (Copy)`,
           status: "Draft",
+          createdBy: currentUser.name,
           // environment: "Dev", // FUTURE: restore when environment promotion is reintroduced
           version: 1,
           createdAt: new Date().toISOString(),
@@ -1022,8 +1256,8 @@ export const useAppStore = create<AppState>()(
       deleteRule: (id) => {
         const rule = get().rules.find((r) => r.id === id);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.delete")) {
+        const { currentUser } = get();
+        if (!can(get(), "rule.delete")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to permanently delete rules.` };
         }
         if (rule.status !== "Archived") {
@@ -1040,21 +1274,20 @@ export const useAppStore = create<AppState>()(
       // conditions/actions — gate every mutation on the same "rule.edit"
       // capability rule editing itself requires, not left open to any role.
       addMatrix: (matrix) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) return;
         set((s) => ({ matrices: [...s.matrices, matrix] }));
         get().logAudit({ user: currentUser.name, action: "Created Matrix", entity: "DecisionMatrix", entityId: matrix.id, details: `New matrix "${matrix.name}" created for ${matrix.domain}.` });
       },
       deleteMatrix: (matrixId) => {
-        const { currentUser, roles, matrices } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser, matrices } = get();
+        if (!can(get(), "rule.edit")) return;
         const matrix = matrices.find((m) => m.id === matrixId);
         set((s) => ({ matrices: s.matrices.filter((m) => m.id !== matrixId) }));
         get().logAudit({ user: currentUser.name, action: "Deleted Matrix", entity: "DecisionMatrix", entityId: matrixId, details: `Matrix "${matrix?.name ?? matrixId}" deleted.` });
       },
       updateMatrixRows: (matrixId, rows) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        if (!can(get(), "rule.edit")) return;
         set((s) => ({
           matrices: s.matrices.map((m) =>
             m.id === matrixId ? { ...m, rows, updatedAt: new Date().toISOString() } : m
@@ -1063,8 +1296,8 @@ export const useAppStore = create<AppState>()(
       },
 
       addMatrixRow: (matrixId, row) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) return;
         set((s) => ({
           matrices: s.matrices.map((m) =>
             m.id === matrixId ? { ...m, rows: [...m.rows, row], updatedAt: new Date().toISOString() } : m
@@ -1074,8 +1307,8 @@ export const useAppStore = create<AppState>()(
       },
 
       updateMatrixRow: (matrixId, rowId, values) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) return;
         set((s) => ({
           matrices: s.matrices.map((m) =>
             m.id === matrixId
@@ -1091,8 +1324,8 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteMatrixRow: (matrixId, rowId) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) return;
         set((s) => ({
           matrices: s.matrices.map((m) =>
             m.id === matrixId
@@ -1104,8 +1337,8 @@ export const useAppStore = create<AppState>()(
       },
 
       duplicateMatrixRow: (matrixId, rowId) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "rule.edit")) return;
+        const { currentUser } = get();
+        if (!can(get(), "rule.edit")) return;
         const matrix = get().matrices.find((m) => m.id === matrixId);
         const row = matrix?.rows.find((r) => r.id === rowId);
         if (!matrix || !row) return;
@@ -1150,77 +1383,235 @@ export const useAppStore = create<AppState>()(
         }),
 
       dashboardConfigs: DEFAULT_DASHBOARD_CONFIGS,
-      setDashboardConfig: (roleId, config) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ dashboardConfigs: { ...s.dashboardConfigs, [roleId]: config } }));
+      setDashboardConfig: (userId, config) => {
+        const { currentUser } = get();
+        if (!can(get(), "config.manage")) return;
+        set((s) => ({ dashboardConfigs: { ...s.dashboardConfigs, [userId]: config } }));
         get().logAudit({
           user: currentUser.name,
           action: "Updated Dashboard Config",
           entity: "DashboardConfig",
-          entityId: roleId,
-          details: `Dashboard defaults for role "${roleId}" updated.`,
+          entityId: userId,
+          details: `Dashboard defaults for user "${userId}" updated.`,
         });
       },
-
-      productAccessConfigs: {},
-      setProductAccessConfig: (roleId, productIds) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => ({ productAccessConfigs: { ...s.productAccessConfigs, [roleId]: { roleId, productIds } } }));
-        get().logAudit({
-          user: currentUser.name,
-          action: "Updated Product Access",
-          entity: "ProductAccessConfig",
-          entityId: roleId,
-          details: `Product access for role "${roleId}" updated — ${productIds.length} product${productIds.length === 1 ? "" : "s"} allowed.`,
-        });
-      },
-      clearProductAccessConfig: (roleId) => {
-        const { currentUser, roles } = get();
-        if (!hasCapability(roles, currentUser.role, "config.manage")) return;
-        set((s) => {
-          const next = { ...s.productAccessConfigs };
-          delete next[roleId];
-          return { productAccessConfigs: next };
-        });
-        get().logAudit({
-          user: currentUser.name,
-          action: "Updated Product Access",
-          entity: "ProductAccessConfig",
-          entityId: roleId,
-          details: `Product access for role "${roleId}" reset to all products (including any added later).`,
-        });
-      },
-
-      // "Logs in" as the role's demo persona — Demo Mode picks a named person,
-      // not just a permission set, matching the Universal CRM pattern.
-      setUserRole: (roleId) =>
-        set((s) => {
-          const role = s.roles.find((r) => r.id === roleId);
-          const displayName = role?.personaName ?? roleId;
-          return {
-            currentUser: {
-              name: displayName,
-              role: roleId,
-              initials: displayName
-                .split(/[\s/]+/)
-                .map((w) => w[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase(),
-            },
-          };
-        }),
 
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setConfigStudioNavCollapsed: (collapsed) => set({ configStudioNavCollapsed: collapsed }),
     }),
     {
       name: "bre-prototype-store",
-      version: 41,
+      version: 49,
       skipHydration: true,
       migrate: (persistedState) => {
+        // v48 -> v49 replaced the operational RuleStatus with the Maker-Checker
+        // governance lifecycle: "Active" -> "Published", "Testing" -> "Pending
+        // Approval". Also backfills BusinessRule.createdBy (for segregation of
+        // duties) from the earliest "Created Rule" audit entry, else `owner`.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.rules) {
+            const creatorByRuleId = new Map<string, string>();
+            for (const entry of s.auditLog ?? []) {
+              if (entry.action === "Created Rule" && entry.entityId && !creatorByRuleId.has(entry.entityId)) {
+                creatorByRuleId.set(entry.entityId, entry.user);
+              }
+            }
+            s.rules = s.rules.map((r) => {
+              const legacyStatus = (r.status as string) ?? "Draft";
+              const status: RuleStatus =
+                legacyStatus === "Active"
+                  ? "Published"
+                  : legacyStatus === "Testing"
+                  ? "Pending Approval"
+                  : (legacyStatus as RuleStatus);
+              return { ...r, status, createdBy: r.createdBy ?? creatorByRuleId.get(r.id) ?? r.owner };
+            });
+          }
+        }
+
+        // v47 -> v48 deleted the Role entity. Access is now driven entirely
+        // by User Management: AppUser.isAdmin grants the config/admin caps,
+        // and each user's UserProductAccess rows grant rule.* caps. Demo
+        // login reads from Users. This derives everything from the outgoing
+        // per-role data so no user loses access, then drops roles/
+        // productAccessConfigs. (Runs first so later steps see final shapes.)
+        {
+          const s = persistedState as Partial<AppState> & {
+            roles?: { id: string; name: string; personaName: string; capabilities: Capability[] }[];
+            productAccessConfigs?: unknown;
+          };
+          const oldRoles = s.roles ?? [];
+          const roleById = new Map(oldRoles.map((r) => [r.id, r]));
+          const roleByName = new Map(oldRoles.map((r) => [r.name, r]));
+
+          if (s.users) {
+            for (const u of s.users) {
+              const uu = u as AppUser & { permissions?: unknown };
+              const oldRole = roleById.get(uu.role) ?? roleByName.get(uu.role);
+              // Admin flag from the old role's config caps (only if unset).
+              if (typeof uu.isAdmin !== "boolean") {
+                uu.isAdmin =
+                  !!oldRole &&
+                  (oldRole.capabilities.includes("config.manage") || oldRole.capabilities.includes("system.manage"));
+              }
+              // Convert a Role.id role field to the Job Title display name.
+              if (oldRole && uu.role === oldRole.id) uu.role = oldRole.name;
+              // No lost rule.* access: ensure the union of this user's
+              // mappings covers the old role's rule.* caps by expanding one.
+              if (oldRole) {
+                const wantRule = oldRole.capabilities.filter((c) => CATEGORY_SCOPABLE_CAPABILITIES.includes(c));
+                const mine = (s.userAccessMappings ?? []).filter((m) => m.userId === uu.id);
+                const have = new Set(mine.flatMap((m) => m.capabilities));
+                const missing = wantRule.filter((c) => !have.has(c));
+                if (missing.length && mine.length) {
+                  mine[0].capabilities = Array.from(new Set([...mine[0].capabilities, ...missing]));
+                }
+              }
+              delete uu.permissions;
+            }
+          }
+
+          // currentUser: add userId, convert a Role.id role field to name.
+          if (s.currentUser) {
+            const cu = s.currentUser as CurrentUser & { userId?: string };
+            const matchUser = (s.users ?? []).find((u) => u.name === cu.name);
+            if (matchUser && !cu.userId) cu.userId = matchUser.id;
+            const cuRole = roleById.get(cu.role);
+            if (cuRole) cu.role = cuRole.name;
+          }
+
+          // Dashboards: re-key from old roleId to userId (matching
+          // role.personaName === user.name); keep already-user-keyed entries.
+          if (s.dashboardConfigs) {
+            const next: Record<string, DashboardConfig> = {};
+            for (const [key, cfg] of Object.entries(s.dashboardConfigs)) {
+              const c = cfg as DashboardConfig & { roleId?: string };
+              const asUser = (s.users ?? []).find((u) => u.id === key);
+              if (asUser) {
+                next[key] = { ...c, userId: key };
+                continue;
+              }
+              const oldRole = roleById.get(key);
+              const user = oldRole ? (s.users ?? []).find((u) => u.name === oldRole.personaName) : undefined;
+              if (user) next[user.id] = { ...c, userId: user.id };
+            }
+            s.dashboardConfigs = next;
+          }
+
+          delete s.roles;
+          delete s.productAccessConfigs;
+        }
+
+        // v46 -> v47 seeded User Access Mapping with demo grants
+        // (DEFAULT_USER_ACCESS_MAPPINGS) spanning every user and all 7 rule
+        // categories, so the now-single main table on User Management shows
+        // real, working data out of the box instead of "No access assigned
+        // yet." Only backfills when the array is still empty, so an admin
+        // who already added/edited their own access rows keeps them.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s && (!s.userAccessMappings || s.userAccessMappings.length === 0)) {
+            s.userAccessMappings = DEFAULT_USER_ACCESS_MAPPINGS;
+          }
+        }
+
+        // v45 -> v46 dropped AppUser.permissions — the global per-user
+        // System Permissions list on the old User Roster table. It was
+        // never actually read anywhere except that roster's own display/
+        // CSV export (hasCapability() only ever checks Role.capabilities
+        // via currentUser.role, never a roster user's permissions), so
+        // removing it doesn't change any real enforcement. User Access
+        // Mapping (per-user/per-product/per-category capabilities) is now
+        // the only place System Permissions are assigned. approvalCategories
+        // stays — that one IS enforced, in approveRule/rejectRule.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.users) {
+            s.users = s.users.map((u) => {
+              const legacy = u as AppUser & { permissions?: unknown };
+              if (!("permissions" in legacy)) return u;
+              const { permissions: _permissions, ...rest } = legacy;
+              return rest;
+            });
+          }
+        }
+
+        // v44 -> v45 stripped `categories` off JobTitle — a Job Title is now
+        // just a reusable name for the Job Title dropdown in Add/Edit User,
+        // no longer a rule-category bundle. A user's approval categories are
+        // chosen directly on the user record (the existing Category
+        // checklist in Add/Edit User), independent of which Job Title they
+        // have. Drops the field if present; nothing to backfill since name
+        // and id are untouched.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.jobTitles) {
+            s.jobTitles = s.jobTitles.map((jt) => {
+              const legacy = jt as JobTitle & { categories?: string[] };
+              if (!("categories" in legacy)) return jt;
+              const { categories: _categories, ...rest } = legacy;
+              return rest;
+            });
+          }
+        }
+
+        // v43 -> v44 reworked User Access Mapping's per-user/per-product/
+        // per-category permission from a flat Read/Write toggle to a
+        // multi-select of the six category-scopable capabilities
+        // (CATEGORY_SCOPABLE_CAPABILITIES in capabilities.ts), so an admin
+        // can grant e.g. rule.edit + rule.simulate without also implying
+        // rule.publish. Any row still in the old shape maps Read ->
+        // [rule.view] and Write -> [rule.view, rule.create, rule.edit] as
+        // the closest equivalent; rows already migrated (no `permission`
+        // field) are left untouched.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.userAccessMappings) {
+            s.userAccessMappings = s.userAccessMappings.map((m) => {
+              const legacy = m as UserProductAccess & { permission?: "Read" | "Write" };
+              if (!legacy.permission) return m;
+              const { permission, ...rest } = legacy;
+              return {
+                ...rest,
+                capabilities: permission === "Write" ? ["rule.view", "rule.create", "rule.edit"] : ["rule.view"],
+              };
+            });
+          }
+        }
+
+        // v42 -> v43 originally reworked Job Titles from a System
+        // Permissions (Capability[]) bundle to a Rule Category (string[])
+        // bundle. That category concept was itself removed in v45 (a Job
+        // Title is now just a name — see below), so this step's only
+        // remaining job is stripping a leftover `capabilities` field from
+        // an even older persisted shape.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.jobTitles) {
+            s.jobTitles = s.jobTitles.map((jt) => {
+              const legacy = jt as JobTitle & { capabilities?: unknown };
+              if (!("capabilities" in legacy)) return jt;
+              const { capabilities: _capabilities, ...rest } = legacy;
+              return rest;
+            });
+          }
+        }
+
+        // v41 -> v42 seeded Job Titles & Permissions from the 6 distinct
+        // role+permissions pairs already in use on the User Management
+        // roster (DEFAULT_JOB_TITLES) — previously jobTitles started empty,
+        // so an existing browser session showed "No job titles found" even
+        // though every seeded user already had a named role and a
+        // permission set. Only backfills when the array is still empty, so
+        // an admin who already added/edited their own job titles keeps them.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s && (!s.jobTitles || s.jobTitles.length === 0)) {
+            s.jobTitles = DEFAULT_JOB_TITLES;
+          }
+        }
+
         // v40 -> v41 fixed a content mismatch: Kavita Rao (Credit/Risk
         // Manager) and Arjun Nair (Underwriter/Claims) had approvalCategories
         // that didn't match their job title (Arjun could approve "Risk &
@@ -1656,19 +2047,48 @@ export const useAppStore = create<AppState>()(
         // v22 -> v23 added `recentProductIds` (Rule Simulator's "Recently
         // Used" list) — a brand-new key, the default shallow merge fills it
         // in from initial state ([]) automatically, nothing to backfill.
+
+        // REQUIRED: zustand persist uses this return value as the migrated
+        // state (merged over the fresh defaults). Without it, every version
+        // bump silently discarded all persisted customization.
+        return persistedState as AppState;
       },
     }
   )
 );
 
-export function hasCapability(roles: Role[], roleId: string, capability: Capability): boolean {
-  return roles.find((r) => r.id === roleId)?.capabilities.includes(capability) ?? false;
+// The effective capability set for a user = the admin caps (iff isAdmin)
+// plus the union of rule.* caps across that user's Active access mappings.
+// This is the single RBAC resolver — there is no Role entity anymore.
+export function effectiveCapabilities(
+  users: AppUser[],
+  mappings: UserProductAccess[],
+  userId: string
+): Set<Capability> {
+  const caps = new Set<Capability>();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return caps;
+  if (user.isAdmin) for (const c of ADMIN_CAPABILITIES) caps.add(c);
+  for (const m of mappings) {
+    if (m.userId === userId && m.status === "Active") for (const c of m.capabilities) caps.add(c);
+  }
+  return caps;
+}
+
+// Store-internal capability check — resolves the signed-in user from state.
+function can(state: AppState, capability: Capability): boolean {
+  return effectiveCapabilities(state.users, state.userAccessMappings, state.currentUser.userId).has(capability);
+}
+
+export function useEffectiveCapabilities(): Set<Capability> {
+  const users = useAppStore((s) => s.users);
+  const mappings = useAppStore((s) => s.userAccessMappings);
+  const userId = useAppStore((s) => s.currentUser.userId);
+  return effectiveCapabilities(users, mappings, userId);
 }
 
 export function useHasCapability(capability: Capability): boolean {
-  const roleId = useAppStore((s) => s.currentUser.role);
-  const roles = useAppStore((s) => s.roles);
-  return hasCapability(roles, roleId, capability);
+  return useEffectiveCapabilities().has(capability);
 }
 
 // Rules scoped to the header's Industry filter when one is active — shared
@@ -1679,17 +2099,11 @@ export function useScopedRules(): BusinessRule[] {
   return domainFilter.length ? rules.filter((r) => domainFilter.includes(r.domain)) : rules;
 }
 
-// Products visible to the logged-in user's role, per Configuration Studio →
-// Access → Roles' Product Access config. No entry for the current role =
-// default-allow-all (every product), so this is a no-op until an admin
-// explicitly restricts a role. Deliberately NOT applied in Product Master or
-// Product-Rule Mapping — those are config.manage-gated admin authoring
-// surfaces, where restricting an admin's own view could lock them out of
-// configuring the very product they'd need to grant access to.
+// Products visible to the logged-in user. Access is now driven per-user
+// through User Access Mapping (see effectiveCapabilities); this returns every
+// product (default-allow-all) so no user is ever locked out of the Products
+// Hub or Simulator picker. Per-product visibility, if ever needed, can derive
+// from the user's access mappings here.
 export function useAccessibleProducts(): Product[] {
-  const products = useAppStore((s) => s.products);
-  const roleId = useAppStore((s) => s.currentUser.role);
-  const access = useAppStore((s) => s.productAccessConfigs[roleId]);
-  if (!access) return products;
-  return products.filter((p) => access.productIds.includes(p.id));
+  return useAppStore((s) => s.products);
 }

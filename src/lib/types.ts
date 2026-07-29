@@ -24,9 +24,19 @@ export interface Entity {
   industry?: string;
 }
 
-// 5-state lifecycle per BRD §9.5: Draft (authoring) -> Testing (simulator
-// validation) -> Active (live) -> Inactive (paused) -> Archived (retired).
-export type RuleStatus = "Draft" | "Testing" | "Active" | "Inactive" | "Archived";
+// Maker-Checker governance lifecycle: Draft (authoring) -> Pending Approval
+// (submitted with product mapping, awaiting Checker) -> Approved (Checker
+// approved, not yet live) -> Published (live, executes) -> plus Rejected
+// (sent back), and Inactive (paused)/Archived (retired) for post-publish
+// operational management. A rule must have >=1 product mapping to leave Draft.
+export type RuleStatus =
+  | "Draft"
+  | "Pending Approval"
+  | "Approved"
+  | "Rejected"
+  | "Published"
+  | "Inactive"
+  | "Archived";
 
 // How the engine resolves multiple rules qualifying for the same case.
 // "execute-all" (default, matches pre-existing behavior) evaluates every
@@ -175,6 +185,9 @@ export interface BusinessRule {
   ruleType?: RuleType;
   priority: Priority;
   status: RuleStatus;
+  /** Who authored the rule — set on create, used for Maker-Checker
+   *  segregation of duties (the approver may not be the creator). */
+  createdBy?: string;
   // environment: RuleEnvironment; // FUTURE: restore when environment promotion is reintroduced
   description?: string;
   owner: string;
@@ -277,6 +290,11 @@ export interface ProductRuleMapping {
    *  Sequencer for product-based execution/chaining. Missing on legacy rows
    *  (falls back to rule priority; see product-rule-engine.ts). */
   order?: number;
+  /** Optional date the mapping takes effect — captured in the Map-to-Product
+   *  dialog during rule submission. Display/governance only in this prototype. */
+  effectiveDate?: string;
+  /** Optional free-text note captured alongside the mapping at submission. */
+  remarks?: string;
   createdAt: string;
   createdBy?: string;
 }
@@ -630,35 +648,37 @@ export type Capability =
   | "notifyx.edit"
   | "notifyx.toggle";
 
-// A configurable role — enforced client-side only (no backend). Seeded from
-// BRD §5.4's persona matrix, but fully editable/renameable via the
-// Configuration Studio; new tenants can add or rename roles freely.
-export interface Role {
+// A reusable named title (e.g. "Credit Risk Manager") that populates the
+// Job Title dropdown in Add/Edit User. Purely a display label — carries no
+// permissions of its own. AppUser.role stores the selected name as plain
+// text; renaming/deleting a JobTitle never changes a user's access, which is
+// driven entirely by their Administrator flag + User Access Mapping rows.
+export interface JobTitle {
   id: string;
   name: string;
-  /** Demo-mode login persona shown on the "Switch Role" picker (e.g. "Ananya Verma"). */
-  personaName: string;
-  /** lucide-react icon name, resolved via ROLE_ICON_MAP at render time. */
-  icon: string;
-  capabilities: Capability[];
-  /** Optional organization-standard appearance for this role tier, offered via the "Use {role} Default" action in Appearance Studio. */
-  defaultAppearance?: Partial<AppearanceSettings>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// A named individual on the team's user roster — distinct from Role (a
-// reusable capability template several users can share). Enforced
+// A named individual on the team's user roster. This is the single source of
+// truth for access: `isAdmin` grants the config/admin capabilities, and the
+// user's UserProductAccess rows grant the rule.* capabilities. Enforced
 // client-side only (no backend), same as the rest of this prototype.
 export interface AppUser {
   id: string;
   name: string;
   email: string;
-  /** Free-text job title/role label (e.g. "Credit Risk Manager") — not a
-   *  foreign key into the `Role` capability-template list, deliberately
-   *  independent of it so this roster never depends on Role data existing. */
+  /** Free-text Job Title label (e.g. "Credit Risk Manager") — display only,
+   *  drives no permissions. */
   role: string;
   department: string;
   status: "Active" | "Inactive";
-  permissions: Capability[];
+  /** Administrator grant. When true, the user holds all config/admin
+   *  capabilities (system.manage, config.manage, notifyx.*) — the six
+   *  non-rule Capabilities that aren't product/category-scoped. Non-admins
+   *  never hold them. rule.* capabilities come separately from the user's
+   *  UserProductAccess rows, never from this flag. */
+  isAdmin: boolean;
   /** RuleCategory.name values this user is authorized to approve as part of
    *  Maker-Checker approval. Zero, one, or many — a single approver can cover
    *  multiple categories. Enforced in store.ts's approveRule/rejectRule: an
@@ -667,6 +687,27 @@ export interface AppUser {
   approvalCategories: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+// User Management → User Access Mapping: per-user, per-Product, per-Category
+// System Permissions (a subset of Capability — see CATEGORY_SCOPABLE_CAPABILITIES
+// in capabilities.ts; only the rule.* actions are meaningful scoped to a
+// category). Deliberately separate from `approvalCategories` above — that's
+// Maker-Checker approval authority, this is day-to-day rule visibility/edit
+// access. The two are related but not the same permission, same as most
+// enterprise BRE/CRM platforms keep them distinct. Reuses Product Master
+// (productId) and Rule Categories (categoryId) directly; no duplicate
+// product/category entity.
+export interface UserProductAccess {
+  id: string;
+  userId: string;
+  productId: string;
+  categoryId: string;
+  capabilities: Capability[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+  status: "Active" | "Inactive";
 }
 
 // Per-role dashboard defaults (BRD §5.3 Persona-to-Module Mapping) — where a
@@ -681,25 +722,13 @@ export interface DashboardWidgetConfig {
 }
 
 export interface DashboardConfig {
-  roleId: string;
+  userId: string;
   landingRoute: string;
   widgets: DashboardWidgetConfig[];
   /** KPI card ids (see KPI_REGISTRY) shown at the top of the dashboard. Falls back to a default set when absent/empty. */
   kpis?: string[];
   /** Quick Action ids (see ACTION_REGISTRY) shown in the Quick Actions widget. Falls back to a default set when absent/empty. */
   quickActions?: string[];
-}
-
-// Per-role Product visibility — admin-configured via Configuration Studio →
-// Access → Roles. No entry (or an absent roleId key) means default-allow-all:
-// the role sees every product, same as before this feature existed. Applies
-// only to operational/consumption surfaces (Products Hub, Rule Simulator's
-// product picker) — Product Master and Product-Rule Mapping stay unfiltered
-// since they're config.manage-gated admin authoring surfaces, and a role
-// locked out of a product there could never configure it in the first place.
-export interface ProductAccessConfig {
-  roleId: string;
-  productIds: string[];
 }
 
 // Generic per-user, per-device dashboard customization — layered on top of
@@ -786,8 +815,11 @@ export interface AppearanceSettings {
 }
 
 export interface CurrentUser {
+  /** References an AppUser.id — the signed-in person, from which access
+   *  (isAdmin + UserProductAccess rows) is resolved. */
+  userId: string;
   name: string;
-  /** References a Role.id — never a hardcoded role label. */
+  /** The signed-in user's Job Title label (display only). */
   role: string;
   initials: string;
 }

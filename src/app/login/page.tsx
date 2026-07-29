@@ -54,7 +54,7 @@ export default function LoginPage() {
   const appName = useAppStore((s) => s.appearance.appName);
   const tagline = useAppStore((s) => s.appearance.tagline);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
-  const currentUserRole = useAppStore((s) => s.currentUser.role);
+  const currentUserId = useAppStore((s) => s.currentUser.userId);
 
   const [employeeId, setEmployeeId] = useState("");
   const [password, setPassword] = useState("");
@@ -65,12 +65,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (hasHydrated && isAuthenticated) {
-      router.replace(dashboardConfigs[currentUserRole]?.landingRoute ?? "/dashboard");
+      router.replace(dashboardConfigs[currentUserId]?.landingRoute ?? "/dashboard");
     }
-  }, [hasHydrated, isAuthenticated, dashboardConfigs, currentUserRole, router]);
+  }, [hasHydrated, isAuthenticated, dashboardConfigs, currentUserId, router]);
 
   const totalRules = rules.length;
-  const activeRules = rules.filter((r) => r.status === "Active").length;
+  const activeRules = rules.filter((r) => r.status === "Published").length;
   const simulationsRun = simulations.length + 256;
 
   const handleSignIn = (e: React.FormEvent) => {
@@ -82,7 +82,7 @@ export default function LoginPage() {
     setError("");
     login();
     toast.success("Signed in successfully");
-    router.push(dashboardConfigs[currentUserRole]?.landingRoute ?? "/dashboard");
+    router.push(dashboardConfigs[currentUserId]?.landingRoute ?? "/dashboard");
   };
 
   return (

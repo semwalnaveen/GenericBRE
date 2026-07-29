@@ -7,6 +7,7 @@ import {
   ConditionGroup,
   DecisionMatrix,
   Domain,
+  JobTitle,
   JsonMapping,
   NotifyCategory,
   NotifyExecutionLog,
@@ -16,15 +17,14 @@ import {
   Priority,
   Product,
   ProductRuleMapping,
-  Role,
   RuleGroup,
   RuleStatus,
   RuleTemplate,
   SimulationResult,
+  UserProductAccess,
 } from "./types";
 import { DEFAULT_RULE_CATEGORIES, DEFAULT_OWNERS } from "./fields";
 import { buildHashChain } from "./audit-chain";
-import rolesData from "@/data/roles.json";
 
 // ---------- deterministic seeded RNG (avoids SSR/CSR hydration drift) ----------
 function mulberry32(seed: number) {
@@ -61,7 +61,9 @@ function makeRule(partial: {
   category: string;
   subCategory?: string;
   priority: Priority;
-  status: RuleStatus;
+  /** Accepts the legacy Active/Testing seed values and normalizes them to the
+   *  governance statuses, so the 60+ core rule literals below need no edits. */
+  status: RuleStatus | "Active" | "Testing";
   description: string;
   owner: string;
   rootGroup: ConditionGroup;
@@ -75,6 +77,8 @@ function makeRule(partial: {
   caseWhens?: BusinessRule["caseWhens"];
   caseElseActions?: BusinessRule["caseElseActions"];
 }): BusinessRule {
+  const status: RuleStatus =
+    partial.status === "Active" ? "Published" : partial.status === "Testing" ? "Pending Approval" : partial.status;
   return {
     id: partial.id,
     name: partial.name,
@@ -84,7 +88,7 @@ function makeRule(partial: {
     groupId: partial.groupId,
     ruleType: partial.ruleType,
     priority: partial.priority,
-    status: partial.status,
+    status,
     description: partial.description,
     owner: partial.owner,
     rootGroup: partial.rootGroup,
@@ -1290,7 +1294,7 @@ const FILLER_NAME_STEMS = [
 ];
 
 function generateFillerRules(count: number): BusinessRule[] {
-  const statuses: RuleStatus[] = ["Active", "Active", "Active", "Active", "Draft", "Draft", "Inactive", "Archived"];
+  const statuses: RuleStatus[] = ["Published", "Published", "Published", "Published", "Draft", "Draft", "Inactive", "Archived"];
   const out: BusinessRule[] = [];
   for (let i = 0; i < count; i++) {
     const domain = pick(FILLER_DOMAINS);
@@ -1574,14 +1578,6 @@ export const RECENT_DEPLOYMENTS = [
 ];
 
 // ============================================================
-// ROLES — seeded 1:1 from BRD §5.4's Target Role-Based Access Matrix, loaded
-// from src/data/roles.json (personaName + icon power the "Switch Role" demo
-// picker). Fully renameable/editable via the Configuration Studio;
-// enforcement is client-side only (no backend in this prototype).
-// ============================================================
-export const DEFAULT_ROLES: Role[] = rolesData as Role[];
-
-// ============================================================
 // RULE GROUPS — organizational collections, independent of Category.
 // ============================================================
 export const DEFAULT_RULE_GROUPS: RuleGroup[] = [
@@ -1724,9 +1720,10 @@ export const DEFAULT_JSON_MAPPINGS: JsonMapping[] = [
 // Administrator can assign any category to any user via the checkboxes,
 // nothing below is enforced in code.
 //
-// Mirrors the 6 personas from src/data/roles.json (name + capabilities) so
-// User Management is a complete, self-contained roster — Roles itself is no
-// longer surfaced as its own Configuration Studio page.
+// The 6 demo people. User Management is the single source of access: each
+// carries an isAdmin flag (config/admin caps), a Job Title label (display
+// only), approval categories (Maker-Checker), and — via DEFAULT_USER_ACCESS_
+// MAPPINGS — per-product/category rule.* grants. There is no Role entity.
 // ============================================================
 const USER_SEED_TIMESTAMP = "2026-02-01T09:00:00.000Z";
 
@@ -1738,7 +1735,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Credit/Risk Manager",
     department: "Credit Risk",
     status: "Active",
-    permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    isAdmin: false,
     approvalCategories: ["Eligibility", "Risk & Fraud"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -1750,7 +1747,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Underwriter/Claims",
     department: "Underwriting & Claims",
     status: "Active",
-    permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    isAdmin: false,
     approvalCategories: ["Underwriting", "Claims", "Collateral"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -1762,7 +1759,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Product Manager",
     department: "Product Strategy",
     status: "Active",
-    permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish", "config.manage"],
+    isAdmin: true,
     approvalCategories: ["Pricing"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -1774,7 +1771,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Business Analyst",
     department: "Business Analysis",
     status: "Active",
-    permissions: ["rule.view", "rule.create", "rule.edit", "rule.simulate"],
+    isAdmin: false,
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -1786,7 +1783,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Operations",
     department: "Operations",
     status: "Active",
-    permissions: ["rule.view", "rule.simulate"],
+    isAdmin: false,
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -1798,10 +1795,126 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "System Administrator",
     department: "IT / System Administration",
     status: "Active",
-    permissions: ["rule.view", "rule.create", "rule.edit", "rule.delete", "rule.simulate", "rule.publish", "system.manage", "config.manage"],
+    isAdmin: true,
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
+  },
+];
+
+// ============================================================
+// JOB TITLES & PERMISSIONS — one reusable named title per distinct job
+// function already in use on the User Management roster above, so the
+// dropdown in Add/Edit User isn't empty on first load. Purely a name catalog
+// — a user's System Permissions and approval categories are each chosen
+// independently on the user record, not derived from the Job Title.
+// ============================================================
+export const DEFAULT_JOB_TITLES: JobTitle[] = [
+  { id: "jt-credit-risk-manager", name: "Credit/Risk Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-underwriter-claims", name: "Underwriter/Claims", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-product-manager", name: "Product Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-business-analyst", name: "Business Analyst", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-operations", name: "Operations", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-system-administrator", name: "System Administrator", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+];
+
+// ============================================================
+// USER ACCESS MAPPING — demo grants so the User Management page shows a
+// populated, working table out of the box instead of "No access assigned
+// yet." Spans every seeded user and all 7 rule categories, spread across a
+// handful of products, with capability sets that scale with seniority (a
+// Manager/PM gets rule.publish, a Business Analyst/Operations user doesn't).
+// ============================================================
+export const DEFAULT_USER_ACCESS_MAPPINGS: UserProductAccess[] = [
+  {
+    id: "uam-kavita-home-eligibility",
+    userId: "usr-kavita-rao",
+    productId: "prod-home-loan",
+    categoryId: "eligibility",
+    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-kavita-home-risk",
+    userId: "usr-kavita-rao",
+    productId: "prod-home-loan",
+    categoryId: "risk-fraud",
+    capabilities: ["rule.view", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-arjun-auto-underwriting",
+    userId: "usr-arjun-nair",
+    productId: "prod-auto-loan",
+    categoryId: "underwriting",
+    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-arjun-gold-collateral",
+    userId: "usr-arjun-nair",
+    productId: "prod-gold-loan",
+    categoryId: "collateral",
+    capabilities: ["rule.view", "rule.edit", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-arjun-home-claims",
+    userId: "usr-arjun-nair",
+    productId: "prod-home-loan",
+    categoryId: "claims",
+    capabilities: ["rule.view", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-rohan-card-pricing",
+    userId: "usr-rohan-mehta",
+    productId: "prod-credit-card",
+    categoryId: "pricing",
+    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-ananya-home-eligibility",
+    userId: "usr-ananya-verma",
+    productId: "prod-home-loan",
+    categoryId: "eligibility",
+    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-divya-auto-compliance",
+    userId: "usr-divya-iyer",
+    productId: "prod-auto-loan",
+    categoryId: "compliance",
+    capabilities: ["rule.view", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    id: "uam-vikram-home-eligibility",
+    userId: "usr-vikram-chawla",
+    productId: "prod-home-loan",
+    categoryId: "eligibility",
+    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.delete", "rule.simulate", "rule.publish"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
   },
 ];
 

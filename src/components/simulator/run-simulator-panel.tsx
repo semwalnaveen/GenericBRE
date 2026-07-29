@@ -56,7 +56,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
     () => (product ? getMappedRules(product.id, rules, productRuleMappings) : []),
     [product, rules, productRuleMappings]
   );
-  const testingMappedRules = mappedRules.filter((r) => r.status === "Testing");
+  const testingMappedRules = mappedRules.filter((r) => r.status === "Pending Approval");
   const mappedRuleIdsKey = mappedRules.map((r) => r.id).join(",");
 
   // Auto Synchronization — regenerate the sample JSON whenever the selected

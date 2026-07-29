@@ -21,6 +21,7 @@ import {
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
 import { RuleViewSheet } from "@/components/repository/rule-view-sheet";
+import { MapToProductDialog } from "@/components/rule-builder/map-to-product-dialog";
 import { downloadCsv, parseCsv } from "@/lib/csv";
 import { emptyGroup } from "@/lib/condition-tree";
 import { BusinessRule } from "@/lib/types";
@@ -43,9 +44,12 @@ function RepositoryContent() {
   const addRule = useAppStore((s) => s.addRule);
   const cloneRule = useAppStore((s) => s.cloneRule);
   const setRuleStatus = useAppStore((s) => s.setRuleStatus);
-  const submitForReview = useAppStore((s) => s.submitForReview);
   const approveRule = useAppStore((s) => s.approveRule);
   const rejectRule = useAppStore((s) => s.rejectRule);
+  const publishRule = useAppStore((s) => s.publishRule);
+  const products = useAppStore((s) => s.products);
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const approvalRequests = useAppStore((s) => s.approvalRequests);
   // promoteRuleEnvironment removed — FUTURE: restore when environment promotion is reintroduced
   // const promoteRuleEnvironment = useAppStore((s) => s.promoteRuleEnvironment);
   const deleteRule = useAppStore((s) => s.deleteRule);
@@ -62,7 +66,6 @@ function RepositoryContent() {
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [domains, setDomains] = useState<string[]>(searchParams.get("domain") ? [searchParams.get("domain")!] : []);
   const [statuses, setStatuses] = useState<string[]>(searchParams.get("status") ? [searchParams.get("status")!] : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   // ownerFilters removed — FUTURE: restore when Owner is reintroduced
@@ -73,6 +76,9 @@ function RepositoryContent() {
   const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[] } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
+  // "Submit Rule" from the Repository opens the same Map-to-Product dialog the
+  // Rule Builder uses, so a Draft can be mapped + submitted without re-editing.
+  const [mapDialogRule, setMapDialogRule] = useState<BusinessRule | null>(null);
   const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -163,7 +169,7 @@ function RepositoryContent() {
     (r: BusinessRule) => {
       const result = approveRule(r.id);
       if (result.ok) {
-        toast.success(`${r.id} approved & published`, { description: `${r.name} is now live.` });
+        toast.success(`${r.id} approved`, { description: `${r.name} is Approved — publish it to go live.` });
       } else {
         toast.error("Approval blocked", { description: result.reason });
       }
@@ -174,7 +180,6 @@ function RepositoryContent() {
   const filtered = useMemo(() => {
     return rules.filter((r) => {
       if (search && !`${r.name} ${r.id}`.toLowerCase().includes(search.toLowerCase())) return false;
-      if (domains.length && !domains.includes(r.domain)) return false;
       if (statuses.length && !statuses.includes(r.status)) return false;
       if (categoryFilters.length && !categoryFilters.includes(r.category)) return false;
       // owner filter removed — FUTURE: restore when Owner is reintroduced
@@ -182,7 +187,7 @@ function RepositoryContent() {
       // environment filter removed — FUTURE: restore when environment promotion is reintroduced
       return true;
     });
-  }, [rules, search, domains, statuses, categoryFilters]);
+  }, [rules, search, statuses, categoryFilters]);
 
   const columns = useMemo(
     () =>
@@ -217,14 +222,7 @@ function RepositoryContent() {
               toast.error("Action blocked", { description: result.reason });
             }
           },
-          onSubmitForReview: (r) => {
-            const result = submitForReview(r.id);
-            if (result.ok) {
-              toast.success(`${r.id} submitted for review`, { description: "Moved to Testing pending approval." });
-            } else {
-              toast.error("Action blocked", { description: result.reason });
-            }
-          },
+          onSubmitForReview: (r) => setMapDialogRule(r),
           onApprove: (r) => {
             const candidateConflicts = detectConflictsForCandidate(r, rules);
             if (candidateConflicts.length > 0) {
@@ -236,13 +234,21 @@ function RepositoryContent() {
           onReject: (r) => {
             const result = rejectRule(r.id);
             if (result.ok) {
-              toast.info(`${r.id} sent back to Draft`);
+              toast.info(`${r.id} rejected`, { description: `${r.name} sent back — edit and resubmit.` });
             } else {
               toast.error("Action blocked", { description: result.reason });
             }
           },
+          onPublish: (r) => {
+            const result = publishRule(r.id);
+            if (result.ok) {
+              toast.success(`${r.id} published`, { description: `${r.name} is now live.` });
+            } else {
+              toast.error("Publish blocked", { description: result.reason });
+            }
+          },
           onReactivate: (r) => {
-            const result = setRuleStatus(r.id, "Active");
+            const result = setRuleStatus(r.id, "Published");
             if (result.ok) {
               toast.success(`${r.id} re-activated`);
             } else {
@@ -257,14 +263,13 @@ function RepositoryContent() {
           },
           onDelete: (r) => setDeleteConfirm(r),
         },
-        { canPublish, canCreate, canEdit, canDelete, ruleGroups }
+        { canPublish, canCreate, canEdit, canDelete, ruleGroups, products, productRuleMappings, approvalRequests }
       ),
-    [router, cloneRule, setRuleStatus, submitForReview, rejectRule, canPublish, canCreate, canEdit, canDelete, ruleGroups, rules, performApprove]
+    [router, cloneRule, setRuleStatus, rejectRule, publishRule, canPublish, canCreate, canEdit, canDelete, ruleGroups, rules, performApprove, products, productRuleMappings, approvalRequests]
   );
 
   const clearAll = () => {
     setSearch("");
-    setDomains([]);
     setStatuses([]);
     setCategoryFilters([]);
     // setOwnerFilters([]); // FUTURE: restore when Owner is reintroduced
@@ -274,7 +279,6 @@ function RepositoryContent() {
 
   const hasFilters = Boolean(
     search ||
-    domains.length ||
     statuses.length ||
     categoryFilters.length
     // ownerFilters.length || // FUTURE: restore when Owner is reintroduced
@@ -318,17 +322,28 @@ function RepositoryContent() {
             onClick={() =>
               downloadCsv(
                 "rule_repository",
-                filtered.map((r) => ({
-                  RuleID: r.id,
-                  Name: r.name,
-                  Domain: r.domain,
-                  Category: r.category,
-                  Priority: r.priority,
-                  Status: r.status,
-                  // Environment removed — FUTURE: restore when environment promotion is reintroduced
-                  // Owner column removed from CSV — FUTURE: restore when Owner is reintroduced
-                  UpdatedAt: r.updatedAt,
-                }))
+                filtered.map((r) => {
+                  const mapped = productRuleMappings
+                    .filter((m) => m.ruleId === r.id)
+                    .map((m) => products.find((p) => p.id === m.productId)?.name ?? m.productId);
+                  const ars = approvalRequests.filter((a) => a.ruleId === r.id);
+                  const submitted = ars[0];
+                  const approved = ars.find((a) => a.stage === "Approved");
+                  return {
+                    RuleID: r.id,
+                    Name: r.name,
+                    Domain: r.domain,
+                    Category: r.category,
+                    "Mapped Products": mapped.join("; "),
+                    Priority: r.priority,
+                    "Approval Status": r.status,
+                    "Submitted By": submitted?.requestedBy ?? "",
+                    "Submitted Date": submitted?.requestedAt ?? "",
+                    "Approved By": approved?.decidedBy ?? "",
+                    "Approved Date": approved?.decidedAt ?? "",
+                    UpdatedAt: r.updatedAt,
+                  };
+                })
               )
             }
           >
@@ -369,16 +384,6 @@ function RepositoryContent() {
           <span className="text-sm font-semibold">
             {selectedRows.length} rule{selectedRows.length === 1 ? "" : "s"} selected
           </span>
-          {canEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-sm"
-              onClick={() => runBulk("Submitted for review", (r) => (r.status === "Draft" ? submitForReview(r.id) : { ok: false, reason: "Not a Draft rule" }))}
-            >
-              Submit for Review
-            </Button>
-          )}
           {canPublish && (
             <Button
               variant="outline"
@@ -427,17 +432,13 @@ function RepositoryContent() {
           rightToolbar={
             <>
               <MultiSelect
-                label="Domain"
-                options={industries.map((i) => ({ value: i.id, label: i.name }))}
-                selected={domains}
-                onChange={setDomains}
-              />
-              <MultiSelect
                 label="Status"
                 options={[
-                  { value: "Active", label: "Active" },
-                  { value: "Testing", label: "Testing" },
                   { value: "Draft", label: "Draft" },
+                  { value: "Pending Approval", label: "Pending Approval" },
+                  { value: "Approved", label: "Approved" },
+                  { value: "Rejected", label: "Rejected" },
+                  { value: "Published", label: "Published" },
                   { value: "Inactive", label: "Inactive" },
                   { value: "Archived", label: "Archived" },
                 ]}
@@ -526,6 +527,12 @@ function RepositoryContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MapToProductDialog
+        open={!!mapDialogRule}
+        onOpenChange={(v) => !v && setMapDialogRule(null)}
+        rule={mapDialogRule}
+      />
     </div>
   );
 }

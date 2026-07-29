@@ -137,11 +137,6 @@ export function MappedRulesChecklist({
   const [search, setSearch] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [selection, setSelection] = useState<Set<string> | null>(null);
-  // Cross-domain mapping (e.g. an Insurance rule mapped to a Lending product)
-  // is rarely intentional and silently meaningless at execution time — hide
-  // other domains by default, with an explicit opt-out for the deliberate
-  // reuse case.
-  const [showAllDomains, setShowAllDomains] = useState(false);
 
   const savedRuleIds = useMemo(
     () => new Set(getMappedRules(product.id, rules, mappings).map((r) => r.id)),
@@ -149,20 +144,15 @@ export function MappedRulesChecklist({
   );
   const activeSelection = selection ?? savedRuleIds;
   const dirty = selection !== null;
-  const crossDomainMappedCount = useMemo(
-    () => rules.filter((r) => activeSelection.has(r.id) && r.domain !== product.domain).length,
-    [rules, activeSelection, product.domain]
-  );
 
   const filteredRules = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rules.filter((r) => {
-      if (!showAllDomains && r.domain !== product.domain) return false;
       if (categoryFilters.length && !categoryFilters.includes(r.category)) return false;
       if (q && !r.name.toLowerCase().includes(q) && !r.id.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [rules, search, categoryFilters, showAllDomains, product.domain]);
+  }, [rules, search, categoryFilters]);
 
   const toggleRule = (ruleId: string) => {
     const next = new Set(activeSelection);
@@ -215,15 +205,6 @@ export function MappedRulesChecklist({
             {allFilteredSelected ? <Square className="size-3.5" /> : <CheckSquare className="size-3.5" />}
             {allFilteredSelected ? "Clear filtered" : "Select all filtered"}
           </Button>
-          <Button
-            variant={showAllDomains ? "secondary" : "outline"}
-            size="sm"
-            className={cn("h-8 gap-1.5 text-sm", showAllDomains ? "border-primary/50 text-primary" : "bg-background")}
-            onClick={() => setShowAllDomains((v) => !v)}
-            title={`By default only ${product.domain} rules are shown — this product's own domain`}
-          >
-            {showAllDomains ? `All domains` : `${product.domain} only`}
-          </Button>
         </div>
 
         <div className="flex shrink-0 items-center justify-between px-3.5 py-2 text-sm text-muted-foreground">
@@ -234,17 +215,6 @@ export function MappedRulesChecklist({
           <span>{filteredRules.length} shown</span>
         </div>
 
-        {crossDomainMappedCount > 0 && (
-          <div className="mx-3.5 mb-3 flex shrink-0 items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
-            <ShieldAlert className="size-3.5 shrink-0" />
-            <span>
-              <span className="font-semibold">{crossDomainMappedCount}</span> mapped rule{crossDomainMappedCount === 1 ? "" : "s"} outside this
-              product&apos;s {product.domain} domain — a cross-domain rule still executes, but is rarely intentional. Toggle &quot;All domains&quot;
-              above to review.
-            </span>
-          </div>
-        )}
-
         <div className="mx-3.5 mb-3.5 flex min-h-0 flex-1 flex-col rounded-lg border overflow-hidden">
           <div className="flex shrink-0 items-center gap-3 bg-muted/50 px-3 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground border-b select-none">
             <div className="flex items-center">
@@ -252,8 +222,7 @@ export function MappedRulesChecklist({
             </div>
             <span className="w-16 shrink-0">ID</span>
             <span className="min-w-0 flex-1">Rule</span>
-            <span className="w-24 shrink-0 text-center">Eligibility</span>
-            <span className="w-20 shrink-0 text-center">Domain</span>
+            <span className="w-28 shrink-0 text-center">Category</span>
           </div>
 
           <ScrollArea className="min-h-0 flex-1">
@@ -269,11 +238,8 @@ export function MappedRulesChecklist({
                   <Checkbox checked={activeSelection.has(r.id)} onCheckedChange={() => toggleRule(r.id)} />
                   <span className="w-16 shrink-0 font-mono text-sm text-muted-foreground">{r.id}</span>
                   <span className="min-w-0 flex-1 truncate font-medium">{r.name}</span>
-                  <div className="w-24 shrink-0 flex justify-center">
+                  <div className="w-28 shrink-0 flex justify-center">
                     <Badge variant="secondary" className="h-6 text-sm">{r.category || "Uncategorized"}</Badge>
-                  </div>
-                  <div className="w-20 shrink-0 flex justify-center">
-                    <Badge variant="outline" className="h-6 text-sm">{r.domain}</Badge>
                   </div>
                 </label>
               ))}

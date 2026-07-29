@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const t = useTranslate();
   const rules = useAppStore((s) => s.rules);
   const showInsights = useAppStore((s) => s.appearance.showInsights);
-  const roleId = useAppStore((s) => s.currentUser.role);
+  const userId = useAppStore((s) => s.currentUser.userId);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
   const [editMode, setEditMode] = useState(false);
@@ -64,7 +64,7 @@ export default function DashboardPage() {
   // admin-configured defaults (Configuration Studio → Dashboard Management,
   // BRD §5.3) — a Business Analyst can reorder/hide/resize the widgets
   // curated for them, not reveal a different persona's widgets entirely.
-  const roleWidgets = dashboardConfigs[roleId]?.widgets ?? [];
+  const roleWidgets = dashboardConfigs[userId]?.widgets ?? [];
   const widgetDefs: WidgetDef[] = roleWidgets
     .filter((w) => w.visible && w.id !== "kpis")
     .map((w) => ({
@@ -73,7 +73,7 @@ export default function DashboardPage() {
       defaultSize: WIDGET_DEFAULT_SIZE[w.id] ?? "SM",
       defaultOrder: w.order,
     }));
-  const dashboardKey = `bre-overview:${roleId}`;
+  const dashboardKey = `bre-overview:${userId}`;
   const { visibleWidgets, reorder } = useDashboardLayout(dashboardKey, widgetDefs);
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function DashboardPage() {
     setDraggedId(null);
   };
 
-  const pendingReview = rules.filter((r) => r.status === "Testing").length;
+  const pendingReview = rules.filter((r) => r.status === "Pending Approval").length;
   const criticalDrafts = rules.filter((r) => r.status === "Draft" && r.priority === 1).length;
 
   const exportSummary = () => {

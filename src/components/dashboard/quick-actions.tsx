@@ -31,15 +31,15 @@ const ACTION_REGISTRY: Record<string, Action> = {
   "decision-matrix": { label: ACTION_LABELS["decision-matrix"], desc: "Edit pricing & threshold slabs", icon: Grid3x3, href: "/matrix", accent: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
   "run-simulator": { label: ACTION_LABELS["run-simulator"], desc: "Test a live customer scenario", icon: FlaskConical, href: "/simulator", accent: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   "view-approvals": { label: ACTION_LABELS["view-approvals"], desc: "Rules submitted and awaiting review", icon: UserCheck, href: "/repository?status=Testing", accent: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
-  "configuration-studio": { label: ACTION_LABELS["configuration-studio"], desc: "Manage metadata, roles & dashboards", icon: Settings, href: "/settings", accent: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
+  "configuration-studio": { label: ACTION_LABELS["configuration-studio"], desc: "Manage metadata, roles & dashboards", icon: Settings, href: "/configuration-studio", accent: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
 };
 
 export function QuickActions() {
   const router = useRouter();
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
-  const roleId = useAppStore((s) => s.currentUser.role);
+  const userId = useAppStore((s) => s.currentUser.userId);
 
-  const ids = dashboardConfigs[roleId]?.quickActions?.length ? dashboardConfigs[roleId].quickActions! : DEFAULT_ACTION_IDS;
+  const ids = dashboardConfigs[userId]?.quickActions?.length ? dashboardConfigs[userId].quickActions! : DEFAULT_ACTION_IDS;
   const actions = ids.map((id) => ACTION_REGISTRY[id]).filter((a): a is Action => !!a);
 
   return (

@@ -174,8 +174,6 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
   const router = useRouter();
   const stored = useAppStore((s) => s.appearance);
   const setAppearance = useAppStore((s) => s.setAppearance);
-  const roles = useAppStore((s) => s.roles);
-  const currentUser = useAppStore((s) => s.currentUser);
   const canManageBranding = useHasCapability("config.manage");
   const [draft, setDraft] = useState<AppearanceSettings>(stored);
   const [activeTab, setActiveTab] = useState("theme");
@@ -183,8 +181,6 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
   const bgInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const t = useTranslateFor(draft.language as LanguageCode);
-
-  const role = roles.find((r) => r.id === currentUser.role);
 
   if (activeTab === "branding" && !canManageBranding) {
     setActiveTab("theme");
@@ -216,11 +212,6 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
     handleClose();
   };
   const reset = () => setDraft(DEFAULT_APPEARANCE);
-  const useRoleDefault = () => {
-    if (!role) return;
-    setDraft({ ...DEFAULT_APPEARANCE, ...role.defaultAppearance });
-    toast.info(`Applied ${role.name}'s organization default`);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-background text-foreground">
@@ -238,11 +229,6 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
         </span>
 
         <div className="ml-auto flex items-center gap-2">
-          {role && (
-            <Button variant="outline" size="sm" onClick={useRoleDefault} className="hidden md:inline-flex">
-              Use {role.name} Default
-            </Button>
-          )}
           <Button variant="ghost" size="sm" onClick={reset} className="gap-1.5">
             <RotateCcw className="size-3.5" /> Reset
           </Button>

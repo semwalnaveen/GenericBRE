@@ -35,9 +35,9 @@ export const DEFAULT_KPI_IDS = ["total-rules", "active-rules", "draft-rules", "r
 
 export const KPI_LABELS: Record<string, string> = {
   "total-rules": "Total Rules",
-  "active-rules": "Active Rules",
+  "active-rules": "Published Rules",
   "draft-rules": "Draft Rules",
-  "pending-review": "Pending Review",
+  "pending-review": "Pending Approval",
   "pending-approvals": "Pending Approvals",
   "rule-conflicts": "Rule Conflicts",
   deployments: "Deployments",
@@ -69,7 +69,7 @@ export function KpiCards() {
   const allApprovalRequests = useAppStore((s) => s.approvalRequests);
   const auditLog = useAppStore((s) => s.auditLog);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
-  const roleId = useAppStore((s) => s.currentUser.role);
+  const userId = useAppStore((s) => s.currentUser.userId);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
   const router = useRouter();
 
@@ -99,10 +99,10 @@ export function KpiCards() {
     },
     "active-rules": {
       label: t(KPI_TRANSLATION_KEYS["active-rules"]),
-      value: rules.filter((r) => r.status === "Active").length,
+      value: rules.filter((r) => r.status === "Published").length,
       icon: CheckCircle2,
       accent: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
-      href: "/repository?status=Active",
+      href: "/repository?status=Published",
     },
     "draft-rules": {
       label: t(KPI_TRANSLATION_KEYS["draft-rules"]),
@@ -113,10 +113,10 @@ export function KpiCards() {
     },
     "pending-review": {
       label: t(KPI_TRANSLATION_KEYS["pending-review"]),
-      value: rules.filter((r) => r.status === "Testing").length,
+      value: rules.filter((r) => r.status === "Pending Approval").length,
       icon: Clock,
       accent: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
-      href: "/repository?status=Testing",
+      href: "/repository?status=Pending Approval",
     },
     "pending-approvals": {
       label: t(KPI_TRANSLATION_KEYS["pending-approvals"]),
@@ -165,7 +165,7 @@ export function KpiCards() {
     },
   };
 
-  const ids = dashboardConfigs[roleId]?.kpis?.length ? dashboardConfigs[roleId].kpis! : DEFAULT_KPI_IDS;
+  const ids = dashboardConfigs[userId]?.kpis?.length ? dashboardConfigs[userId].kpis! : DEFAULT_KPI_IDS;
   const kpis = ids.map((id) => registry[id]).filter((k): k is Kpi => !!k);
 
   return (

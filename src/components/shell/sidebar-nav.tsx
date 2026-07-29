@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { NAV_ITEMS, NAV_ITEMS_SECONDARY, visibleNavItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAppStore } from "@/lib/store";
+import { useEffectiveCapabilities } from "@/lib/store";
 import { useTranslate } from "@/lib/use-translate";
 import { Badge } from "@/components/ui/badge";
 
@@ -91,11 +91,10 @@ function NavLink({
 }
 
 export function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
-  const roles = useAppStore((s) => s.roles);
-  const roleId = useAppStore((s) => s.currentUser.role);
+  const capabilities = useEffectiveCapabilities();
   const t = useTranslate();
-  const primaryItems = visibleNavItems(NAV_ITEMS, roles, roleId);
-  const secondaryItems = visibleNavItems(NAV_ITEMS_SECONDARY, roles, roleId);
+  const primaryItems = visibleNavItems(NAV_ITEMS, capabilities);
+  const secondaryItems = visibleNavItems(NAV_ITEMS_SECONDARY, capabilities);
 
   return (
     <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-2.5 py-4">

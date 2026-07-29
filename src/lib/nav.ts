@@ -10,8 +10,7 @@ import {
   Compass,
   type LucideIcon,
 } from "lucide-react";
-import { Capability, Role } from "./types";
-import { hasCapability } from "./store";
+import { Capability } from "./types";
 import { TranslationKey } from "./i18n";
 
 export interface NavItem {
@@ -39,11 +38,11 @@ export const NAV_ITEMS: NavItem[] = [
 export const NAV_ITEMS_SECONDARY: NavItem[] = [
   { href: "/audit-log", label: "Audit Log", labelKey: "nav.auditLog", icon: ScrollText, requiredCapability: "config.manage" },
   { href: "/metadata-explorer", label: "Metadata Explorer", labelKey: "nav.metadataExplorer", icon: Compass },
-  { href: "/settings", label: "Configuration Studio", labelKey: "nav.configStudio", icon: Settings, requiredCapability: "config.manage" },
+  { href: "/configuration-studio", label: "Configuration Studio", labelKey: "nav.configStudio", icon: Settings, requiredCapability: "config.manage" },
 ];
 
-// Role-based navigation (BRD §5.3) — a role only sees the modules its
-// capabilities actually grant, rather than every module regardless of persona.
-export function visibleNavItems(items: NavItem[], roles: Role[], roleId: string): NavItem[] {
-  return items.filter((item) => !item.requiredCapability || hasCapability(roles, roleId, item.requiredCapability));
+// Capability-based navigation — a user only sees the modules their effective
+// capabilities (see effectiveCapabilities in store.ts) actually grant.
+export function visibleNavItems(items: NavItem[], capabilities: Set<Capability>): NavItem[] {
+  return items.filter((item) => !item.requiredCapability || capabilities.has(item.requiredCapability));
 }

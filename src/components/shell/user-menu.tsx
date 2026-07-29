@@ -18,10 +18,9 @@ import {
 
 export function UserMenu() {
   const user = useAppStore((s) => s.currentUser);
-  const roles = useAppStore((s) => s.roles);
   const logout = useAppStore((s) => s.logout);
   const router = useRouter();
-  const roleName = roles.find((r) => r.id === user.role)?.name ?? user.role;
+  const roleName = user.role;
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
   return (

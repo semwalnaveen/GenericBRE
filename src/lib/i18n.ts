@@ -94,7 +94,7 @@ export const TRANSLATIONS = {
     fr: "Total des règles", es: "Total de reglas", de: "Regeln gesamt", ja: "総ルール数", zh: "规则总数", ar: "إجمالي القواعد",
   },
   "kpi.activeRules": {
-    en: "Active Rules", hi: "सक्रिय नियम", ta: "செயலில் உள்ள விதிகள்", te: "క్రియాశీల నియమాలు", ml: "സജീവ റൂളുകൾ",
+    en: "Published Rules", hi: "प्रकाशित नियम", ta: "வெளியிடப்பட்ட விதிகள்", te: "ప్రచురించిన నియమాలు", ml: "പ്രസിദ്ധീകരിച്ച റൂളുകൾ",
     fr: "Règles actives", es: "Reglas activas", de: "Aktive Regeln", ja: "アクティブなルール", zh: "活跃规则", ar: "القواعد النشطة",
   },
   "kpi.draftRules": {
@@ -102,7 +102,7 @@ export const TRANSLATIONS = {
     fr: "Règles en brouillon", es: "Reglas en borrador", de: "Entwurfsregeln", ja: "下書きルール", zh: "草稿规则", ar: "قواعد المسودة",
   },
   "kpi.pendingReview": {
-    en: "Pending Review", hi: "समीक्षा लंबित", ta: "மதிப்பாய்வு நிலுவையில்", te: "సమీక్ష పెండింగ్‌లో ఉంది", ml: "അവലോകനം തീർപ്പുകൽപ്പിക്കാത്തത്",
+    en: "Pending Approval", hi: "अनुमोदन लंबित", ta: "ஒப்புதல் நிலுவையில்", te: "ఆమోదం పెండింగ్‌లో ఉంది", ml: "അംഗീകാരം തീർപ്പുകൽപ്പിക്കാത്തത്",
     fr: "Révision en attente", es: "Revisión pendiente", de: "Prüfung ausstehend", ja: "レビュー待ち", zh: "待审核", ar: "قيد المراجعة",
   },
   "kpi.pendingApprovals": {

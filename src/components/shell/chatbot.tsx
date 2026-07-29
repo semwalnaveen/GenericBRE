@@ -7,7 +7,7 @@ import { MessageCircle, X, Send, Sparkles, ThumbsUp, ThumbsDown, Bot, GripHorizo
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GUIDE_CATEGORIES, OPEN_GUIDE_EVENT, type OpenGuideDetail } from "./help-desk";
-import { useAppStore, hasCapability } from "@/lib/store";
+import { useEffectiveCapabilities } from "@/lib/store";
 import { NAV_ITEMS, NAV_ITEMS_SECONDARY } from "@/lib/nav";
 
 // Same capability requirements the Sidebar already hides restricted nav
@@ -180,12 +180,11 @@ export function ChatBot() {
   const [input, setInput] = useState("");
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const roles = useAppStore((s) => s.roles);
-  const roleId = useAppStore((s) => s.currentUser.role);
+  const capabilities = useEffectiveCapabilities();
 
   const canAccessHref = (href: string) => {
     const requiredCapability = ROUTE_CAPABILITIES.get(href);
-    return !requiredCapability || hasCapability(roles, roleId, requiredCapability);
+    return !requiredCapability || capabilities.has(requiredCapability);
   };
 
   useEffect(() => {

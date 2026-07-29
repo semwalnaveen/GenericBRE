@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Search, LayoutDashboard } from "lucide-react";
+import { Search, LayoutDashboard, UserRound } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { DashboardConfig } from "@/lib/types";
 import { WIDGET_LABELS } from "@/components/dashboard/manage-widgets-sheet";
@@ -12,7 +12,6 @@ import { ACTION_LABELS, DEFAULT_ACTION_IDS } from "@/components/dashboard/quick-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { iconForRole } from "@/lib/role-icons";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
@@ -22,7 +21,7 @@ const LANDING_ROUTES: { value: string; label: string }[] = [
   { value: "/repository", label: "Rule Repository" },
   { value: "/matrix", label: "Decision Matrix" },
   { value: "/simulator", label: "Rule Simulator" },
-  { value: "/settings", label: "Configuration Studio" },
+  { value: "/configuration-studio", label: "Configuration Studio" },
 ];
 
 const ALL_WIDGET_IDS = Object.keys(WIDGET_LABELS);
@@ -68,31 +67,31 @@ function CheckboxPicker({
 }
 
 export function DashboardManagementManager() {
-  const roles = useAppStore((s) => s.roles);
+  const users = useAppStore((s) => s.users);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const setDashboardConfig = useAppStore((s) => s.setDashboardConfig);
   const [search, setSearch] = useState("");
 
-  const filteredRoles = useMemo(() => {
+  const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return roles;
-    return roles.filter(
-      (r) => r.name.toLowerCase().includes(q) || r.personaName.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)
+    if (!q) return users;
+    return users.filter(
+      (u) => u.name.toLowerCase().includes(q) || u.role.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
     );
-  }, [roles, search]);
+  }, [users, search]);
 
-  const configFor = (roleId: string): DashboardConfig =>
-    dashboardConfigs[roleId] ?? {
-      roleId,
+  const configFor = (userId: string): DashboardConfig =>
+    dashboardConfigs[userId] ?? {
+      userId,
       landingRoute: "/dashboard",
       widgets: ALL_WIDGET_IDS.map((id, order) => ({ id, visible: true, order })),
       kpis: DEFAULT_KPI_IDS,
       quickActions: DEFAULT_ACTION_IDS,
     };
 
-  const updateConfig = (roleId: string, patch: Partial<DashboardConfig>) => {
-    setDashboardConfig(roleId, { ...configFor(roleId), roleId, ...patch });
-    toast.success(`Dashboard defaults for "${roles.find((r) => r.id === roleId)?.name}" updated.`);
+  const updateConfig = (userId: string, patch: Partial<DashboardConfig>) => {
+    setDashboardConfig(userId, { ...configFor(userId), userId, ...patch });
+    toast.success(`Dashboard defaults for "${users.find((u) => u.id === userId)?.name}" updated.`);
   };
 
   return (
@@ -105,51 +104,51 @@ export function DashboardManagementManager() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search role configurations..."
+              placeholder="Search user layouts..."
               className="h-8 pl-8 text-sm"
             />
           </div>
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium text-muted-foreground">
-            {filteredRoles.length} Role Layouts
+            {filteredUsers.length} User Layouts
           </span>
         </div>
       </div>
 
-      {filteredRoles.length === 0 ? (
+      {filteredUsers.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
           <LayoutDashboard className="size-8 text-muted-foreground/50 mb-2" />
-          <p className="text-sm font-medium text-foreground">No role configurations found</p>
-          <p className="mt-0.5 text-sm text-muted-foreground">No roles match your search filter.</p>
+          <p className="text-sm font-medium text-foreground">No user layouts found</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">No users match your search filter.</p>
         </div>
       ) : (
         <Accordion className="gap-3">
-          {filteredRoles.map((role, idx) => {
-            const config = configFor(role.id);
-            const Icon = iconForRole(role.icon);
+          {filteredUsers.map((user, idx) => {
+            const config = configFor(user.id);
+            const Icon = UserRound;
             const accent = ROLE_ACCENT_PALETTE[idx % ROLE_ACCENT_PALETTE.length];
 
-            const setLandingRoute = (route: string) => updateConfig(role.id, { landingRoute: route });
-            const reorder = (widgets: DashboardConfig["widgets"]) => updateConfig(role.id, { widgets });
+            const setLandingRoute = (route: string) => updateConfig(user.id, { landingRoute: route });
+            const reorder = (widgets: DashboardConfig["widgets"]) => updateConfig(user.id, { widgets });
             const toggleVisible = (id: string) =>
-              updateConfig(role.id, {
+              updateConfig(user.id, {
                 widgets: config.widgets.some((w) => w.id === id)
                   ? config.widgets.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w))
                   : [...config.widgets, { id, visible: true, order: config.widgets.length }],
               });
             const kpis = config.kpis?.length ? config.kpis : DEFAULT_KPI_IDS;
             const toggleKpi = (id: string) =>
-              updateConfig(role.id, { kpis: kpis.includes(id) ? kpis.filter((k) => k !== id) : [...kpis, id] });
+              updateConfig(user.id, { kpis: kpis.includes(id) ? kpis.filter((k) => k !== id) : [...kpis, id] });
             const actions = config.quickActions?.length ? config.quickActions : DEFAULT_ACTION_IDS;
             const toggleAction = (id: string) =>
-              updateConfig(role.id, { quickActions: actions.includes(id) ? actions.filter((a) => a !== id) : [...actions, id] });
+              updateConfig(user.id, { quickActions: actions.includes(id) ? actions.filter((a) => a !== id) : [...actions, id] });
 
             const landingLabel = LANDING_ROUTES.find((r) => r.value === config.landingRoute)?.label ?? config.landingRoute;
             const visibleWidgetCount = config.widgets.filter((w) => w.visible).length;
 
             return (
               <AccordionItem
-                key={role.id}
-                value={role.id}
+                key={user.id}
+                value={user.id}
                 className={cn("rounded-xl border bg-card px-4 shadow-2xs transition-colors", accent.border)}
               >
                 <AccordionTrigger className="py-3.5 hover:no-underline">
@@ -158,8 +157,8 @@ export function DashboardManagementManager() {
                       <Icon className="size-4.5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold tracking-tight text-foreground">{role.name}</p>
-                      <p className="truncate text-sm font-medium text-muted-foreground">{role.personaName}</p>
+                      <p className="truncate text-sm font-semibold tracking-tight text-foreground">{user.name}</p>
+                      <p className="truncate text-sm font-medium text-muted-foreground">{user.role}</p>
                     </div>
                     <div className="hidden shrink-0 items-center gap-1.5 text-sm text-muted-foreground sm:flex">
                       <span>{landingLabel}</span>

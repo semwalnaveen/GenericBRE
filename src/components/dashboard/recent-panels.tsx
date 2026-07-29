@@ -124,7 +124,7 @@ export function RecentActivityPanel() {
 export function RecentDeploymentsPanel() {
   const rules = useScopedRules();
   const recent = [...rules]
-    .filter((r) => r.status === "Active")
+    .filter((r) => r.status === "Published")
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
     .slice(0, 5);
 

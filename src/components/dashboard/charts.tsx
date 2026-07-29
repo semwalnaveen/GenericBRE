@@ -20,9 +20,11 @@ import { RuleStatus } from "@/lib/types";
 import { colorForIndustry } from "@/lib/industries";
 
 const STATUS_COLORS: Record<RuleStatus, string> = {
-  Active: "var(--chart-1)",
+  Published: "var(--chart-1)",
+  Approved: "var(--chart-1)",
   Draft: "var(--chart-4)",
-  Testing: "var(--chart-3)",
+  "Pending Approval": "var(--chart-3)",
+  Rejected: "var(--chart-5)",
   Inactive: "var(--chart-2)",
   Archived: "var(--chart-5)",
 };
@@ -109,7 +111,7 @@ export function RuleStatusChart() {
   const router = useRouter();
 
   const data = useMemo(() => {
-    const order: RuleStatus[] = ["Active", "Testing", "Draft", "Inactive", "Archived"];
+    const order: RuleStatus[] = ["Published", "Approved", "Pending Approval", "Draft", "Rejected", "Inactive", "Archived"];
     const counts: Record<string, number> = {};
     for (const r of rules) counts[r.status] = (counts[r.status] ?? 0) + 1;
     return order.map((name) => ({ name, value: counts[name] ?? 0 }));

@@ -166,9 +166,11 @@ export function ProductHubGrid({
 
           // Status mix among mapped rules
           const statusMix: { status: BusinessRule["status"]; color: string }[] = [
-            { status: "Active", color: "bg-emerald-500" },
+            { status: "Published", color: "bg-emerald-500" },
+            { status: "Approved", color: "bg-violet-500" },
             { status: "Draft", color: "bg-amber-500" },
-            { status: "Testing", color: "bg-sky-500" },
+            { status: "Pending Approval", color: "bg-sky-500" },
+            { status: "Rejected", color: "bg-red-500" },
             { status: "Inactive", color: "bg-muted-foreground/40" },
             { status: "Archived", color: "bg-muted-foreground/20" },
           ];

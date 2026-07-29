@@ -54,7 +54,7 @@ export function DraftRulesPanel() {
 export function RulesAwaitingReviewPanel() {
   const rules = useScopedRules();
   const router = useRouter();
-  const testing = useMemo(() => rules.filter((r) => r.status === "Testing"), [rules]);
+  const testing = useMemo(() => rules.filter((r) => r.status === "Pending Approval"), [rules]);
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
