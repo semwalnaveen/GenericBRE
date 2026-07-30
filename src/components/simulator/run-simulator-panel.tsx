@@ -108,6 +108,17 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
       return;
     }
 
+    const missingFields = fieldCatalog
+      .filter((f) => f.mandatory && (parsed[f.key] === undefined || parsed[f.key] === null || String(parsed[f.key]).trim() === ""))
+      .map((f) => f.label || f.key);
+
+    if (missingFields.length > 0) {
+      toast.error("Missing Mandatory Fields", {
+        description: `Please provide values for: ${missingFields.join(", ")}`,
+      });
+      return;
+    }
+
     setRunning(true);
     const input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
 
@@ -200,6 +211,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
     resetToSampleJson,
     runScenario,
     activeConfig: resolveDecisionResponseConfig(decisionResponseSettings, { industry: domain }),
+    fieldCatalog,
   };
 }
 

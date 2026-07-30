@@ -17,7 +17,7 @@ import { useAppStore, useHasCapability } from "@/lib/store";
 import { Product } from "@/lib/types";
 import { getTemplateColumns, buildSampleRow } from "@/lib/batch-template";
 import { validateBatchWorkbook, BatchValidationResult } from "@/lib/batch-validation";
-import { parseXlsxFile, downloadTemplateWorkbook, downloadResultsWorkbook, DEFAULT_MAX_FILE_SIZE_BYTES } from "@/lib/xlsx-io";
+import { downloadTemplateWorkbook, downloadResultsWorkbook, DEFAULT_MAX_FILE_SIZE_BYTES } from "@/lib/xlsx-io";
 import { downloadCsv } from "@/lib/csv";
 import { runBatch, BatchRowResult, BatchRunProgress } from "@/lib/batch-runner";
 import { Button } from "@/components/ui/button";
@@ -109,20 +109,34 @@ export function BatchTestingPanel({ products, initialProduct }: { products: Prod
     toast.success("Sample template downloaded");
   };
 
-  const handleFile = async (f: File) => {
+  const handleFile = (f: File) => {
     resetAll();
     setFile(f);
     setUploadedAt(new Date().toISOString());
     setPhase("validating");
-    try {
-      const parsed = await parseXlsxFile(f, DEFAULT_MAX_FILE_SIZE_BYTES);
-      const result = validateBatchWorkbook(parsed, columns);
-      setValidation(result);
-      setPhase("ready");
-    } catch (err) {
-      setParseError(err instanceof Error ? err.message : "Could not read this file — is it a valid .xlsx/.xls workbook?");
+    
+    // Process file off the main thread to prevent UI freezing
+    const worker = new Worker(new URL("@/lib/workers/batch-validator.worker.ts", import.meta.url));
+    
+    worker.onmessage = (e) => {
+      const data = e.data;
+      if (data.type === 'success') {
+        setValidation(data.result);
+        setPhase("ready");
+      } else {
+        setParseError(data.message);
+        setPhase("idle");
+      }
+      worker.terminate();
+    };
+    
+    worker.onerror = () => {
+      setParseError("A fatal error occurred during validation.");
       setPhase("idle");
-    }
+      worker.terminate();
+    };
+    
+    worker.postMessage({ file: f, columns, maxSizeBytes: DEFAULT_MAX_FILE_SIZE_BYTES });
   };
 
   const handleRun = async () => {

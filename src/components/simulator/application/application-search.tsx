@@ -14,7 +14,6 @@ export interface ApplicationQuickPick {
 export function ApplicationSearch({
   value,
   onChange,
-  onFetch,
   loading,
   quickPicks,
   onPick,
@@ -22,7 +21,6 @@ export function ApplicationSearch({
 }: {
   value: string;
   onChange: (v: string) => void;
-  onFetch: () => void;
   loading: boolean;
   quickPicks: ApplicationQuickPick[];
   onPick: (id: string) => void;
@@ -39,27 +37,22 @@ export function ApplicationSearch({
         </p>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            id="application-id"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !loading) onFetch();
-            }}
-            placeholder="e.g. APP000124"
-            disabled={loading}
-            aria-invalid={invalid}
-            className={cn("h-10 pl-8 font-mono text-sm", invalid && "border-destructive focus-visible:ring-destructive/40")}
-          />
-          {invalid && <p className="mt-1 text-sm text-destructive">Enter an Application ID to continue.</p>}
-        </div>
-        <Button onClick={onFetch} disabled={loading} className="h-10 gap-1.5 text-sm font-semibold shrink-0">
-          {loading ? <Loader2 className="size-4 animate-spin" /> : <ArrowRight className="size-4" />}
-          {loading ? "Fetching Application…" : "Fetch Details"}
-        </Button>
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          id="application-id"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type Application ID to auto-search (e.g. APP000124)..."
+          aria-invalid={invalid}
+          className={cn("h-10 pl-9 font-mono text-sm pr-10", invalid && "border-destructive focus-visible:ring-destructive/40")}
+        />
+        {loading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {invalid && <p className="mt-1.5 text-sm font-medium text-destructive">Enter a valid Application ID to continue.</p>}
       </div>
 
       {quickPicks.length > 0 && (

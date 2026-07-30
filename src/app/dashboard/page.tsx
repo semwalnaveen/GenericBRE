@@ -6,7 +6,7 @@ import { Download, Sparkles, GripVertical } from "lucide-react";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentRulesPanel, RecentActivityPanel, RecentDeploymentsPanel } from "@/components/dashboard/recent-panels";
-import { DomainDistributionChart, RuleStatusChart } from "@/components/dashboard/charts";
+import { DomainDistributionChart, RuleStatusChart, SimulationResultsChart, ExecutionTimelineChart } from "@/components/dashboard/charts";
 import { DemoScenariosPanel } from "@/components/dashboard/demo-scenarios";
 import {
   DraftRulesPanel,
@@ -46,9 +46,11 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "rule-conflicts": () => <RuleConflictsPanel />,
   "execution-logs": () => <ExecutionLogsPanel />,
   "decision-lookup": () => <DecisionLookupPanel />,
+  "simulation-results": () => <SimulationResultsChart />,
+  "execution-timeline": () => <ExecutionTimelineChart />,
 };
 
-const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG" };
+const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "MD" };
 
 export default function DashboardPage() {
   const router = useRouter();

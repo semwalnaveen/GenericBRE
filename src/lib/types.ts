@@ -402,6 +402,10 @@ export interface BusinessField {
    *  available to the Rule Builder's condition picker but excluded from the
    *  Simulator's dynamic input form since the user never enters them directly. */
   computed?: boolean;
+  /** Whether the field contains PII and should be masked in UI tools/traces. */
+  mask?: boolean;
+  /** Whether the field is required for pre-flight simulation schema validation. */
+  mandatory?: boolean;
   /** Metadata-repository fields — part of the Configuration Studio's Field
    *  Catalog upgrade, all optional so pre-existing seed data keeps working. */
   businessName?: string;
@@ -463,6 +467,8 @@ export interface TraceStep {
   branch?: "then" | "else";
   /** Assign Value/Calculate outputs this step produced (see engine.ts's applyAction) — surfaced in the Simulator's timeline/Rule Chaining Variables display. */
   producedValues?: Record<string, string | number>;
+  /** Any evaluation errors encountered during this step (e.g., NaN from missing variables). */
+  errors?: string[];
 }
 
 export type DecisionOutcome = "Approved" | "Rejected" | "Review Required";

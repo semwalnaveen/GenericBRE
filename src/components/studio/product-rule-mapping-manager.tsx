@@ -69,7 +69,7 @@ export function MappedRulesReorder({
   if (ordered.length === 0) return null;
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex flex-col rounded-xl border bg-card shadow-sm max-h-full">
       <div className="flex shrink-0 items-center gap-2 border-b bg-muted/30 px-3.5 py-2.5">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <ListOrdered className="size-3.5" />
@@ -80,7 +80,7 @@ export function MappedRulesReorder({
         </div>
         <Badge variant="secondary" className="ml-auto h-6 shrink-0 text-sm">{ordered.length} rule{ordered.length === 1 ? "" : "s"}</Badge>
       </div>
-      <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2.5">
+      <div className="space-y-1.5 overflow-y-auto p-2.5 max-h-[320px]">
         {ordered.map((r, i) => (
           <div
             key={`${r.id}-${i}`}
@@ -183,8 +183,8 @@ export function MappedRulesChecklist({
   };
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex min-h-0 flex-1 flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex flex-col gap-3 max-h-full">
+      <div className="flex flex-col rounded-xl border bg-card shadow-sm">
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-muted/30 px-3.5 py-2.5">
           <div className="relative flex-1 min-w-48">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -215,7 +215,7 @@ export function MappedRulesChecklist({
           <span>{filteredRules.length} shown</span>
         </div>
 
-        <div className="mx-3.5 mb-3.5 flex min-h-0 flex-1 flex-col rounded-lg border overflow-hidden">
+        <div className="mx-3.5 mb-3.5 flex flex-col rounded-lg border overflow-hidden">
           <div className="flex shrink-0 items-center gap-3 bg-muted/50 px-3 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground border-b select-none">
             <div className="flex items-center">
               <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAllFiltered} />
@@ -225,7 +225,7 @@ export function MappedRulesChecklist({
             <span className="w-28 shrink-0 text-center">Category</span>
           </div>
 
-          <ScrollArea className="min-h-0 flex-1">
+          <ScrollArea className="max-h-[250px]">
             <div className="divide-y">
               {filteredRules.map((r, i) => (
                 <label

@@ -181,27 +181,27 @@ export function ProductManager() {
           const count = mappedCount(p.id);
 
           return (
-            <div key={p.id} className="group relative flex flex-col justify-between rounded-xl border bg-card p-3.5 transition-all duration-150 hover:border-primary/40 hover:shadow-xs">
+            <div key={p.id} className="group relative flex flex-col justify-between rounded-xl border bg-card p-4 transition-all duration-200 hover:border-primary/40 hover:shadow-md">
               <div>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs">
-                      <Icon className="size-4.5" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-1 items-start gap-3 min-w-0">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
+                      <Icon className="size-5" />
                     </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="truncate text-sm font-semibold tracking-tight text-foreground">{p.name}</p>
-                        <Badge variant={p.status === "Active" ? "default" : "secondary"} className="h-5 shrink-0 px-1.5 text-sm font-medium">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate text-base font-semibold tracking-tight text-foreground" title={p.name}>{p.name}</h3>
+                        <Badge variant={p.status === "Active" ? "default" : "secondary"} className="h-5 shrink-0 px-1.5 text-[10px] uppercase font-bold tracking-wider">
                           {p.status}
                         </Badge>
                       </div>
-                      <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
-                        {p.code} · {industry?.name ?? p.domain}
+                      <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                        {p.code} <span className="opacity-50 px-0.5">•</span> {industry?.name ?? p.domain}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-0.5 opacity-80 transition-opacity group-hover:opacity-100">
+                  <div className="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <Button
                       variant="ghost"
                       size="icon-sm"
@@ -227,16 +227,16 @@ export function ProductManager() {
                   </div>
                 </div>
 
-                <p className="mt-2.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+                <p className="mt-3.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
                   {p.description || "No description provided"}
                 </p>
               </div>
 
-              <div className="mt-3.5 flex items-center justify-between border-t pt-2.5 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {count} rule{count === 1 ? "" : "s"} mapped
+              <div className="mt-4 flex items-center justify-between border-t pt-3">
+                <span className="text-xs font-medium text-muted-foreground">
+                  <span className="text-foreground font-semibold">{count}</span> rule{count === 1 ? "" : "s"} mapped
                 </span>
-                <span className="text-sm font-mono text-muted-foreground/60">{p.publishStatus ?? "Draft"}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground shadow-sm border">{p.publishStatus ?? "Draft"}</span>
               </div>
             </div>
           );

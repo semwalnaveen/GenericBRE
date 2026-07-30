@@ -31,7 +31,6 @@ import {
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
 import { RuleViewSheet } from "@/components/repository/rule-view-sheet";
-import { MapToProductDialog } from "@/components/rule-builder/map-to-product-dialog";
 import { downloadCsv, parseCsv } from "@/lib/csv";
 import { emptyGroup } from "@/lib/condition-tree";
 import { BusinessRule } from "@/lib/types";
@@ -80,7 +79,6 @@ function RepositoryContent() {
   const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[] } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
-  const [mapDialogRule, setMapDialogRule] = useState<BusinessRule | null>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
@@ -103,6 +101,61 @@ function RepositoryContent() {
   const clearSelection = () => {
     setSelectedRows([]);
     setResetSelectionSignal((n) => n + 1);
+  };
+
+  const handleExport = () => {
+    const toExport = selectedRows.length > 0 ? selectedRows : filtered;
+    if (toExport.length === 0) {
+      toast.warning("No rules to export");
+      return;
+    }
+    const exportData = toExport.map((r) => ({
+      ...r,
+      actions: JSON.stringify(r.actions),
+      elseActions: r.elseActions ? JSON.stringify(r.elseActions) : "",
+      conditionSummaries: JSON.stringify(r.conditionSummaries),
+    }));
+    downloadCsv("genericbre_rules", exportData as Record<string, unknown>[]);
+    toast.success(`Exported ${exportData.length} rules`);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      const data = parseCsv(text);
+      let importedCount = 0;
+      data.forEach((row: any) => {
+        const taken = new Set(useAppStore.getState().rules.map((r) => r.id));
+        const id = nextRuleId(useAppStore.getState().rules, taken);
+        
+        let actions = [];
+        let elseActions = undefined;
+        let conditionSummaries = [];
+        try { actions = row.actions ? JSON.parse(row.actions) : []; } catch {}
+        try { elseActions = row.elseActions ? JSON.parse(row.elseActions) : undefined; } catch {}
+        try { conditionSummaries = row.conditionSummaries ? JSON.parse(row.conditionSummaries) : []; } catch {}
+        
+        const newRule: BusinessRule = {
+          ...row,
+          id,
+          name: `${row.name || "Imported"} (Copy)`,
+          status: "Draft",
+          actions,
+          elseActions,
+          conditionSummaries,
+        };
+        addRule(newRule);
+        importedCount++;
+      });
+      toast.success(`Imported ${importedCount} rules as Drafts`);
+      if (importRef.current) importRef.current.value = "";
+    };
+    reader.readAsText(file);
   };
 
   const performApprove = useCallback(
@@ -163,7 +216,7 @@ function RepositoryContent() {
               toast.error("Action blocked", { description: result.reason });
             }
           },
-          onSubmitForReview: (r) => setMapDialogRule(r),
+          onSubmitForReview: (r) => router.push(`/rule-builder/mapping?ruleId=${r.id}`),
           onApprove: (r) => {
             const candidateConflicts = detectConflictsForCandidate(r, rules);
             if (candidateConflicts.length > 0) {
@@ -228,6 +281,13 @@ function RepositoryContent() {
           <p className="mt-0.5 text-sm text-muted-foreground">Searchable catalogue of every configured business rule</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <input type="file" accept=".csv" className="hidden" ref={importRef} onChange={handleImport} />
+          <Button variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={() => importRef.current?.click()}>
+            <Upload className="size-3.5" /> Import
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={handleExport}>
+            <Download className="size-3.5" /> Export {selectedRows.length > 0 ? `(${selectedRows.length})` : ""}
+          </Button>
           {canCreate && (
             <Button size="sm" className="gap-1.5 shadow-xs font-medium" onClick={() => router.push("/rule-builder")}>
               <Plus className="size-3.5" /> Create Rule
@@ -470,11 +530,6 @@ function RepositoryContent() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <MapToProductDialog
-        open={!!mapDialogRule}
-        onOpenChange={(v) => !v && setMapDialogRule(null)}
-        rule={mapDialogRule}
-      />
     </div>
   );
 }

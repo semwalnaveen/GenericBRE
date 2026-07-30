@@ -56,7 +56,6 @@ import { CaseBuilder } from "@/components/rule-builder/case-builder";
 import { RulePreviewPanel } from "@/components/rule-builder/rule-preview-panel";
 import { InlineTestPanel } from "@/components/rule-builder/inline-test-panel";
 import { TemplatePicker } from "@/components/rule-builder/template-picker";
-import { MapToProductDialog } from "@/components/rule-builder/map-to-product-dialog";
 import { SampleJsonPanel } from "@/components/rule-builder/sample-json-panel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -160,9 +159,6 @@ function RuleBuilderContent() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
-  // After "Submit Rule" saves the draft, the Map-to-Product dialog opens with
-  // the just-saved rule so the Maker can map it before submitting for approval.
-  const [mapDialogRule, setMapDialogRule] = useState<BusinessRule | null>(null);
   const [showElseBranch, setShowElseBranch] = useState(() => !!existingRule?.elseActions?.length);
   // Additive CASE Builder visibility — independent of the ELSE branch above
   // (that one belongs to the normal condition tree; this one to the CASE block).
@@ -498,10 +494,10 @@ function RuleBuilderContent() {
     router.push("/repository");
   };
 
-  // "Submit Rule" first persists the Draft, then opens the Map-to-Product
-  // dialog. The rule only enters the approval queue (Pending Approval) once a
-  // product mapping is configured and the Maker clicks "Submit for Approval"
-  // inside that dialog — the Checker then reviews the complete configuration.
+  // "Submit Rule" first persists the Draft, then redirects to the
+  // full-page Product Mapping screen. The rule only enters the approval queue
+  // (Pending Approval) once the Maker completes product mapping and clicks
+  // "Submit for Approval" on that page.
   const handleSubmitForReview = () => {
     if (!validate()) return;
     const saved = persistRule("Draft");
@@ -509,7 +505,7 @@ function RuleBuilderContent() {
       toast.error("Couldn't save", { description: saved.reason });
       return;
     }
-    setMapDialogRule(saved.rule);
+    router.push(`/rule-builder/mapping?ruleId=${saved.rule.id}`);
   };
 
   const handleDuplicate = () => {
@@ -649,13 +645,6 @@ function RuleBuilderContent() {
           </Button>
         </div>
       </div>
-
-      <MapToProductDialog
-        open={!!mapDialogRule}
-        onOpenChange={(v) => !v && setMapDialogRule(null)}
-        rule={mapDialogRule}
-        onSubmitted={() => router.push("/repository")}
-      />
 
       <TemplatePicker
         open={templatePickerOpen}
