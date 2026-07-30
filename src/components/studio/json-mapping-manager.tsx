@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Trash2, Upload, Wand2, FileJson, Save, ArrowDown, ArrowUp, Package } from "lucide-react";
+import { Trash2, Upload, Wand2, FileJson, Save, ArrowDown, ArrowUp, Package, Search } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { JsonMapping, JsonMappingEntry, FieldDataType } from "@/lib/types";
 import { flattenJson, FlattenedAttribute } from "@/lib/json-mapping";
@@ -66,6 +66,8 @@ export function JsonMappingManager() {
   const [activeDirection, setActiveDirection] = useState<"request" | "response">("request");
   const [payloadText, setPayloadText] = useState("");
   const [pendingDelete, setPendingDelete] = useState<JsonMapping | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Mapped" | "Unmapped">("All");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const productsForDomain = products.filter((p) => p.domain === domainFilter);
@@ -179,6 +181,12 @@ export function JsonMappingManager() {
   };
 
   const industryFields = active ? fieldCatalog.filter((f) => f.domain === active.industry || f.domain === "Common") : [];
+  const filteredEntries = active?.entries.filter((entry) => {
+    const matchesSearch = entry.externalAttribute.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          entry.jsonPath.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "All" || entry.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }) ?? [];
 
   return (
     <div className="flex h-full min-h-100 gap-4">
@@ -294,6 +302,26 @@ export function JsonMappingManager() {
                   />
                 </div>
 
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-2 size-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search attributes or paths..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-8 pl-8 text-sm"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "All" | "Mapped" | "Unmapped")}>
+                    <SelectTrigger className="h-8 w-32 text-sm"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All Status</SelectItem>
+                      <SelectItem value="Mapped">Mapped</SelectItem>
+                      <SelectItem value="Unmapped">Unmapped</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="w-full max-h-[320px] overflow-x-auto overflow-y-auto rounded-xl border">
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-card">
@@ -310,7 +338,7 @@ export function JsonMappingManager() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {active.entries.map((entry) => (
+                      {filteredEntries.map((entry) => (
                         <TableRow key={entry.id}>
                           <TableCell className="font-mono text-sm">{entry.externalAttribute}</TableCell>
                           <TableCell className="font-mono text-sm text-muted-foreground">{entry.jsonPath}</TableCell>
@@ -372,7 +400,7 @@ export function JsonMappingManager() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {active.entries.length === 0 && (
+                      {filteredEntries.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
                             No attributes yet — paste a sample payload above and click Detect Attributes.
