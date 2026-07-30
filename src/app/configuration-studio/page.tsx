@@ -72,7 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Rule Governance",
+    label: "Rule Management",
     items: [
       { id: "industries", label: "Domains", icon: Building2 },
       { id: "products", label: "Product Master", icon: Package },

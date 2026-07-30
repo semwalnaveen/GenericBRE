@@ -299,6 +299,26 @@ export interface ProductRuleMapping {
   createdBy?: string;
 }
 
+// A submitted customer application, addressable by a human-facing Application
+// ID (e.g. "APP000124"). Powers the Rule Simulator's Application-ID mode:
+// enter an ID, auto-identify its Product, run its data through that product's
+// mapped rules. In production this would be fetched from the originating LOS/
+// core system; this prototype has no backend, so DEFAULT_APPLICATIONS seeds a
+// representative set (client-side, like DEFAULT_PRODUCTS). `fields` is keyed by
+// Field-Catalog keys — the SAME shape as SimulationResult.input — so it feeds
+// the existing execution engine with zero transformation. `applicantName` and
+// `status` are display-only identity, never passed to the engine.
+export type ApplicationStatus = "Submitted" | "Under Review" | "Pending Documents";
+
+export interface LoanApplication {
+  id: string;
+  productId: string;
+  applicantName: string;
+  status: ApplicationStatus;
+  submittedAt: string;
+  fields: Record<string, string | number | boolean>;
+}
+
 // ============================================================
 // Execution Manager types removed — system deprecated/deleted.
 // ============================================================
@@ -466,6 +486,29 @@ export interface SimulationResult {
   totalDurationMs: number;
   /** True when one or more Testing-stage rules were included via an explicit sandbox test — this result is a pre-approval preview, not a production decision. */
   sandbox?: boolean;
+}
+
+// Batch Testing (Excel upload) — a summary-only audit record of one batch
+// run. Deliberately excludes per-row results: a 10,000-row batch's full
+// result set (each with its own SimulationResult/trace) stays in the Batch
+// Testing tab's component state only and is never written here, so it never
+// persists into the single localStorage blob this whole store round-trips
+// through (see AUDIT_LOG_CAP's comment in store.ts for why unbounded growth
+// there is already a documented risk this must not add to).
+export interface BatchRunSummary {
+  id: string;
+  productId: string;
+  productName: string;
+  fileName: string;
+  uploadedBy: string;
+  startedAt: string;
+  endedAt: string;
+  totalRows: number;
+  passed: number;
+  failed: number;
+  cancelled: boolean;
+  avgExecutionMs: number;
+  reportDownloaded: boolean;
 }
 
 // ============================================================

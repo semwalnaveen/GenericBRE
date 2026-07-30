@@ -2,11 +2,13 @@
 
 import { Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Download, Upload, Plus, AlertTriangle, X } from "lucide-react";
+import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
   AlertDialog,
@@ -18,6 +20,14 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
 import { RuleViewSheet } from "@/components/repository/rule-view-sheet";
@@ -25,7 +35,8 @@ import { MapToProductDialog } from "@/components/rule-builder/map-to-product-dia
 import { downloadCsv, parseCsv } from "@/lib/csv";
 import { emptyGroup } from "@/lib/condition-tree";
 import { BusinessRule } from "@/lib/types";
-import { detectRuleConflicts, detectConflictsForCandidate, RuleConflict } from "@/lib/conflict-detection";
+import { detectConflictsForCandidate, RuleConflict } from "@/lib/conflict-detection";
+import { detectProductRuleConflicts, ProductConflictFinding } from "@/lib/product-conflict-detection";
 
 function nextRuleId(existing: BusinessRule[], taken: Set<string>) {
   const nums = existing.map((r) => parseInt(r.id.replace(/\D/g, ""), 10)).filter((n) => !Number.isNaN(n));
@@ -50,13 +61,9 @@ function RepositoryContent() {
   const products = useAppStore((s) => s.products);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const approvalRequests = useAppStore((s) => s.approvalRequests);
-  // promoteRuleEnvironment removed — FUTURE: restore when environment promotion is reintroduced
-  // const promoteRuleEnvironment = useAppStore((s) => s.promoteRuleEnvironment);
   const deleteRule = useAppStore((s) => s.deleteRule);
   const industries = useAppStore((s) => s.industries);
   const ruleCategories = useAppStore((s) => s.ruleCategories);
-  // owners selector removed — FUTURE: restore when Owner is reintroduced
-  // const owners = useAppStore((s) => s.owners);
   const ruleGroups = useAppStore((s) => s.ruleGroups);
   const canPublish = useHasCapability("rule.publish");
   const canCreate = useHasCapability("rule.create");
@@ -68,108 +75,41 @@ function RepositoryContent() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statuses, setStatuses] = useState<string[]>(searchParams.get("status") ? [searchParams.get("status")!] : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
-  // ownerFilters removed — FUTURE: restore when Owner is reintroduced
-  // groupFilters removed — Rule Group is no longer a filter dimension, see docs/plan history
-  // environmentFilters removed — FUTURE: restore when environment promotion is reintroduced
   const [viewRule, setViewRule] = useState<BusinessRule | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[] } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
-  // "Submit Rule" from the Repository opens the same Map-to-Product dialog the
-  // Rule Builder uses, so a Draft can be mapped + submitted without re-editing.
   const [mapDialogRule, setMapDialogRule] = useState<BusinessRule | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
 
-  const conflicts = useMemo(() => detectRuleConflicts(rules), [rules]);
+  // Product-Level Rule Conflict Detection — evaluate all mapped products
+  const productConflicts = useMemo(() => {
+    const out: { productId: string; productName: string; finding: ProductConflictFinding }[] = [];
+    for (const p of products) {
+      const findings = detectProductRuleConflicts(p.id, rules, productRuleMappings);
+      for (const finding of findings) {
+        out.push({ productId: p.id, productName: p.name, finding });
+      }
+    }
+    return out;
+  }, [products, rules, productRuleMappings]);
+
+  const criticalConflicts = useMemo(() => productConflicts.filter((c) => c.finding.severity === "Critical"), [productConflicts]);
+  const mediumConflicts = useMemo(() => productConflicts.filter((c) => c.finding.severity === "Medium"), [productConflicts]);
 
   const clearSelection = () => {
     setSelectedRows([]);
     setResetSelectionSignal((n) => n + 1);
   };
 
-  function runBulk(label: string, action: (r: BusinessRule) => { ok: boolean; reason?: string }) {
-    let succeeded = 0;
-    const failures: string[] = [];
-    for (const r of selectedRows) {
-      const result = action(r);
-      if (result.ok) succeeded++;
-      else failures.push(`${r.id}${result.reason ? `: ${result.reason}` : ""}`);
-    }
-    if (succeeded > 0) {
-      toast.success(`${label}: ${succeeded} of ${selectedRows.length} rule${selectedRows.length === 1 ? "" : "s"}${failures.length ? `, ${failures.length} blocked` : ""}`, {
-        description: failures.length ? failures.slice(0, 4).join(" · ") + (failures.length > 4 ? " …" : "") : undefined,
-      });
-    } else {
-      toast.error(`${label} blocked for all ${selectedRows.length} selected rule(s)`, {
-        description: failures.slice(0, 4).join(" · "),
-      });
-    }
-    clearSelection();
-  }
-
-  const handleImportFile = (file: File) => {
-    const finish = (rows: Record<string, string>[]) => {
-      const taken = new Set(rules.map((r) => r.id));
-      let added = 0;
-      const skipped: string[] = [];
-      rows.forEach((row, i) => {
-        const name = row.name || row.Name;
-        const domain = row.domain || row.Domain;
-        const category = row.category || row.Category;
-        const owner = row.owner || row.Owner;
-        const priority = Number(row.priority || row.Priority || 3);
-        if (!name || !domain || !category || !owner) {
-          skipped.push(`Row ${i + 2}: missing name, domain, category or owner`);
-          return;
-        }
-        const rule: BusinessRule = {
-          id: nextRuleId(rules, taken),
-          name,
-          domain,
-          category,
-          subCategory: "",
-          priority: (Number.isFinite(priority) ? Math.min(5, Math.max(1, priority)) : 3) as BusinessRule["priority"],
-          status: "Draft",
-          // environment removed — FUTURE: restore when environment promotion is reintroduced
-          description: row.description || row.Description || "",
-          owner,
-          rootGroup: emptyGroup("AND"),
-          actions: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          version: 1,
-          simulatable: true,
-        };
-        const result = addRule(rule);
-        if (result.ok) added++;
-        else skipped.push(`${rule.id}: ${result.reason}`);
-      });
-      toast.success(`Import complete: ${added} rule${added === 1 ? "" : "s"} added as Draft${skipped.length ? `, ${skipped.length} skipped` : ""}.`, {
-        description: skipped.length ? skipped.slice(0, 5).join(" · ") + (skipped.length > 5 ? " …" : "") : "Open each in Rule Builder to finish its conditions & actions.",
-      });
-    };
-
-    if (file.name.endsWith(".json")) {
-      file.text().then((text) => {
-        try {
-          const data = JSON.parse(text);
-          finish(Array.isArray(data) ? data : [data]);
-        } catch {
-          toast.error("Invalid JSON file.");
-        }
-      });
-    } else {
-      file.text().then((text) => finish(parseCsv(text)));
-    }
-  };
-
   const performApprove = useCallback(
-    (r: BusinessRule) => {
-      const result = approveRule(r.id);
+    (rule: BusinessRule) => {
+      const result = approveRule(rule.id);
       if (result.ok) {
-        toast.success(`${r.id} approved`, { description: `${r.name} is Approved — publish it to go live.` });
+        toast.success(`${rule.id} approved`, { description: `${rule.name} is ready for publishing.` });
       } else {
         toast.error("Approval blocked", { description: result.reason });
       }
@@ -179,12 +119,13 @@ function RepositoryContent() {
 
   const filtered = useMemo(() => {
     return rules.filter((r) => {
-      if (search && !`${r.name} ${r.id}`.toLowerCase().includes(search.toLowerCase())) return false;
-      if (statuses.length && !statuses.includes(r.status)) return false;
-      if (categoryFilters.length && !categoryFilters.includes(r.category)) return false;
-      // owner filter removed — FUTURE: restore when Owner is reintroduced
-      // group filter removed — Rule Group is no longer a filter dimension
-      // environment filter removed — FUTURE: restore when environment promotion is reintroduced
+      if (search) {
+        const q = search.toLowerCase();
+        const m = r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
+        if (!m) return false;
+      }
+      if (statuses.length > 0 && !statuses.includes(r.status)) return false;
+      if (categoryFilters.length > 0 && !categoryFilters.includes(r.category)) return false;
       return true;
     });
   }, [rules, search, statuses, categoryFilters]);
@@ -255,9 +196,7 @@ function RepositoryContent() {
               toast.error("Action blocked", { description: result.reason });
             }
           },
-          onPromote: (_r) => {
-            // Promote action disabled — FUTURE: restore when environment promotion is reintroduced
-          },
+          onPromote: (_r) => {},
           onTestInSimulator: (r) => {
             router.push(`/simulator?domain=${r.domain}&sandboxRule=${r.id}`);
           },
@@ -272,19 +211,9 @@ function RepositoryContent() {
     setSearch("");
     setStatuses([]);
     setCategoryFilters([]);
-    // setOwnerFilters([]); // FUTURE: restore when Owner is reintroduced
-    // setGroupFilters removed — Rule Group is no longer a filter dimension
-    // setEnvironmentFilters([]); // FUTURE: restore when environment promotion is reintroduced
   };
 
-  const hasFilters = Boolean(
-    search ||
-    statuses.length ||
-    categoryFilters.length
-    // ownerFilters.length || // FUTURE: restore when Owner is reintroduced
-    // groupFilters.length removed — Rule Group is no longer a filter dimension
-    // || environmentFilters.length // FUTURE: restore when environment promotion is reintroduced
-  );
+  const hasFilters = Boolean(search || statuses.length || categoryFilters.length);
 
   return (
     <div className="flex h-full flex-col">
@@ -299,56 +228,6 @@ function RepositoryContent() {
           <p className="mt-0.5 text-sm text-muted-foreground">Searchable catalogue of every configured business rule</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={importRef}
-            type="file"
-            accept=".csv,.json"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImportFile(file);
-              e.target.value = "";
-            }}
-          />
-          {canCreate && (
-            <Button variant="outline" size="sm" className="gap-1.5 shadow-2xs" onClick={() => importRef.current?.click()}>
-              <Upload className="size-3.5" /> Import Rules
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 shadow-2xs"
-            onClick={() =>
-              downloadCsv(
-                "rule_repository",
-                filtered.map((r) => {
-                  const mapped = productRuleMappings
-                    .filter((m) => m.ruleId === r.id)
-                    .map((m) => products.find((p) => p.id === m.productId)?.name ?? m.productId);
-                  const ars = approvalRequests.filter((a) => a.ruleId === r.id);
-                  const submitted = ars[0];
-                  const approved = ars.find((a) => a.stage === "Approved");
-                  return {
-                    RuleID: r.id,
-                    Name: r.name,
-                    Domain: r.domain,
-                    Category: r.category,
-                    "Mapped Products": mapped.join("; "),
-                    Priority: r.priority,
-                    "Approval Status": r.status,
-                    "Submitted By": submitted?.requestedBy ?? "",
-                    "Submitted Date": submitted?.requestedAt ?? "",
-                    "Approved By": approved?.decidedBy ?? "",
-                    "Approved Date": approved?.decidedAt ?? "",
-                    UpdatedAt: r.updatedAt,
-                  };
-                })
-              )
-            }
-          >
-            <Download className="size-3.5" /> Export CSV
-          </Button>
           {canCreate && (
             <Button size="sm" className="gap-1.5 shadow-xs font-medium" onClick={() => router.push("/rule-builder")}>
               <Plus className="size-3.5" /> Create Rule
@@ -357,111 +236,174 @@ function RepositoryContent() {
         </div>
       </div>
 
-      {conflicts.length > 0 && (
-        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b bg-muted/20 px-5 py-1.5 text-sm text-muted-foreground sm:px-6">
-          <div className="flex items-center gap-1.5 font-medium text-destructive">
-            <AlertTriangle className="size-3.5 shrink-0" />
-            <span>{conflicts.length} Conflict{conflicts.length > 1 ? "s" : ""}:</span>
-          </div>
+      {/* PRODUCT-LEVEL RULE CONFLICT DETECTION BANNER */}
+      {productConflicts.length > 0 && (
+        <div className={criticalConflicts.length > 0 ? "flex shrink-0 items-center justify-between gap-3 border-b bg-destructive/10 px-5 py-2 text-sm sm:px-6" : "flex shrink-0 items-center justify-between gap-3 border-b bg-amber-500/10 px-5 py-2 text-sm sm:px-6"}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {conflicts.slice(0, 2).map((c, i) => (
-              <span key={i} className="inline-flex items-center gap-1">
-                <span className="font-mono font-medium text-foreground">{c.ruleAId}</span>
-                <span className="text-muted-foreground/60">vs</span>
-                <span className="font-mono font-medium text-foreground">{c.ruleBId}</span>
-                <span className="text-muted-foreground/80">— {c.reason}</span>
+            <div className={criticalConflicts.length > 0 ? "flex items-center gap-1.5 font-semibold text-destructive" : "flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400"}>
+              <ShieldAlert className="size-4 shrink-0" />
+              <span>
+                Product-Level Rule Conflicts: {criticalConflicts.length > 0 ? `${criticalConflicts.length} Critical` : ""}{criticalConflicts.length > 0 && mediumConflicts.length > 0 ? ", " : ""}{mediumConflicts.length > 0 ? `${mediumConflicts.length} Duplicate Warning${mediumConflicts.length > 1 ? "s" : ""}` : ""}
               </span>
-            ))}
-            {conflicts.length > 2 && (
-              <span className="text-muted-foreground/70">+{conflicts.length - 2} more</span>
-            )}
+            </div>
+            <div className="hidden md:flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              {productConflicts.slice(0, 2).map(({ productName, finding }, i) => (
+                <span key={i} className="inline-flex items-center gap-1">
+                  <span className="font-medium text-foreground">[{productName}]</span>
+                  <span className="text-muted-foreground font-mono">Rule {finding.ruleAId} vs {finding.ruleBId}</span>
+                  <span className="text-muted-foreground">— {finding.reason}</span>
+                </span>
+              ))}
+              {productConflicts.length > 2 && (
+                <span className="text-muted-foreground/70">+{productConflicts.length - 2} more</span>
+              )}
+            </div>
           </div>
-        </div>
-      )}
 
-      {selectedRows.length > 0 && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-primary/5 px-5 py-2 sm:px-6">
-          <span className="text-sm font-semibold">
-            {selectedRows.length} rule{selectedRows.length === 1 ? "" : "s"} selected
-          </span>
-          {canPublish && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-sm"
-              onClick={() => runBulk("Archived", (r) => (r.status !== "Archived" ? setRuleStatus(r.id, "Archived") : { ok: false, reason: "Already archived" }))}
-            >
-              Archive
-            </Button>
-          )}
-          {canDelete && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-sm text-destructive hover:text-destructive"
-              onClick={() => runBulk("Deleted", (r) => deleteRule(r.id))}
-            >
-              Delete
-            </Button>
-          )}
-          {/* Bulk "Assign Rule Group" removed — Rule Group is no longer a filter/assignment concept in Repository */}
-          <Button variant="ghost" size="icon-sm" className="ml-auto" onClick={clearSelection}>
-            <X className="size-3.5" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs shrink-0 font-medium"
+            onClick={() => setReportModalOpen(true)}
+          >
+            View Conflict Report
           </Button>
         </div>
       )}
+
+      {/* FILTER TOOLBAR */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card/40 px-5 py-2.5 sm:px-6">
+        <div className="relative min-w-48 flex-1 sm:max-w-64">
+          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search rules, categories..."
+            className="h-8 pl-8 text-sm"
+          />
+        </div>
+
+        <MultiSelect
+          label="Status"
+          options={[
+            { value: "Draft", label: "Draft" },
+            { value: "Pending Approval", label: "Pending Approval" },
+            { value: "Published", label: "Published" },
+            { value: "Inactive", label: "Inactive" },
+            { value: "Archived", label: "Archived" },
+          ]}
+          selected={statuses}
+          onChange={setStatuses}
+        />
+
+        <MultiSelect
+          label="Category"
+          options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
+          selected={categoryFilters}
+          onChange={setCategoryFilters}
+        />
+
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 gap-1 px-2 text-xs text-muted-foreground">
+            <X className="size-3" /> Reset filters
+          </Button>
+        )}
+      </div>
 
       <div className="min-h-0 flex-1 p-5 sm:p-6">
         <DataTable
           columns={columns}
           data={filtered}
-          getRowId={(r) => r.id}
           onSelectionChange={setSelectedRows}
           resetSelectionSignal={resetSelectionSignal}
-          leftToolbar={
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search rules by name or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-72 pl-8 text-sm sm:w-80"
-              />
-            </div>
-          }
-          rightToolbar={
-            <>
-              <MultiSelect
-                label="Status"
-                options={[
-                  { value: "Draft", label: "Draft" },
-                  { value: "Pending Approval", label: "Pending Approval" },
-                  { value: "Approved", label: "Approved" },
-                  { value: "Rejected", label: "Rejected" },
-                  { value: "Published", label: "Published" },
-                  { value: "Inactive", label: "Inactive" },
-                  { value: "Archived", label: "Archived" },
-                ]}
-                selected={statuses}
-                onChange={setStatuses}
-              />
-              <MultiSelect
-                label="Category"
-                options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
-                selected={categoryFilters}
-                onChange={setCategoryFilters}
-              />
-              {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 px-2 text-sm">
-                  Clear all
-                </Button>
-              )}
-            </>
-          }
         />
       </div>
 
-      <RuleViewSheet rule={viewRule} open={viewOpen} onOpenChange={setViewOpen} />
+      <RuleViewSheet open={viewOpen} onOpenChange={setViewOpen} rule={viewRule} />
+
+      {/* PRODUCT-LEVEL RULE CONFLICT DETECTION REPORT MODAL */}
+      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        <DialogContent className="sm:max-w-4xl lg:max-w-5xl w-full">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="size-5 text-amber-500" />
+              Product-Level Rule Conflict Detection Report
+            </DialogTitle>
+            <DialogDescription>
+              Evaluates all mapped products for contradictory decisions, overlapping thresholds, and duplicate rules mapped to the same product.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-lg border p-3 text-center bg-card">
+                <p className="text-xs text-muted-foreground font-medium">Mapped Products Analyzed</p>
+                <p className="text-xl font-bold text-foreground mt-0.5">{products.length}</p>
+              </div>
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-center">
+                <p className="text-xs text-destructive font-medium">Critical Conflicts</p>
+                <p className="text-xl font-bold text-destructive mt-0.5">{criticalConflicts.length}</p>
+              </div>
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center">
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Duplicate Warnings</p>
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-0.5">{mediumConflicts.length}</p>
+              </div>
+            </div>
+
+            <ScrollArea className="max-h-[380px] space-y-3">
+              <div className="space-y-3 pr-2">
+                {productConflicts.map(({ productName, finding: c }, idx) => (
+                  <div
+                    key={idx}
+                    className={
+                      c.severity === "Critical"
+                        ? "rounded-lg border border-destructive/40 bg-destructive/5 p-3.5 space-y-2"
+                        : "rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5 space-y-2"
+                    }
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={c.severity === "Critical" ? "destructive" : "secondary"}>
+                          {c.severity}
+                        </Badge>
+                        <span className="font-semibold text-sm">
+                          [{productName}] Rule {c.ruleAId} ({c.ruleAName}) vs Rule {c.ruleBId} ({c.ruleBName})
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-background/60 p-2.5 rounded border font-mono">
+                      <div>
+                        <span className="text-muted-foreground block font-sans text-[11px]">Rule {c.ruleAId}</span>
+                        <span className="text-foreground">{c.conditionA || c.ruleAId}</span>
+                        {c.decisionA && <span className="block text-primary font-semibold mt-0.5">Decision: {c.decisionA}</span>}
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block font-sans text-[11px]">Rule {c.ruleBId}</span>
+                        <span className="text-foreground">{c.conditionB || c.ruleBId}</span>
+                        {c.decisionB && <span className="block text-destructive font-semibold mt-0.5">Decision: {c.decisionB}</span>}
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-foreground">Reason:</strong> {c.reason}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-foreground">Recommendation:</strong> {c.recommendation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportModalOpen(false)}>
+              Close Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!approvalConfirm} onOpenChange={(v) => !v && setApprovalConfirm(null)}>
         <AlertDialogContent>

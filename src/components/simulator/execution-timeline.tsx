@@ -1,120 +1,100 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, XCircle, MinusCircle, CircleSlash, ChevronDown } from "lucide-react";
+import { CheckCircle2, XCircle, MinusCircle, Clock, ChevronRight } from "lucide-react";
 import { TraceStep } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-const STATUS_CONFIG = {
-  Passed: { icon: CheckCircle2, color: "text-emerald-500", line: "bg-emerald-500/40", label: "Passed" },
-  Failed: { icon: XCircle, color: "text-red-500", line: "bg-red-500/40", label: "Failed" },
-  Skipped: { icon: MinusCircle, color: "text-muted-foreground", line: "bg-border", label: "Skipped" },
-  "Not Applicable": { icon: CircleSlash, color: "text-muted-foreground/60", line: "bg-border", label: "N/A" },
-} as const;
-
-function coerceNum(v: string) {
-  const n = parseFloat(v.replace(/[^0-9.\-]/g, ""));
-  return Number.isFinite(n) ? n : null;
+export interface ExecutionTimelineProps {
+  traceSteps?: TraceStep[];
+  trace?: TraceStep[];
 }
 
-function ThresholdBar({ actual, expected, passed }: { actual: string; expected: string; passed: boolean }) {
-  const a = coerceNum(actual);
-  const e = coerceNum(expected.split(/[–-]/)[0]);
-  if (a === null || e === null || e === 0) return null;
-  const ratio = Math.min(1.4, a / e);
-  return (
-    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-      <div
-        className={cn("h-full rounded-full", passed ? "bg-emerald-500" : "bg-red-500")}
-        style={{ width: `${Math.min(100, ratio * 100)}%` }}
-      />
-    </div>
-  );
-}
+const STATUS_ICONS: Record<TraceStep["status"], React.ElementType> = {
+  Passed: CheckCircle2,
+  Failed: XCircle,
+  Skipped: MinusCircle,
+  "Not Applicable": MinusCircle,
+};
 
-function TimelineStep({ step, index }: { step: TraceStep; index: number }) {
-  const [open, setOpen] = useState(index === 0);
-  const cfg = STATUS_CONFIG[step.status];
-  const Icon = cfg.icon;
-  const hasDetails = step.conditionSummaries.length > 0 || (step.producedValues && Object.keys(step.producedValues).length > 0);
+const STATUS_COLORS: Record<TraceStep["status"], string> = {
+  Passed: "border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400",
+  Failed: "border-destructive/40 bg-destructive/5 text-destructive",
+  Skipped: "border-border bg-muted/30 text-muted-foreground",
+  "Not Applicable": "border-border bg-muted/30 text-muted-foreground",
+};
 
-  return (
-    <div className="relative flex gap-3 pb-4 last:pb-0">
-      <div className="flex flex-col items-center">
-        <Icon className={cn("size-5 shrink-0", cfg.color)} />
-        <div className={cn("mt-1 w-px flex-1", cfg.line)} />
-      </div>
-      <div className="min-w-0 flex-1 pb-1">
-        <button
-          disabled={!hasDetails}
-          onClick={() => hasDetails && setOpen((o) => !o)}
-          className={cn(
-            "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left disabled:cursor-default",
-            hasDetails && "hover:bg-accent/50"
-          )}
-        >
-          <span className="font-mono text-sm text-muted-foreground">{step.ruleId}</span>
-          <span className="truncate text-sm font-medium">{step.ruleName}</span>
-          {step.sandbox && (
-            <span className="shrink-0 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-              Sandbox
-            </span>
-          )}
-          <span className={cn("ml-auto shrink-0 rounded-full px-2 py-0.5 text-sm font-semibold", cfg.color)}>{cfg.label}</span>
-          {step.durationMs > 0 && <span className="shrink-0 text-sm text-muted-foreground">{step.durationMs.toFixed(2)}ms</span>}
-          {hasDetails && <ChevronDown className={cn("size-3 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />}
-        </button>
-
-        {open && hasDetails && (
-          <div className="ml-2 mt-1 space-y-2 border-l pl-3">
-            {step.conditionSummaries.map((c, i) => (
-              <div key={i} className="rounded-md bg-muted/30 px-2.5 py-1.5 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{c.field}</span>
-                  {c.passed ? (
-                    <CheckCircle2 className="size-3.5 text-emerald-500" />
-                  ) : (
-                    <XCircle className="size-3.5 text-red-500" />
-                  )}
-                </div>
-                <p className="mt-0.5 text-muted-foreground">
-                  Expected <span className="font-mono text-foreground">{c.operator} {c.expected}</span> · Actual{" "}
-                  <span className="font-mono text-foreground">{c.actual}</span>
-                </p>
-                <ThresholdBar actual={c.actual} expected={c.expected} passed={c.passed} />
-              </div>
-            ))}
-            {step.actionsApplied.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Action{step.actionsApplied.length > 1 ? "s" : ""} applied: {step.actionsApplied.map((a) => a.type).join(", ")}
-              </div>
-            )}
-            {step.producedValues && Object.keys(step.producedValues).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 text-sm">
-                {Object.entries(step.producedValues).map(([key, value]) => (
-                  <span key={key} className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-primary">
-                    {key} = {String(value)}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-export function ExecutionTimeline({ trace }: { trace: TraceStep[] }) {
-  return (
-    <div className="rounded-xl border bg-card p-4">
-      <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Rule Trace — Evaluation Order &amp; Execution Timeline
+export function ExecutionTimeline({ traceSteps, trace }: ExecutionTimelineProps) {
+  const steps = traceSteps ?? trace ?? [];
+  if (!steps || steps.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground italic py-4 text-center">
+        Run simulation to generate visual execution timeline nodes.
       </p>
-      <div>
-        {trace.map((step, i) => (
-          <TimelineStep key={step.ruleId} step={step} index={i} />
-        ))}
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Visual Rule Execution Timeline ({steps.length} Steps)
+        </h4>
+      </div>
+
+      <div className="space-y-2 relative before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-[2px] before:bg-border/60">
+        {steps.map((step, idx) => {
+          const Icon = STATUS_ICONS[step.status] ?? MinusCircle;
+          const statusClass = STATUS_COLORS[step.status];
+
+          const inputsUsed = step.conditionSummaries.map((c) => `${c.field} = ${c.actual}`).join(", ");
+          const outputProduced = step.producedValues && Object.keys(step.producedValues).length > 0
+            ? Object.entries(step.producedValues).map(([k, v]) => `${k} = ${v}`).join(", ")
+            : step.actionsApplied.map((a) => a.type).join(", ");
+
+          return (
+            <div key={step.ruleId || idx} className="relative flex items-start gap-3 pl-8">
+              {/* Timeline Node Badge Icon */}
+              <div className="absolute left-1.5 top-2 size-5 -translate-x-1/2 rounded-full bg-background border flex items-center justify-center z-10">
+                <Icon className={cn("size-3.5", step.status === "Passed" && "text-emerald-500", step.status === "Failed" && "text-destructive", step.status === "Skipped" && "text-muted-foreground")} />
+              </div>
+
+              {/* Node Card */}
+              <div className={cn("flex-1 rounded-lg border p-3 text-xs space-y-1.5 transition-shadow hover:shadow-2xs", statusClass)}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-foreground">
+                      Step {idx + 1}: {step.ruleId}
+                    </span>
+                    <span className="font-semibold text-foreground/90 truncate max-w-44" title={step.ruleName}>
+                      {step.ruleName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={step.status === "Passed" ? "default" : step.status === "Failed" ? "destructive" : "secondary"} className="h-5 text-[10px]">
+                      {step.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40 font-mono text-[11px]">
+                  <div>
+                    <span className="font-sans text-[10px] text-muted-foreground block">Input Evaluated</span>
+                    <span className="text-foreground truncate block" title={inputsUsed || "—"}>
+                      {inputsUsed || "—"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-sans text-[10px] text-muted-foreground block">Output Generated</span>
+                    <span className="text-foreground truncate block" title={outputProduced || "—"}>
+                      {outputProduced || "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

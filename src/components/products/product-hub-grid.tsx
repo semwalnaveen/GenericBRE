@@ -206,8 +206,8 @@ export function ProductHubGrid({
                 </div>
 
                 <div className="mt-2.5 min-w-0">
-                  <p className="truncate text-sm font-semibold tracking-tight text-foreground">{p.name}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="truncate text-sm font-semibold tracking-tight text-foreground" title={p.name}>{p.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5" title={`${p.code} · ${industry?.name ?? p.domain}`}>
                     <span className="truncate font-mono text-sm text-muted-foreground">{p.code}</span>
                     <span className="text-muted-foreground/40">·</span>
                     <span className="truncate text-sm font-medium text-muted-foreground/80">{industry?.name ?? p.domain}</span>

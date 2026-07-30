@@ -1,244 +1,169 @@
 "use client";
 
-import { useState } from "react";
-import { Package, ChevronsUpDown, Globe, CalendarCheck2 } from "lucide-react";
-import { Product, Industry, BusinessRule, ProductRuleMapping } from "@/lib/types";
-import { getMappedRules } from "@/lib/product-rule-engine";
-import { iconForIndustry } from "@/lib/industries";
-import { useAppStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
+import { useState, useMemo } from "react";
+import { Search, Package, Check, Star, Clock, Building2, ChevronDown } from "lucide-react";
+import { Product } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MultiSelect } from "@/components/ui/multi-select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
-const RESULT_CAP = 50;
+export interface ProductSelectorProps {
+  products: Product[];
+  selectedProduct: Product;
+  onSelectProduct: (product: Product) => void;
+  mappedRuleCount?: number;
+}
 
-// Enterprise-scale replacement for the old ProductKpiCards grid: a single
-// searchable combobox whose trigger doubles as the "Product Summary" card
-// (spec requirement #4), so there's no separate summary element to keep in
-// sync. Search-first + a capped render list is the scalability strategy for
-// 500+ products (no virtualization library is installed, and the spec itself
-// leads with "searchable dropdown" as the primary scale mechanism) — see the
-// plan at large for the full rationale.
 export function ProductSelector({
   products,
-  industries,
-  rules,
-  mappings,
-  selectedProductId,
-  onSelect,
-}: {
-  products: Product[];
-  industries: Industry[];
-  rules: BusinessRule[];
-  mappings: ProductRuleMapping[];
-  selectedProductId: string | undefined;
-  onSelect: (product: Product) => void;
-}) {
+  selectedProduct,
+  onSelectProduct,
+  mappedRuleCount = 0,
+}: ProductSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [industryFilter, setIndustryFilter] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<string[]>(["prod-home-loan", "prod-auto-loan"]);
 
-  // Only Active products are valid simulation targets — unchanged from the
-  // KPI-card grid this replaces (execution-eligibility gate, not new).
-  const active = products.filter((p) => p.status === "Active");
-  const selected = active.find((p) => p.id === selectedProductId) ?? null;
-
-  if (active.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
-        No active products yet — add one in Configuration Studio → Product Master.
-      </p>
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.code.toLowerCase().includes(q) ||
+        p.domain.toLowerCase().includes(q)
     );
-  }
+  }, [products, search]);
 
-  const filtered = active.filter((p) => {
-    if (industryFilter.length > 0 && !industryFilter.includes(p.domain)) return false;
-    if (statusFilter.length > 0 && !statusFilter.includes(p.publishStatus ?? "Draft")) return false;
-    return true;
-  });
-  const capped = filtered.slice(0, RESULT_CAP);
+  const favoriteProducts = useMemo(
+    () => products.filter((p) => favorites.includes(p.id)),
+    [products, favorites]
+  );
 
-  const select = (product: Product) => {
-    onSelect(product);
-    setSearch("");
-    setOpen(false);
+  const toggleFavorite = (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    setFavorites((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
   };
 
-  const selectedIndustry = selected ? industries.find((i) => i.id === selected.domain) : undefined;
-  // iconForIndustry looks up a stable icon reference from ICON_MAP, it doesn't
-  // create a new component — false positive for react-hooks/static-components.
-  const SelectedIcon = iconForIndustry(selectedIndustry?.icon) ?? Package;
-  const mappedCount = selected ? getMappedRules(selected.id, rules, mappings).length : 0;
-  const canCall = selected?.publishStatus === "Published";
-
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2 rounded-xl border bg-card p-3.5 shadow-xs">
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Target Product Pipeline
+        </label>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Building2 className="size-3.5" />
+          <span className="font-medium text-foreground">{selectedProduct.domain}</span>
+          <span>·</span>
+          <span>{mappedRuleCount} Mapped Rules</span>
+        </div>
+      </div>
+
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          render={
-            <button
-              type="button"
-              className={cn(
-                "flex w-full items-start gap-3 rounded-xl border bg-card p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/40",
-                open && "border-primary ring-1 ring-primary/30"
-              )}
-            />
-          }
-        >
-          {selected ? (
-            <>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                {/* eslint-disable-next-line react-hooks/static-components -- iconForIndustry returns a stable ICON_MAP reference, not a freshly created component */}
-                <SelectedIcon className="size-4.5" />
-              </span>
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <p className="truncate text-sm font-semibold">{selected.name}</p>
-                  <span className="shrink-0 font-mono text-sm text-muted-foreground">{selected.code}</span>
-                  <Badge variant={canCall ? "default" : "secondary"} className="shrink-0 text-sm">
-                    {selected.publishStatus ?? "Draft"}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-muted-foreground">
-                  <span>{selectedIndustry?.name ?? selected.domain}</span>
-                  <span>
-                    <span className="font-semibold text-foreground">{mappedCount}</span> mapped rule{mappedCount === 1 ? "" : "s"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CalendarCheck2 className="size-3" />
-                    {selected.lastPublishedAt ? new Date(selected.lastPublishedAt).toLocaleDateString() : "Not yet published"}
-                  </span>
-                </div>
-                {canCall && (
-                  <div className="flex items-center gap-1.5 font-mono text-sm text-muted-foreground/80">
-                    <Globe className="size-3 shrink-0" />
-                    POST /api/decision · productId: &quot;{selected.code}&quot;
-                  </div>
-                )}
-              </div>
-              <ChevronsUpDown className="mt-1 size-3.5 shrink-0 opacity-50" />
-            </>
-          ) : (
-            <>
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                <Package className="size-4.5" />
-              </span>
-              <div className="flex-1 pt-1.5">
-                <p className="text-sm text-muted-foreground">Search products by name, code, or industry...</p>
-              </div>
-              <ChevronsUpDown className="mt-2.5 size-3.5 shrink-0 opacity-50" />
-            </>
-          )}
+        <PopoverTrigger render={<Button variant="outline" size="sm" className="w-full justify-between h-10 px-3 border-border/80 bg-muted/20 font-medium" />}>
+          <div className="flex items-center gap-2 min-w-0">
+            <Package className="size-4 shrink-0 text-primary" />
+            <span className="truncate font-semibold text-foreground">{selectedProduct.name}</span>
+            <span className="font-mono text-xs text-muted-foreground">({selectedProduct.code})</span>
+            <Badge
+              variant={selectedProduct.status === "Active" ? "default" : "secondary"}
+              className="h-5 text-[10px] px-1.5"
+            >
+              {selectedProduct.status}
+            </Badge>
+          </div>
+          <ChevronDown className="size-4 shrink-0 opacity-50" />
         </PopoverTrigger>
 
-        <PopoverContent align="start" className="w-[min(28rem,92vw)] p-0">
-          <div className="flex items-center gap-1.5 border-b p-1.5">
-            <MultiSelect
-              label="Industry"
-              options={industries.map((i) => ({ value: i.id, label: i.name }))}
-              selected={industryFilter}
-              onChange={setIndustryFilter}
-              className="h-8 flex-1 text-sm"
-            />
-            <MultiSelect
-              label="Status"
-              options={[
-                { value: "Published", label: "Published" },
-                { value: "Draft", label: "Draft" },
-              ]}
-              selected={statusFilter}
-              onChange={setStatusFilter}
-              className="h-8 flex-1 text-sm"
+        <PopoverContent align="start" className="w-[380px] p-2 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by product name, code or domain..."
+              className="h-8 pl-8 text-xs"
             />
           </div>
 
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search by name, code, or industry..."
-              value={search}
-              onValueChange={setSearch}
-            />
-            <CommandList className="max-h-80">
-              <CommandEmpty>No matching products.</CommandEmpty>
-
-              <CommandGroup heading="All Products">
-                {capped
-                  .filter((p) => {
-                    if (search.trim() === "") return true;
-                    const industry = industries.find((i) => i.id === p.domain);
-                    const haystack = `${p.name} ${p.code} ${industry?.name ?? p.domain}`.toLowerCase();
-                    return haystack.includes(search.trim().toLowerCase());
-                  })
-                  .map((p) => (
-                    <ProductRow key={p.id} product={p} industries={industries} rules={rules} mappings={mappings} onSelect={select} />
-                  ))}
-              </CommandGroup>
-            </CommandList>
-            {filtered.length > RESULT_CAP && (
-              <p className="border-t px-3 py-2 text-center text-sm text-muted-foreground">
-                Showing {RESULT_CAP} of {filtered.length} matches — refine your search to narrow the list.
+          {/* Favorites quick row */}
+          {favoriteProducts.length > 0 && !search && (
+            <div className="space-y-1 pt-1">
+              <p className="px-2 text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                <Star className="size-3 text-amber-500 fill-amber-500" /> Favorites
               </p>
+              <div className="flex flex-wrap gap-1 px-1">
+                {favoriteProducts.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      onSelectProduct(p);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors",
+                      p.id === selectedProduct.id
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border bg-background hover:bg-accent"
+                    )}
+                  >
+                    <span>{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="max-h-60 overflow-y-auto space-y-0.5 divide-y divide-border/40">
+            {filteredProducts.map((p) => {
+              const isFav = favorites.includes(p.id);
+              const isSelected = p.id === selectedProduct.id;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    onSelectProduct(p);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between px-2.5 py-2 text-xs rounded-md cursor-pointer transition-colors",
+                    isSelected ? "bg-primary/10 font-medium text-foreground" : "hover:bg-accent/60"
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground">{p.name}</span>
+                      <span className="font-mono text-[11px] text-muted-foreground">({p.code})</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">Domain: {p.domain}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isSelected && <Check className="size-3.5 text-primary" />}
+                    <button
+                      onClick={(e) => toggleFavorite(e, p.id)}
+                      className="p-1 text-muted-foreground hover:text-amber-500 transition-colors"
+                      title={isFav ? "Remove favorite" : "Add favorite"}
+                    >
+                      <Star className={cn("size-3.5", isFav && "fill-amber-500 text-amber-500")} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredProducts.length === 0 && (
+              <p className="p-4 text-center text-xs text-muted-foreground">No products match your search.</p>
             )}
-          </Command>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
-  );
-}
-
-function ProductRow({
-  product,
-  industries,
-  rules,
-  mappings,
-  onSelect,
-}: {
-  product: Product;
-  industries: Industry[];
-  rules: BusinessRule[];
-  mappings: ProductRuleMapping[];
-  onSelect: (product: Product) => void;
-}) {
-  const industry = industries.find((i) => i.id === product.domain);
-  const Icon = iconForIndustry(industry?.icon) ?? Package;
-  const mappedCount = getMappedRules(product.id, rules, mappings).length;
-  const published = product.publishStatus === "Published";
-
-  return (
-    <CommandItem
-      value={product.id}
-      onSelect={() => onSelect(product)}
-      className="flex items-start gap-2.5 py-2"
-    >
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-        {/* eslint-disable-next-line react-hooks/static-components -- see note in ProductSelector above */}
-        <Icon className="size-3.5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="truncate text-sm font-semibold text-foreground">{product.name}</span>
-          <span className="shrink-0 font-mono text-sm text-muted-foreground">{product.code}</span>
-          <Badge variant={published ? "default" : "secondary"} className="shrink-0 text-sm">
-            {product.publishStatus ?? "Draft"}
-          </Badge>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-2.5 text-sm text-muted-foreground">
-          <span>{industry?.name ?? product.domain}</span>
-          <span>{mappedCount} mapped rule{mappedCount === 1 ? "" : "s"}</span>
-          <span>{product.lastPublishedAt ? new Date(product.lastPublishedAt).toLocaleDateString() : "Not published"}</span>
-        </div>
-      </div>
-    </CommandItem>
   );
 }

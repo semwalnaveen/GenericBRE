@@ -38,9 +38,9 @@ export function DraftRulesPanel() {
               onClick={() => router.push(`/rule-builder?id=${r.id}`)}
               className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
             >
-              <div className="min-w-0">
+              <div className="min-w-0" title={r.name}>
                 <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground">{r.id} · {r.category}</p>
+                <p className="text-sm text-muted-foreground truncate" title={`${r.id} · ${r.category}`}>{r.id} · {r.category}</p>
               </div>
             </button>
           ))}
@@ -107,9 +107,9 @@ export function ApprovalQueuePanel() {
                 onClick={() => router.push(`/repository?search=${a.ruleId}`)}
                 className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
               >
-                <div className="min-w-0">
+                <div className="min-w-0" title={rule?.name ?? a.ruleId}>
                   <p className="truncate text-sm font-medium">{rule?.name ?? a.ruleId}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground truncate" title={`Requested by ${a.requestedBy} · ${formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}`}>
                     Requested by {a.requestedBy} · {formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}
                   </p>
                 </div>

@@ -50,7 +50,7 @@ function NavLink({
         <span className="absolute left-0 top-1/2 h-4.5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
       )}
       <Icon className={cn("size-4 shrink-0", active && "text-sidebar-primary")} strokeWidth={2.2} />
-      {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && <span className="truncate" title={label}>{label}</span>}
       {!collapsed && badge ? (
         <Badge className="ml-auto h-4.5 min-w-4.5 rounded-full px-1 text-sm">{badge}</Badge>
       ) : null}

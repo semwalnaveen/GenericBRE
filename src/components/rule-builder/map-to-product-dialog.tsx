@@ -153,25 +153,10 @@ export function MapToProductDialog({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Rule Priority</Label>
-              <Select
-                items={Object.fromEntries(PRIORITIES.map((p) => [String(p), PRIORITY_LABEL[p]]))}
-                value={String(priority)}
-                onValueChange={(v) => setPriority((Number(v) || 3) as Priority)}
-              >
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={String(p)}>{PRIORITY_LABEL[p]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <Label>Execution Sequence</Label>
               <Input type="number" min={0} value={sequence} onChange={(e) => setSequence(e.target.value)} placeholder="1" />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 col-span-2 sm:col-span-1">
               <Label>Effective Date</Label>
               <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} />
             </div>

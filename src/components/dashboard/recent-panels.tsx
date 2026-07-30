@@ -38,9 +38,9 @@ export function RecentRulesPanel() {
               onClick={() => router.push(`/rule-builder?id=${r.id}`)}
               className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
             >
-              <div className="min-w-0">
+              <div className="min-w-0" title={r.name}>
                 <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground truncate" title={`${r.id} · ${r.domain}`}>
                   {r.id} · {r.domain} · updated {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
                 </p>
               </div>
@@ -100,7 +100,7 @@ export function RecentActivityPanel() {
               className="flex w-full items-center gap-2 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
             >
               <span className={cn("size-1.5 shrink-0 rounded-full", ACTION_DOT[a.action] ?? "bg-muted-foreground")} />
-              <span className="min-w-0 flex-1 truncate text-sm">
+              <span className="min-w-0 flex-1 truncate text-sm" title={`${a.action} ${a.entityId} by ${a.user}`}>
                 <span className="font-medium">{a.action}</span>{" "}
                 <span className="font-mono text-sm text-foreground/70">{a.entityId}</span>
               </span>
