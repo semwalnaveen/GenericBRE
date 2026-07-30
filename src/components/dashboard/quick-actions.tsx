@@ -60,9 +60,9 @@ export function QuickActions() {
             <span className={`flex size-7 items-center justify-center rounded-lg ${a.accent}`}>
               <a.icon className="size-3.5" />
             </span>
-            <div>
-              <p className="text-sm font-semibold leading-tight">{a.label}</p>
-              <p className="text-sm text-muted-foreground leading-tight mt-0.5">{a.desc}</p>
+            <div className="min-w-0 w-full">
+              <p className="text-sm font-semibold leading-tight truncate" title={a.label}>{a.label}</p>
+              <p className="text-sm text-muted-foreground leading-tight mt-0.5 truncate" title={a.desc}>{a.desc}</p>
             </div>
           </motion.button>
         ))}

@@ -13,6 +13,7 @@ import {
   DEFAULT_JOB_TITLES,
   DEFAULT_USER_ACCESS_MAPPINGS,
   DEFAULT_JSON_MAPPINGS,
+  DEFAULT_APPLICATIONS,
   DEFAULT_PRODUCTS,
   DEFAULT_PRODUCT_RULE_MAPPINGS,
   DEFAULT_RULE_GROUPS,
@@ -26,8 +27,10 @@ import {
   AppearanceSettings,
   ApprovalRequest,
   AuditEntry,
+  BatchRunSummary,
   BusinessField,
   BusinessRule,
+  LoanApplication,
   Capability,
   ColorMode,
   CurrentUser,
@@ -158,6 +161,12 @@ interface AppState {
   matrices: DecisionMatrix[];
   auditLog: AuditEntry[];
   simulations: SimulationResult[];
+  /** Batch Testing run history — summaries only, see BatchRunSummary. */
+  batchRuns: BatchRunSummary[];
+  addBatchRunSummary: (summary: Omit<BatchRunSummary, "id">) => string;
+  markBatchReportDownloaded: (id: string) => void;
+  /** Seed customer applications for the Simulator's Application-ID mode (see LoanApplication). */
+  applications: LoanApplication[];
   appearance: AppearanceSettings;
   appearanceOpen: boolean;
   setAppearanceOpen: (open: boolean) => void;
@@ -398,6 +407,8 @@ export const useAppStore = create<AppState>()(
       matrices: MATRICES,
       auditLog: AUDIT_LOG,
       simulations: DEFAULT_SIMULATIONS,
+      batchRuns: [],
+      applications: DEFAULT_APPLICATIONS,
       appearance: DEFAULT_APPEARANCE,
       appearanceOpen: false,
       dashboardLayouts: {},
@@ -771,10 +782,13 @@ export const useAppStore = create<AppState>()(
       },
 
       productRuleMappings: DEFAULT_PRODUCT_RULE_MAPPINGS,
-      saveProductRuleMapping: (productId, ruleIds) => {
+      saveProductRuleMapping: (productId, ruleIdsInput) => {
         const { currentUser } = get();
         if (!can(get(), "config.manage")) return;
         const now = new Date().toISOString();
+        // De-dupe: a rule is only ever mapped once per product (guards against
+        // a duplicate (product, rule) row — see findDuplicateRules).
+        const ruleIds = [...new Set(ruleIdsInput)];
         // Rules whose membership in THIS product changed (added or removed) —
         // used below to trigger re-approval on any already-live rule.
         const beforeIds = new Set(get().productRuleMappings.filter((m) => m.productId === productId).map((m) => m.ruleId));
@@ -1062,10 +1076,13 @@ export const useAppStore = create<AppState>()(
         }
         const now = new Date().toISOString();
         const seq = config.sequence;
+        // De-dupe: a rule is only ever mapped once per product (guards against
+        // a duplicate (product, rule) row — see findDuplicateRules).
+        const uniqueProductIds = [...new Set(config.productIds)];
         set((s) => ({
           productRuleMappings: [
             ...s.productRuleMappings.filter((m) => m.ruleId !== ruleId),
-            ...config.productIds.map((productId, i) => ({
+            ...uniqueProductIds.map((productId, i) => ({
               id: `prm-${ruleId}-${productId}-${Date.now()}-${i}`,
               productId,
               ruleId,
@@ -1354,6 +1371,17 @@ export const useAppStore = create<AppState>()(
 
       addSimulation: (result) => set((s) => ({ simulations: [result, ...s.simulations].slice(0, 50) })),
 
+      // Batch Testing — summary-only, capped at 20 (mirrors addSimulation's
+      // history cap above). Per-row results are never stored here; see
+      // BatchRunSummary's doc comment in types.ts for why.
+      addBatchRunSummary: (summary) => {
+        const id = `BATCH-${Date.now()}`;
+        set((s) => ({ batchRuns: [{ ...summary, id }, ...s.batchRuns].slice(0, 20) }));
+        return id;
+      },
+      markBatchReportDownloaded: (id) =>
+        set((s) => ({ batchRuns: s.batchRuns.map((b) => (b.id === id ? { ...b, reportDownloaded: true } : b)) })),
+
       logAudit: (entry) =>
         set((s) => {
           const timestamp = new Date().toISOString();
@@ -1401,9 +1429,19 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 49,
+      version: 51,
       skipHydration: true,
       migrate: (persistedState) => {
+        // v50 -> v51 added `applications` (seed customer applications for the
+        // Simulator's Application-ID mode) — a brand-new key; the default
+        // shallow merge fills it from initial state (DEFAULT_APPLICATIONS)
+        // automatically, nothing to backfill.
+
+        // v49 -> v50 added `batchRuns` (Batch Testing run history) — a
+        // brand-new key, same as `recentProductIds` in the v22 -> v23 note
+        // below: the default shallow merge fills it in from initial state
+        // ([]) automatically, nothing to backfill here.
+
         // v48 -> v49 replaced the operational RuleStatus with the Maker-Checker
         // governance lifecycle: "Active" -> "Published", "Testing" -> "Pending
         // Approval". Also backfills BusinessRule.createdBy (for segregation of

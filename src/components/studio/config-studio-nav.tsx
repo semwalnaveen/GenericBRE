@@ -63,7 +63,7 @@ function NavButton<T extends string>({
         />
       )}
       <item.icon className="size-3.5 shrink-0" />
-      {!collapsed && <span className="truncate">{item.label}</span>}
+      {!collapsed && <span className="truncate" title={item.label}>{item.label}</span>}
     </button>
   );
 

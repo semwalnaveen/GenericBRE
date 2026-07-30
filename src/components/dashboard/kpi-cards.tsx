@@ -181,7 +181,7 @@ export function KpiCards() {
           whileTap={{ scale: 0.98 }}
           className="group flex h-22 flex-col justify-between gap-1 rounded-lg border bg-card px-2.5 py-2 text-left shadow-2xs transition-all duration-150 ease-out hover:bg-accent/60 hover:border-primary/40 hover:shadow-md"
         >
-          <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center justify-between gap-1.5 w-full min-w-0" title={k.label}>
             <span className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{k.label}</span>
             <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md", k.accent)}>
               <k.icon className="size-3" />
@@ -189,7 +189,7 @@ export function KpiCards() {
           </div>
           <div>
             <p className="text-xl font-bold tabular-nums leading-none">{k.value}</p>
-            {k.suffix && <p className="mt-0.5 truncate text-sm text-muted-foreground/70">{k.suffix}</p>}
+            {k.suffix && <p className="mt-0.5 truncate text-sm text-muted-foreground/70" title={k.suffix}>{k.suffix}</p>}
           </div>
         </motion.button>
       ))}
