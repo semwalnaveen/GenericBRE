@@ -18,4 +18,6 @@ export const WIDGET_LABELS: Record<string, string> = {
   "rule-conflicts": "Rule Conflicts",
   "execution-logs": "Execution Logs",
   "decision-lookup": "Decision Lookup",
+  "simulation-results": "Simulation Outcomes",
+  "execution-timeline": "Execution Timeline",
 };

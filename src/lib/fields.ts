@@ -5,15 +5,15 @@ import { BusinessField, Domain, Operator, RuleCategory } from "./types";
 // own fields there; nothing here is a closed set.
 export const DEFAULT_FIELD_CATALOG: BusinessField[] = [
   // Common
-  { key: "applicant_age", label: "Applicant Age", domain: "Common", type: "number", unit: "years", entity: "applicant" },
+  { key: "applicant_age", label: "Applicant Age", domain: "Common", type: "number", unit: "years", entity: "applicant", mandatory: true },
   { key: "gender", label: "Gender", domain: "Common", type: "enum", options: ["Male", "Female", "Other"], entity: "applicant" },
   { key: "city", label: "Current City", domain: "Common", type: "enum", options: ["Mumbai", "Delhi", "Bengaluru", "Chennai", "Pune", "Ahmedabad", "Other"], entity: "applicant" },
   { key: "segment", label: "Segment Tier", domain: "Common", type: "enum", options: ["Mass", "Affluent", "Premium"], entity: "applicant" },
 
   // Lending
-  { key: "credit_score", label: "Bureau Credit Score", domain: "Lending", type: "number", entity: "applicant" },
-  { key: "monthly_income", label: "Monthly Income", domain: "Lending", type: "currency", unit: "₹", entity: "applicant" },
-  { key: "monthly_liabilities", label: "Monthly Liabilities", domain: "Lending", type: "currency", unit: "₹", entity: "applicant" },
+  { key: "credit_score", label: "Bureau Credit Score", domain: "Lending", type: "number", entity: "applicant", mask: true },
+  { key: "monthly_income", label: "Monthly Income", domain: "Lending", type: "currency", unit: "₹", entity: "applicant", mandatory: true, mask: true },
+  { key: "monthly_liabilities", label: "Monthly Liabilities", domain: "Lending", type: "currency", unit: "₹", entity: "applicant", mask: true },
   { key: "loan_amount", label: "Loan Amount Requested", domain: "Lending", type: "currency", unit: "₹", entity: "loan-account" },
   { key: "loan_type", label: "Loan Type", domain: "Lending", type: "enum", options: ["Personal Loan", "Home Loan", "Vehicle Loan", "Business Loan"], entity: "loan-account" },
   { key: "dti_ratio", label: "Debt-to-Income Ratio", domain: "Lending", type: "number", unit: "%", computed: true, entity: "applicant" },

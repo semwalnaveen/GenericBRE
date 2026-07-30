@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Columns3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode;
   leftToolbar?: React.ReactNode;
   rightToolbar?: React.ReactNode;
+  className?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +48,7 @@ export function DataTable<TData, TValue>({
   toolbar,
   leftToolbar,
   rightToolbar,
+  className,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -79,7 +82,7 @@ export function DataTable<TData, TValue>({
   }, [rowSelection]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
+    <div className={cn("flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
         <div className="flex flex-wrap items-center gap-3">
           <p className="px-1 text-sm text-muted-foreground whitespace-nowrap">
@@ -113,7 +116,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-card">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="hover:bg-transparent">

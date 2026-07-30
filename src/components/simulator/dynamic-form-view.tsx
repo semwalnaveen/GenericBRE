@@ -178,9 +178,9 @@ export function DynamicFormView({
       </div>
 
       {/* ACCORDION CATEGORIZED SECTIONS */}
-      <Accordion defaultValue={["applicant", "income", "loan", "collateral"]} className="space-y-2">
+      <Accordion type="multiple" defaultValue={["applicant", "income", "loan", "collateral"]} className="space-y-2">
         {categoryGroups.map((group) => {
-          if (group.entries.length === 0 && search.trim()) return null;
+          if (group.entries.length === 0) return null;
           return (
             <AccordionItem key={group.id} value={group.id} className="rounded-lg border bg-card px-3 py-1">
               <AccordionTrigger className="hover:no-underline py-2.5">

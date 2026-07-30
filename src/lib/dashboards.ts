@@ -18,7 +18,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     // "demo-scenarios" (industry-level canned simulator presets) removed —
     // it's demo/sales content, not a BA workflow tool, and duplicates the
     // "Run Simulator" quick action already on this dashboard.
-    widgets: widgets(["kpis", "quick-actions", "draft-rules", "rules-awaiting-review", "recent-rules"]),
+    widgets: widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "draft-rules", "rules-awaiting-review", "recent-rules"]),
     kpis: ["draft-rules", "pending-review", "active-rules", "rule-executions", "total-rules", "business-categories"],
     quickActions: ["create-rule", "open-repository", "run-simulator"],
   },
@@ -41,7 +41,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     landingRoute: "/simulator",
     // "demo-scenarios" removed — same reasoning as Ananya Verma above:
     // demo/sales content, redundant with the "Run Simulator" quick action.
-    widgets: widgets(["kpis", "recent-rules", "recent-activity"]),
+    widgets: widgets(["kpis", "simulation-results", "execution-timeline", "recent-rules", "recent-activity"]),
     kpis: ["rule-executions", "failed-simulations", "active-rules", "pending-review", "total-rules", "deployments"],
     quickActions: ["run-simulator", "open-repository"],
   },

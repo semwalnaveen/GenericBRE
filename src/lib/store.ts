@@ -1429,7 +1429,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 51,
+      version: 52,
       skipHydration: true,
       migrate: (persistedState) => {
         // v50 -> v51 added `applications` (seed customer applications for the
@@ -2089,6 +2089,14 @@ export const useAppStore = create<AppState>()(
         // REQUIRED: zustand persist uses this return value as the migrated
         // state (merged over the fresh defaults). Without it, every version
         // bump silently discarded all persisted customization.
+        if (version === 51) {
+          const s = persistedState as Partial<AppState>;
+          return {
+            ...s,
+            dashboardConfigs: DEFAULT_DASHBOARD_CONFIGS,
+          } as AppState;
+        }
+
         return persistedState as AppState;
       },
     }

@@ -2,13 +2,12 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { FlaskConical, FileSpreadsheet, ScanSearch, Braces } from "lucide-react";
+import { FlaskConical, FileSpreadsheet } from "lucide-react";
 import { useAccessibleProducts } from "@/lib/store";
 import { Product } from "@/lib/types";
 import { useRunSimulator } from "@/components/simulator/run-simulator-panel";
 import { RunSimulatorRedesigned } from "@/components/simulator/run-simulator-redesigned";
 import { BatchTestingPanel } from "@/components/simulator/batch/batch-testing-panel";
-import { ApplicationSimulator } from "@/components/simulator/application/application-simulator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -26,9 +25,6 @@ function SimulatorContent() {
     () => products.find((p) => p.id === initialProductId) ?? products[0] ?? null
   );
   const [mode, setMode] = useState<"single" | "batch">("single");
-  // Within Single Simulation, Application-ID is the default input source;
-  // Manual Input preserves the original product-picker + JSON flow verbatim.
-  const [source, setSource] = useState<"application" | "manual">("application");
 
   const sim = useRunSimulator(selectedProduct, initialSandboxRule);
 
@@ -55,32 +51,7 @@ function SimulatorContent() {
             here. Safe because exactly one TabsContent is always rendered. */}
         {mode === "single" && (
           <TabsContent value="single" className="flex min-h-0 flex-1 flex-col">
-            {/* Input-source toggle — Application-ID (default) vs the original
-                Manual Input flow (product picker + Form/JSON), kept intact. */}
-            <div className="flex items-center gap-2 border-b bg-card px-4 py-2 sm:px-5">
-              <div className="flex items-center gap-1 rounded-lg border bg-muted/40 p-1">
-                <Button
-                  variant={source === "application" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-8 gap-1.5 text-sm font-semibold"
-                  onClick={() => setSource("application")}
-                >
-                  <ScanSearch className="size-3.5" /> By Application ID
-                </Button>
-                <Button
-                  variant={source === "manual" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-8 gap-1.5 text-sm font-semibold"
-                  onClick={() => setSource("manual")}
-                >
-                  <Braces className="size-3.5" /> Manual Input
-                </Button>
-              </div>
-            </div>
-
-            {source === "application" ? (
-              <ApplicationSimulator />
-            ) : selectedProduct ? (
+            {selectedProduct ? (
               <RunSimulatorRedesigned
                 product={selectedProduct}
                 sim={sim}

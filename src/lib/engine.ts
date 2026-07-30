@@ -134,15 +134,16 @@ function evaluateConditionLeaf(
   const actual = Array.isArray(raw) ? undefined : raw;
   const passed = evaluateOperator(cond.operator, actual, cond.value, cond.value2);
   const field = getField(catalog, cond.field);
-  const expectedLabel =
-    cond.operator === "between"
+  const expectedLabel = field?.mask
+    ? "***"
+    : cond.operator === "between"
       ? `${cond.value} – ${cond.value2}`
       : cond.value;
   details.push({
     field: field?.label ?? cond.field,
     operator: cond.operator,
     expected: expectedLabel,
-    actual: actual === undefined ? "—" : String(actual),
+    actual: actual === undefined ? "—" : field?.mask ? "***" : String(actual),
     passed,
   });
   return passed;
@@ -288,13 +289,14 @@ export function runRulesForCase(
     if (step.actionsApplied.length > 0) {
       triggeredRules.push(rule.id);
       const producedValues: Record<string, string | number> = {};
+      const actionErrors: string[] = [];
       for (const action of step.actionsApplied) {
         // Calculate's {{field}} expressions resolve against the case's
         // current field values plus every value computed so far in this run
         // (this rule's earlier actions and, when chainInputs is on, earlier
         // rules' outputs already folded into workingInput above).
         const context = { ...workingInput, ...calculatedValues };
-        applyAction(action, calculatedValues, context);
+        applyAction(action, calculatedValues, context, actionErrors);
         applyAction(action, producedValues, context);
         if (action.type === "Reject") {
           // Reject always wins and halts further evaluation.
@@ -326,6 +328,9 @@ export function runRulesForCase(
       if (Object.keys(producedValues).length > 0) {
         step.producedValues = producedValues;
         if (chainInputs) workingInput = { ...workingInput, ...producedValues };
+      }
+      if (actionErrors.length > 0) {
+        step.errors = actionErrors;
       }
     }
   }
@@ -401,16 +406,26 @@ export function resolveBracketValue(action: RuleAction, context: InputMap): Expr
 export function applyAction(
   action: RuleAction,
   calculatedValues: Record<string, string | number>,
-  context: InputMap = calculatedValues
+  context: InputMap = calculatedValues,
+  stepErrors?: string[]
 ) {
   if (action.type === "Calculate" || action.type === "Assign Value") {
     if (action.outputField && action.outputValue !== undefined) {
-      calculatedValues[action.outputField] = resolveActionValue(action, context).value;
+      const resolved = resolveActionValue(action, context);
+      if (resolved.error) {
+        if (stepErrors) stepErrors.push(resolved.error);
+      } else {
+        calculatedValues[action.outputField] = resolved.value;
+      }
     }
   } else if (action.type === "Bracket Lookup") {
     if (action.outputField) {
       const resolved = resolveBracketValue(action, context);
-      if (!resolved.error && resolved.value !== "") calculatedValues[action.outputField] = resolved.value;
+      if (resolved.error) {
+        if (stepErrors) stepErrors.push(resolved.error);
+      } else if (resolved.value !== "") {
+        calculatedValues[action.outputField] = resolved.value;
+      }
     }
   }
 }

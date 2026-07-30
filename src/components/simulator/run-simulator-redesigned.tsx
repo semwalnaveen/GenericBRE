@@ -62,6 +62,8 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
   const apiRequestJson = JSON.stringify(sim.apiRequestEnvelope, null, 2);
   const apiResponseJson = JSON.stringify(sim.responseShape, null, 2);
 
+  const requiredFields = sim.fieldCatalog.filter((f) => f.mandatory).map((f) => f.key);
+
   const availableProducts = products.length > 0 ? products : [product];
 
   const handleDownloadReport = () => {
@@ -150,7 +152,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                   jsonText={sim.jsonText || "{}"}
                   onUpdateJsonText={sim.setJsonText}
                   mappedFields={["applicant_age", "monthly_income", "credit_score", "loan_amount", "ltv_ratio", "dti_ratio"]}
-                  requiredFields={["applicant_age", "monthly_income"]}
+                  requiredFields={requiredFields}
                 />
               </TabsContent>
 
@@ -195,7 +197,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
           </div>
 
           {/* PRE-FLIGHT VALIDATION PANEL */}
-          <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={["applicant_age", "monthly_income"]} />
+          <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={requiredFields} />
         </div>
 
         {/* RIGHT COLUMN — DECISION, VARIABLE INSPECTOR & CONTEXT (6 COLS) */}
@@ -204,7 +206,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
           <DecisionExplanation result={result} onDownloadReport={handleDownloadReport} />
 
           {/* VARIABLE INSPECTOR (FULL 6-COLUMN WIDTH) */}
-          {result && <VariableViewer traceSteps={result.flatTrace} jsonText={sim.jsonText || "{}"} />}
+          {result && <VariableViewer traceSteps={result.flatTrace} jsonText={sim.jsonText || "{}"} fieldCatalog={sim.fieldCatalog} />}
 
           {/* STICKY SUMMARY PANEL */}
           <div className="rounded-xl border bg-card p-4 space-y-3 shadow-xs">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Menu, Search, Plus, Palette } from "lucide-react";
+import { Menu, Search, Plus, Palette, ShieldCheck } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LogoLockup } from "./logo";
@@ -9,12 +9,14 @@ import { GlobalFilterBar, MobileFilterButton } from "./global-filter-bar";
 import { HelpDesk } from "./help-desk";
 import { UserMenu } from "./user-menu";
 import { CommandPalette } from "./command-palette";
+import { RoleSwitcherDialog } from "./role-switcher-dialog";
 import { AppearanceStudio } from "@/components/studio/appearance-studio";
 import { useTranslate } from "@/lib/use-translate";
 import { useAppStore } from "@/lib/store";
 
 export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const appearanceOpen = useAppStore((s) => s.appearanceOpen);
   const setAppearanceOpen = useAppStore((s) => s.setAppearanceOpen);
   const router = useRouter();
@@ -64,6 +66,10 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
               <GlobalFilterBar />
             </>
           )}
+          <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary" onClick={() => setSwitcherOpen(true)}>
+            <ShieldCheck className="size-3.5" />
+            <span className="hidden lg:inline">Switch Persona</span>
+          </Button>
           <Button size="sm" className="h-9 gap-1.5" onClick={() => router.push("/rule-builder")} aria-label="Create Rule">
             <Plus className="size-3.5" />
             <span className="hidden lg:inline">{t("header.createRule")}</span>
@@ -84,6 +90,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
       </header>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       {appearanceOpen && <AppearanceStudio open={appearanceOpen} onOpenChange={setAppearanceOpen} />}
+      <RoleSwitcherDialog open={switcherOpen} onOpenChange={setSwitcherOpen} />
     </>
   );
 }

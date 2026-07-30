@@ -58,13 +58,18 @@ export function ApplicationSimulator() {
   }, [application?.id]);
 
   const quickPicks: ApplicationQuickPick[] = useMemo(
-    () =>
-      applications.slice(0, 6).map((a) => ({
-        id: a.id,
-        applicantName: a.applicantName,
-        productName: products.find((p) => p.id === a.productId)?.name ?? a.productId,
-      })),
-    [applications, products]
+    () => {
+      const lowerQuery = query.toLowerCase();
+      return applications
+        .filter((a) => !lowerQuery || a.id.toLowerCase().includes(lowerQuery) || a.applicantName.toLowerCase().includes(lowerQuery))
+        .slice(0, 6)
+        .map((a) => ({
+          id: a.id,
+          applicantName: a.applicantName,
+          productName: products.find((p) => p.id === a.productId)?.name ?? a.productId,
+        }));
+    },
+    [applications, products, query]
   );
 
   const doFetch = (idOverride?: string) => {
@@ -81,15 +86,31 @@ export function ApplicationSimulator() {
     // there is no backend; this is a client-side store lookup.
     setTimeout(() => {
       const found = findApplication(applications, raw);
-      const resolved = resolveApplication(found, products, (pid) => getMappedRules(pid, rules, productRuleMappings).length);
-      if (isResolutionError(resolved)) {
-        setError(resolved);
+      
+      if (!found) {
+        // If not found exactly, check if there are partial matches.
+        // If there are partial matches, the user is likely still typing, so don't show an error.
+        const hasPartialMatches = applications.some(
+          (a) => a.id.toLowerCase().includes(raw.toLowerCase()) || a.applicantName.toLowerCase().includes(raw.toLowerCase())
+        );
+        
+        if (hasPartialMatches) {
+          setError(null);
+        } else {
+          setError({ type: "NOT_FOUND", message: `No application found matching "${raw}".` });
+        }
         setApplication(null);
       } else {
-        setApplication(resolved.application);
+        const resolved = resolveApplication(found, products, (pid) => getMappedRules(pid, rules, productRuleMappings).length);
+        if (isResolutionError(resolved)) {
+          setError(resolved);
+          setApplication(null);
+        } else {
+          setApplication(resolved.application);
+        }
       }
       setFetching(false);
-    }, FETCH_LATENCY_MS);
+    }, 300);
   };
 
   const handlePick = (id: string) => {
@@ -101,6 +122,21 @@ export function ApplicationSimulator() {
   const executionPlan = sim.mappedRules;
   const inputJson = application ? JSON.stringify(application.fields) : "{}";
 
+  // Auto-search (Elasticsearch style) with debounce
+  useEffect(() => {
+    if (!query.trim()) {
+      // Clear out if empty
+      setApplication(null);
+      setError(null);
+      setInvalid(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      doFetch(query);
+    }, 300); // Snappier debounce for search
+    return () => clearTimeout(timer);
+  }, [query]); // eslint-disable-next-line react-hooks/exhaustive-deps
+
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto bg-background p-4 sm:p-5">
       <ApplicationSearch
@@ -109,7 +145,6 @@ export function ApplicationSimulator() {
           setQuery(v);
           if (invalid) setInvalid(false);
         }}
-        onFetch={() => doFetch()}
         loading={fetching}
         quickPicks={quickPicks}
         onPick={handlePick}

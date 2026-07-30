@@ -113,9 +113,9 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
     let input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
 
     // Apply JSON Value Mapping translation layer
-    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request") 
-                 || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
-    
+    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request")
+      || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
+
     input = applyTranslationMapping(input, mapping) as Record<string, string | number | boolean>;
 
     // Validate payload against field catalog constraints
@@ -181,13 +181,13 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
           : `${product.name} scenario, outcome ${sim.outcome}.`,
         decisionContext: responseConfig.enableAuditLogging
           ? {
-              correlationId: dr.correlationId,
-              triggeredRules: dr.triggeredRules,
-              ruleVersions: dr.ruleVersions,
-              executionTimeMs: dr.totalDurationMs,
-              requestPayload: dr.input,
-              responsePayload: buildApiResponsePayload(dr, "full-audit", responseConfig),
-            }
+            correlationId: dr.correlationId,
+            triggeredRules: dr.triggeredRules,
+            ruleVersions: dr.ruleVersions,
+            executionTimeMs: dr.totalDurationMs,
+            requestPayload: dr.input,
+            responsePayload: buildApiResponsePayload(dr, "full-audit", responseConfig),
+          }
           : undefined,
       });
       toast[sim.outcome === "Approved" ? "success" : sim.outcome === "Rejected" ? "error" : "warning"](
@@ -218,6 +218,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
     resetToSampleJson,
     runScenario,
     activeConfig: resolveDecisionResponseConfig(decisionResponseSettings, { industry: domain }),
+    fieldCatalog,
   };
 }
 
@@ -320,9 +321,8 @@ function WorkflowSteps({ product, jsonReady, running, hasResult }: { product: Pr
         { icon: CheckCircle2, label: "View Results", done: hasResult },
       ].map((step, idx) => (
         <div key={idx} className="flex items-center gap-2 shrink-0">
-          <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${
-            step.done ? "bg-emerald-500 text-white" : step.active ? "bg-primary text-white animate-pulse" : "bg-muted text-muted-foreground"
-          }`}>
+          <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${step.done ? "bg-emerald-500 text-white" : step.active ? "bg-primary text-white animate-pulse" : "bg-muted text-muted-foreground"
+            }`}>
             <step.icon className="size-3.5" />
           </div>
           <span className="text-sm whitespace-nowrap text-muted-foreground">{step.label}</span>

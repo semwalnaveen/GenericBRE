@@ -111,6 +111,16 @@ function buildColumns(onRowClick: (row: BatchRowResult) => void): ColumnDef<Batc
       ),
       size: 90,
     },
+    {
+      id: "reason",
+      header: "Decision Reason",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground truncate block max-w-[400px]" title={row.original.decision?.summary ?? row.original.errorMessage ?? "—"}>
+          {row.original.decision?.summary ?? row.original.errorMessage ?? "—"}
+        </span>
+      ),
+      // No fixed size so it absorbs the remaining space
+    },
   ];
 }
 
@@ -165,6 +175,7 @@ export function BatchResultsGrid({
 
   return (
     <DataTable
+      className="h-auto max-h-[360px]"
       columns={columns}
       data={filtered}
       getRowId={(r) => String(r.rowNumber)}

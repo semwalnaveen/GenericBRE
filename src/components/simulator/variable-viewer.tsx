@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Variable, Layers, CheckCircle2 } from "lucide-react";
-import { TraceStep } from "@/lib/types";
+import { TraceStep, BusinessField } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 
 export interface VariableViewerProps {
   traceSteps: TraceStep[];
   jsonText: string;
+  fieldCatalog: BusinessField[];
 }
 
 export interface VariableItem {
@@ -17,7 +19,9 @@ export interface VariableItem {
   consumedByRule: string;
 }
 
-export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
+export function VariableViewer({ traceSteps, jsonText, fieldCatalog }: VariableViewerProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
   const variables = useMemo(() => {
     const items: VariableItem[] = [];
 
@@ -25,10 +29,12 @@ export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
     try {
       const parsed = JSON.parse(jsonText || "{}");
       for (const [k, v] of Object.entries(parsed)) {
+        const field = fieldCatalog.find((f) => f.key === k);
+        const valStr = field?.mask ? "***" : String(v);
         items.push({
           key: k,
           producedByRule: "Input Request",
-          currentValue: String(v),
+          currentValue: valStr,
           consumedByRule: traceSteps.find((s) => s.conditionSummaries.some((c) => c.field === k))?.ruleId || "All Rules",
         });
       }
@@ -40,15 +46,17 @@ export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
     for (const step of traceSteps) {
       if (step.producedValues) {
         for (const [k, v] of Object.entries(step.producedValues)) {
+          const field = fieldCatalog.find((f) => f.key === k);
+          const valStr = field?.mask ? "***" : String(v);
           const existing = items.find((i) => i.key === k);
           if (existing) {
-            existing.currentValue = String(v);
+            existing.currentValue = valStr;
             existing.producedByRule = step.ruleId;
           } else {
             items.push({
               key: k,
               producedByRule: step.ruleId,
-              currentValue: String(v),
+              currentValue: valStr,
               consumedByRule: "Decision Engine",
             });
           }
@@ -57,7 +65,7 @@ export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
     }
 
     return items;
-  }, [traceSteps, jsonText]);
+  }, [traceSteps, jsonText, fieldCatalog]);
 
   if (variables.length === 0) {
     return (
@@ -66,6 +74,13 @@ export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
       </p>
     );
   }
+
+  const rowVirtualizer = useVirtualizer({
+    count: variables.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 36,
+    overscan: 5,
+  });
 
   return (
     <div className="space-y-2.5 rounded-lg border bg-card p-3 text-xs">
@@ -79,27 +94,40 @@ export function VariableViewer({ traceSteps, jsonText }: VariableViewerProps) {
         </Badge>
       </div>
 
-      <div className="max-h-60 overflow-y-auto border rounded-md">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead className="bg-muted border-b font-semibold text-muted-foreground sticky top-0 z-10 shadow-xs">
-            <tr>
-              <th className="p-2 font-semibold bg-muted">Variable Key</th>
-              <th className="p-2 font-semibold bg-muted">Current Value</th>
-              <th className="p-2 font-semibold bg-muted">Produced By</th>
-              <th className="p-2 font-semibold bg-muted">Consumed By</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40 font-mono text-[11px]">
-            {variables.map((item, idx) => (
-              <tr key={idx} className="hover:bg-accent/40">
-                <td className="p-2 font-bold text-foreground truncate max-w-48" title={item.key}>{item.key}</td>
-                <td className="p-2 text-primary font-semibold truncate max-w-36" title={item.currentValue}>{item.currentValue}</td>
-                <td className="p-2 text-muted-foreground font-sans truncate max-w-36" title={item.producedByRule}>{item.producedByRule}</td>
-                <td className="p-2 text-muted-foreground font-sans truncate max-w-36" title={item.consumedByRule}>{item.consumedByRule}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div ref={parentRef} className="max-h-60 overflow-y-auto border rounded-md relative bg-card">
+        {/* Header - Sticky */}
+        <div className="sticky top-0 z-10 flex w-full bg-muted border-b text-[11px] font-semibold text-muted-foreground shadow-xs">
+          <div className="p-2 w-[35%]">Variable Key</div>
+          <div className="p-2 w-[25%]">Current Value</div>
+          <div className="p-2 w-[20%]">Produced By</div>
+          <div className="p-2 w-[20%]">Consumed By</div>
+        </div>
+        
+        {/* Virtualized Body */}
+        <div 
+          className="w-full relative font-mono text-[11px]"
+          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const item = variables[virtualRow.index];
+            return (
+              <div 
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={rowVirtualizer.measureElement}
+                className="absolute top-0 left-0 w-full flex items-center hover:bg-accent/40 border-b border-border/40"
+                style={{
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <div className="p-2 font-bold text-foreground truncate w-[35%]" title={item.key}>{item.key}</div>
+                <div className="p-2 text-primary font-semibold truncate w-[25%]" title={item.currentValue}>{item.currentValue}</div>
+                <div className="p-2 text-muted-foreground font-sans truncate w-[20%]" title={item.producedByRule}>{item.producedByRule}</div>
+                <div className="p-2 text-muted-foreground font-sans truncate w-[20%]" title={item.consumedByRule}>{item.consumedByRule}</div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
