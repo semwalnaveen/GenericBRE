@@ -34,6 +34,7 @@ export function BatchRowDetailSheet({
   onOpenChange: (v: boolean) => void;
 }) {
   const decisionResponseSettings = useAppStore((s) => s.decisionResponseSettings);
+  const fieldCatalog = useAppStore((s) => s.fieldCatalog);
   const config = resolveDecisionResponseConfig(decisionResponseSettings, { industry: domain });
 
   return (
@@ -84,7 +85,7 @@ export function BatchRowDetailSheet({
                   </TabsContent>
 
                   <TabsContent value="variables">
-                    <VariableViewer traceSteps={row.decision.flatTrace} jsonText={JSON.stringify(row.decision.input)} />
+                    <VariableViewer traceSteps={row.decision.flatTrace} jsonText={JSON.stringify(row.decision.input)} fieldCatalog={fieldCatalog} />
                   </TabsContent>
 
                   <TabsContent value="audit">

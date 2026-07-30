@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, Undo2, CheckCheck, MoreHorizontal, TestTube2, Trash2, Rocket } from "lucide-react";
+import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, Undo2, CheckCheck, MoreHorizontal, TestTube2, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ApprovalRequest, BusinessRule, Product, ProductRuleMapping, RuleGroup } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
@@ -33,7 +33,6 @@ export interface RepositoryActions {
   onSubmitForReview: (r: BusinessRule) => void;
   onApprove: (r: BusinessRule) => void;
   onReject: (r: BusinessRule) => void;
-  onPublish: (r: BusinessRule) => void;
   onReactivate: (r: BusinessRule) => void;
   onTestInSimulator: (r: BusinessRule) => void;
   onPromote: (r: BusinessRule) => void;
@@ -220,16 +219,6 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => actions.onApprove(r)} disabled={!context.canPublish}>
                     <CheckCheck className="size-3.5" /> Approve
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => actions.onReject(r)} disabled={!context.canPublish}>
-                    <Undo2 className="size-3.5" /> Reject
-                  </DropdownMenuItem>
-                </>
-              )}
-              {r.status === "Approved" && (
-                <>
-                  <DropdownMenuItem onClick={() => actions.onPublish(r)} disabled={!context.canPublish}>
-                    <Rocket className="size-3.5" /> Publish
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => actions.onReject(r)} disabled={!context.canPublish}>
                     <Undo2 className="size-3.5" /> Reject

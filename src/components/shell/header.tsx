@@ -68,7 +68,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
           )}
           <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary" onClick={() => setSwitcherOpen(true)}>
             <ShieldCheck className="size-3.5" />
-            <span className="hidden lg:inline">Switch Persona</span>
+            <span className="hidden lg:inline">Switch User</span>
           </Button>
           <Button size="sm" className="h-9 gap-1.5" onClick={() => router.push("/rule-builder")} aria-label="Create Rule">
             <Plus className="size-3.5" />

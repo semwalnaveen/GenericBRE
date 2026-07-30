@@ -56,7 +56,6 @@ function RepositoryContent() {
   const setRuleStatus = useAppStore((s) => s.setRuleStatus);
   const approveRule = useAppStore((s) => s.approveRule);
   const rejectRule = useAppStore((s) => s.rejectRule);
-  const publishRule = useAppStore((s) => s.publishRule);
   const products = useAppStore((s) => s.products);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const approvalRequests = useAppStore((s) => s.approvalRequests);
@@ -162,7 +161,7 @@ function RepositoryContent() {
     (rule: BusinessRule) => {
       const result = approveRule(rule.id);
       if (result.ok) {
-        toast.success(`${rule.id} approved`, { description: `${rule.name} is ready for publishing.` });
+        toast.success(`${rule.id} approved & published`, { description: `${rule.name} is now live.` });
       } else {
         toast.error("Approval blocked", { description: result.reason });
       }
@@ -233,14 +232,6 @@ function RepositoryContent() {
               toast.error("Action blocked", { description: result.reason });
             }
           },
-          onPublish: (r) => {
-            const result = publishRule(r.id);
-            if (result.ok) {
-              toast.success(`${r.id} published`, { description: `${r.name} is now live.` });
-            } else {
-              toast.error("Publish blocked", { description: result.reason });
-            }
-          },
           onReactivate: (r) => {
             const result = setRuleStatus(r.id, "Published");
             if (result.ok) {
@@ -257,7 +248,7 @@ function RepositoryContent() {
         },
         { canPublish, canCreate, canEdit, canDelete, ruleGroups, products, productRuleMappings, approvalRequests }
       ),
-    [router, cloneRule, setRuleStatus, rejectRule, publishRule, canPublish, canCreate, canEdit, canDelete, ruleGroups, rules, performApprove, products, productRuleMappings, approvalRequests]
+    [router, cloneRule, setRuleStatus, rejectRule, canPublish, canCreate, canEdit, canDelete, ruleGroups, rules, performApprove, products, productRuleMappings, approvalRequests]
   );
 
   const clearAll = () => {

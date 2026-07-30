@@ -329,7 +329,6 @@ interface AppState {
   submitForReview: (ruleId: string) => { ok: boolean; reason?: string };
   approveRule: (ruleId: string) => { ok: boolean; reason?: string };
   rejectRule: (ruleId: string, comment?: string) => { ok: boolean; reason?: string };
-  publishRule: (ruleId: string) => { ok: boolean; reason?: string };
   mapRuleToProducts: (
     ruleId: string,
     config: {
@@ -1006,15 +1005,22 @@ export const useAppStore = create<AppState>()(
           return { ok: false, reason: "You created or submitted this rule — a different Checker must approve it." };
         }
 
+        // Approve now publishes atomically — there is no separate manual
+        // Publish step. "Approved" is never a resting status; a rule goes
+        // straight from Pending Approval to Published in one action.
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Approved", updatedAt: new Date().toISOString() } : r)),
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Published", updatedAt: new Date().toISOString() } : r)),
           approvalRequests: s.approvalRequests.map((a) =>
             a.ruleId === ruleId && a.stage === "Pending Review"
               ? { ...a, stage: "Approved", decidedBy: currentUser.name, decidedAt: new Date().toISOString() }
               : a
           ),
         }));
-        get().logAudit({ user: currentUser.name, action: "Approved Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved — awaiting publish.` });
+        // Reuses the "Published Rule" action string (not "Approved Rule")
+        // so the Deployments KPI (kpi-cards.tsx's deploymentEvents, filtered
+        // on this exact string) keeps counting this as a deployment with no
+        // changes needed there.
+        get().logAudit({ user: currentUser.name, action: "Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved and published by ${currentUser.name} — now live.` });
         return { ok: true };
       },
       rejectRule: (ruleId, comment) => {
@@ -1041,22 +1047,6 @@ export const useAppStore = create<AppState>()(
           ),
         }));
         get().logAudit({ user: currentUser.name, action: "Rejected Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} rejected during review${comment ? `: ${comment}` : "."}` });
-        return { ok: true };
-      },
-      publishRule: (ruleId) => {
-        const rule = get().rules.find((r) => r.id === ruleId);
-        if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser } = get();
-        if (!can(get(), "rule.publish")) {
-          return { ok: false, reason: `${currentUser.name} doesn't have permission to publish rules.` };
-        }
-        if (rule.status !== "Approved") {
-          return { ok: false, reason: `Only Approved rules can be published — "${rule.name}" is ${rule.status}.` };
-        }
-        set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Published", updatedAt: new Date().toISOString() } : r)),
-        }));
-        get().logAudit({ user: currentUser.name, action: "Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} published — now live.` });
         return { ok: true };
       },
       // Rule-centric product mapping used by the Map-to-Product dialog during
@@ -1429,9 +1419,22 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 52,
+      version: 53,
       skipHydration: true,
-      migrate: (persistedState) => {
+      migrate: (persistedState, version) => {
+        // v52 -> v53 collapsed the Approve -> Publish governance step into
+        // one action (approveRule now publishes atomically — see approveRule
+        // in this file). Any rule left resting in "Approved" from before this
+        // change (awaiting a manual publish that will now never come via UI)
+        // is promoted straight to "Published", matching what the new
+        // one-step flow would have produced.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.rules) {
+            s.rules = s.rules.map((r) => (r.status === "Approved" ? { ...r, status: "Published" } : r));
+          }
+        }
+
         // v50 -> v51 added `applications` (seed customer applications for the
         // Simulator's Application-ID mode) — a brand-new key; the default
         // shallow merge fills it from initial state (DEFAULT_APPLICATIONS)

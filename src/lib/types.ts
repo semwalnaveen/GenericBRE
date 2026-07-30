@@ -25,10 +25,13 @@ export interface Entity {
 }
 
 // Maker-Checker governance lifecycle: Draft (authoring) -> Pending Approval
-// (submitted with product mapping, awaiting Checker) -> Approved (Checker
-// approved, not yet live) -> Published (live, executes) -> plus Rejected
-// (sent back), and Inactive (paused)/Archived (retired) for post-publish
-// operational management. A rule must have >=1 product mapping to leave Draft.
+// (submitted with product mapping, awaiting Checker) -> Published (live,
+// executes) -> plus Rejected (sent back), and Inactive (paused)/Archived
+// (retired) for post-publish operational management. A rule must have >=1
+// product mapping to leave Draft. Approving a Pending Approval rule
+// publishes it atomically (see store.ts's approveRule) — "Approved" is kept
+// in this union only for backward compatibility with already-persisted data
+// from before that change; no code path produces it as a resting status.
 export type RuleStatus =
   | "Draft"
   | "Pending Approval"
