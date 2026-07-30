@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Trash2, Upload, Wand2, FileJson, Save, ArrowDown, ArrowUp, Package, Search } from "lucide-react";
+import { Trash2, Upload, Wand2, FileJson, Save, ArrowDown, ArrowUp, ArrowUpDown, Package, Search, Settings2 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { JsonMapping, JsonMappingEntry, FieldDataType } from "@/lib/types";
 import { flattenJson, FlattenedAttribute } from "@/lib/json-mapping";
@@ -16,6 +16,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogHeader,
@@ -25,6 +33,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+
+type SortColumn = "externalAttribute" | "jsonPath" | "mappedField" | "dataType" | "required" | "transformationRule" | "defaultValue" | "status";
 
 const FIELD_TYPES: FieldDataType[] = ["number", "string", "boolean", "enum", "currency", "list"];
 
@@ -68,7 +78,12 @@ export function JsonMappingManager() {
   const [pendingDelete, setPendingDelete] = useState<JsonMapping | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | "Mapped" | "Unmapped">("All");
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [valueMapModalOpen, setValueMapModalOpen] = useState<string | null>(null);
+  const [draftValueMapText, setDraftValueMapText] = useState("");
 
   const productsForDomain = products.filter((p) => p.domain === domainFilter);
   const selectedProduct = selectedProductId ? products.find((p) => p.id === selectedProductId) ?? null : null;
@@ -168,6 +183,23 @@ export function JsonMappingManager() {
     updateActive({ entries: active.entries.filter((e) => e.id !== entryId) });
   };
 
+  const handleOpenValueMap = (entry: JsonMappingEntry) => {
+    setValueMapModalOpen(entry.id);
+    setDraftValueMapText(entry.valueMap ? JSON.stringify(entry.valueMap, null, 2) : "{\n  \n}");
+  };
+
+  const handleSaveValueMap = () => {
+    if (!valueMapModalOpen) return;
+    try {
+      const parsed = JSON.parse(draftValueMapText);
+      updateEntry(valueMapModalOpen, { valueMap: Object.keys(parsed).length > 0 ? parsed : undefined });
+      setValueMapModalOpen(null);
+      toast.success("Value map saved.");
+    } catch {
+      toast.error("Invalid JSON format for Value Map.");
+    }
+  };
+
   const save = () => {
     if (!active) return;
     toast.success(`"${active.name}" saved — ${active.entries.filter((e) => e.status === "Mapped").length} of ${active.entries.length} attributes mapped.`);
@@ -188,10 +220,42 @@ export function JsonMappingManager() {
     return matchesSearch && matchesStatus;
   }) ?? [];
 
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
+    if (!sortColumn) return 0;
+    const valA = a[sortColumn] ?? "";
+    const valB = b[sortColumn] ?? "";
+    if (valA < valB) return sortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === "asc") setSortDirection("desc");
+      else setSortColumn(null);
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const renderSortableHeader = (label: string, column: SortColumn, extraClass = "") => (
+    <TableHead className={`cursor-pointer hover:bg-muted/50 transition-colors select-none ${extraClass}`} onClick={() => handleSort(column)}>
+      <div className="flex items-center gap-1.5">
+        {label}
+        {sortColumn === column ? (
+          sortDirection === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+        ) : (
+          <ArrowUpDown className="size-3 text-muted-foreground/30" />
+        )}
+      </div>
+    </TableHead>
+  );
+
   return (
-    <div className="flex h-full min-h-100 gap-4">
-      <div className="w-56 shrink-0 space-y-3">
-        <div className="space-y-1.5">
+    <div className="flex flex-col h-full min-h-100 gap-6">
+      <div className="flex items-start gap-4">
+        <div className="w-64 space-y-1.5">
           <Label className="text-sm text-muted-foreground">Domain</Label>
           <Select
             value={domainFilter}
@@ -201,7 +265,7 @@ export function JsonMappingManager() {
               setSelectedProductId(products.find((p) => p.domain === nextDomain)?.id ?? null);
             }}
           >
-            <SelectTrigger className="w-full h-8"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
             <SelectContent>
               {industries.map((i) => (
                 <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
@@ -209,35 +273,40 @@ export function JsonMappingManager() {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-muted-foreground">Product</p>
-          <div className="max-h-125 space-y-1 overflow-y-auto">
-            {productsForDomain.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => { setSelectedProductId(p.id); setActiveDirection("request"); }}
-                className={`flex w-full items-center gap-2 rounded-lg border p-2.5 text-left transition-colors ${selectedProductId === p.id ? "border-primary bg-primary/5" : "hover:bg-muted"}`}
-              >
-                <Package className="size-3.5 shrink-0 text-muted-foreground" />
-                <p className="truncate text-sm font-semibold">{p.name}</p>
-              </button>
-            ))}
-            {productsForDomain.length === 0 && (
-              <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                No products in this domain yet.
-              </p>
-            )}
-          </div>
+        
+        <div className="w-64 space-y-1.5">
+          <Label className="text-sm text-muted-foreground">Product</Label>
+          <Select
+            value={selectedProductId ?? undefined}
+            onValueChange={(v) => { setSelectedProductId(v); setActiveDirection("request"); }}
+          >
+            <SelectTrigger className="w-full h-9">
+              <SelectValue placeholder="Select a product" />
+            </SelectTrigger>
+            <SelectContent>
+              {productsForDomain.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  <div className="flex items-center gap-2">
+                    <Package className="size-3.5 text-muted-foreground" />
+                    <span>{p.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+              {productsForDomain.length === 0 && (
+                <SelectItem value="none" disabled>No products in domain</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <div className="min-w-0 flex-1">
         {!selectedProduct ? (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+          <div className="flex h-40 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
             Select a product — its Request and Response mappings auto-generate from its rules.
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex overflow-hidden rounded-lg border w-fit">
               <button
                 onClick={() => setActiveDirection("request")}
@@ -326,19 +395,20 @@ export function JsonMappingManager() {
                   <Table>
                     <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableRow className="hover:bg-transparent">
-                        <TableHead>External Attribute</TableHead>
-                        <TableHead>JSON Path</TableHead>
-                        <TableHead>Mapped Field</TableHead>
-                        <TableHead>Data Type</TableHead>
-                        <TableHead className="w-16">Req.</TableHead>
-                        <TableHead>Transformation</TableHead>
-                        <TableHead>Default</TableHead>
-                        <TableHead>Status</TableHead>
+                        {renderSortableHeader("External Attribute", "externalAttribute")}
+                        {renderSortableHeader("JSON Path", "jsonPath")}
+                        {renderSortableHeader("Mapped Field", "mappedField")}
+                        {renderSortableHeader("Data Type", "dataType")}
+                        {renderSortableHeader("Req.", "required", "w-20")}
+                        {renderSortableHeader("Transformation", "transformationRule")}
+                        <TableHead className="text-sm font-semibold text-foreground">Value Map</TableHead>
+                        {renderSortableHeader("Default", "defaultValue")}
+                        {renderSortableHeader("Status", "status")}
                         <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredEntries.map((entry) => (
+                      {sortedEntries.map((entry) => (
                         <TableRow key={entry.id}>
                           <TableCell className="font-mono text-sm">{entry.externalAttribute}</TableCell>
                           <TableCell className="font-mono text-sm text-muted-foreground">{entry.jsonPath}</TableCell>
@@ -381,6 +451,11 @@ export function JsonMappingManager() {
                             </Select>
                           </TableCell>
                           <TableCell>
+                            <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2" onClick={() => handleOpenValueMap(entry)}>
+                              <Settings2 className="size-3.5" /> {entry.valueMap ? `Map (${Object.keys(entry.valueMap).length})` : "Map"}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
                             <Input
                               value={entry.defaultValue ?? ""}
                               onChange={(e) => updateEntry(entry.id, { defaultValue: e.target.value || undefined })}
@@ -400,7 +475,7 @@ export function JsonMappingManager() {
                           </TableCell>
                         </TableRow>
                       ))}
-                      {filteredEntries.length === 0 && (
+                      {sortedEntries.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
                             No attributes yet — paste a sample payload above and click Detect Attributes.
@@ -442,6 +517,29 @@ export function JsonMappingManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!valueMapModalOpen} onOpenChange={(v) => !v && setValueMapModalOpen(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure Value Map</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Translate incoming external values to internal canonical values (e.g., <code>&quot;01&quot;: &quot;Salaried&quot;</code>).
+            </p>
+            <Textarea
+              className="font-mono text-xs min-h-48"
+              value={draftValueMapText}
+              onChange={(e) => setDraftValueMapText(e.target.value)}
+              placeholder='{\n  "ExternalCode": "InternalValue"\n}'
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button onClick={handleSaveValueMap}>Save Mapping</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

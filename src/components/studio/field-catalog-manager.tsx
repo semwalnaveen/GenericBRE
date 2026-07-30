@@ -529,6 +529,46 @@ export function FieldCatalogManager() {
                 <Input value={draft.sourceSystem ?? ""} onChange={(e) => setDraft((d) => ({ ...d, sourceSystem: e.target.value || undefined }))} placeholder="e.g. Core Banking" />
               </div>
             </div>
+
+            <div className="pt-3 mt-3 border-t">
+              <Label className="text-sm font-semibold text-muted-foreground mb-3 block">Validation Constraints (Optional)</Label>
+              
+              {(draft.type === "number" || draft.type === "currency") && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Minimum Value</Label>
+                    <Input type="number" value={draft.minValue ?? ""} onChange={(e) => setDraft((d) => ({ ...d, minValue: e.target.value ? Number(e.target.value) : undefined }))} placeholder="e.g. 0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Maximum Value</Label>
+                    <Input type="number" value={draft.maxValue ?? ""} onChange={(e) => setDraft((d) => ({ ...d, maxValue: e.target.value ? Number(e.target.value) : undefined }))} placeholder="e.g. 100000" />
+                  </div>
+                </div>
+              )}
+
+              {draft.type === "string" && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Minimum Length</Label>
+                      <Input type="number" value={draft.minLength ?? ""} onChange={(e) => setDraft((d) => ({ ...d, minLength: e.target.value ? Number(e.target.value) : undefined }))} placeholder="e.g. 2" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Maximum Length</Label>
+                      <Input type="number" value={draft.maxLength ?? ""} onChange={(e) => setDraft((d) => ({ ...d, maxLength: e.target.value ? Number(e.target.value) : undefined }))} placeholder="e.g. 255" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Regex Pattern</Label>
+                    <Input value={draft.regexPattern ?? ""} onChange={(e) => setDraft((d) => ({ ...d, regexPattern: e.target.value || undefined }))} placeholder="e.g. ^[A-Z0-9]+$" />
+                  </div>
+                </div>
+              )}
+              
+              {draft.type !== "number" && draft.type !== "currency" && draft.type !== "string" && (
+                 <p className="text-sm text-muted-foreground italic">No validation constraints available for {draft.type} fields.</p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>

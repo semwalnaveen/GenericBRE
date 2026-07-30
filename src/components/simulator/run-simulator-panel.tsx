@@ -6,6 +6,7 @@ import { FlaskConical, PlayCircle, RotateCcw, CheckCircle2, Clock, Zap } from "l
 import { useAppStore } from "@/lib/store";
 import { Product, DecisionResult, ResponseMode } from "@/lib/types";
 import { getMappedRules, executeRulesByProduct } from "@/lib/product-rule-engine";
+import { validatePayload, applyTranslationMapping } from "@/lib/engine";
 import { fromSimulation, resolveDecisionResponseConfig, buildApiResponsePayload } from "@/lib/decision-response";
 import { applyMatrixLookup } from "@/lib/matrix-lookup";
 import { buildTemplateJson, buildApiRequestEnvelope, buildResponseShapePreview, buildResponseShapeFromResult } from "@/lib/simulator-json";
@@ -40,6 +41,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
   const logAudit = useAppStore((s) => s.logAudit);
   const currentUser = useAppStore((s) => s.currentUser);
   const recordRecentProduct = useAppStore((s) => s.recordRecentProduct);
+  const jsonMappings = useAppStore((s) => s.jsonMappings);
 
   const domain = product?.domain ?? "";
   const [jsonText, setJsonText] = useState<string>(() =>
@@ -108,8 +110,24 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
       return;
     }
 
+    let input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
+
+    // Apply JSON Value Mapping translation layer
+    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request") 
+                 || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
+    
+    input = applyTranslationMapping(input, mapping) as Record<string, string | number | boolean>;
+
+    // Validate payload against field catalog constraints
+    const validationErrors = validatePayload(input, fieldCatalog);
+    if (validationErrors.length > 0) {
+      toast.error("Payload Validation Failed", {
+        description: validationErrors.map((e) => e.error).join(" • ")
+      });
+      return;
+    }
+
     setRunning(true);
-    const input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
 
     if (domain === "Lending") {
       const income = Number(input.monthly_income) || 1;
