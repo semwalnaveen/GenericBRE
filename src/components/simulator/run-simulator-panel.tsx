@@ -6,6 +6,7 @@ import { FlaskConical, PlayCircle, RotateCcw, CheckCircle2, Clock, Zap } from "l
 import { useAppStore } from "@/lib/store";
 import { Product, DecisionResult, ResponseMode } from "@/lib/types";
 import { getMappedRules, executeRulesByProduct } from "@/lib/product-rule-engine";
+import { validatePayload, applyTranslationMapping } from "@/lib/engine";
 import { fromSimulation, resolveDecisionResponseConfig, buildApiResponsePayload } from "@/lib/decision-response";
 import { applyMatrixLookup } from "@/lib/matrix-lookup";
 import { buildTemplateJson, buildApiRequestEnvelope, buildResponseShapePreview, buildResponseShapeFromResult } from "@/lib/simulator-json";
@@ -40,6 +41,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
   const logAudit = useAppStore((s) => s.logAudit);
   const currentUser = useAppStore((s) => s.currentUser);
   const recordRecentProduct = useAppStore((s) => s.recordRecentProduct);
+  const jsonMappings = useAppStore((s) => s.jsonMappings);
 
   const domain = product?.domain ?? "";
   const [jsonText, setJsonText] = useState<string>(() =>
@@ -108,19 +110,24 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
       return;
     }
 
-    const missingFields = fieldCatalog
-      .filter((f) => f.mandatory && (parsed[f.key] === undefined || parsed[f.key] === null || String(parsed[f.key]).trim() === ""))
-      .map((f) => f.label || f.key);
+    let input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
 
-    if (missingFields.length > 0) {
-      toast.error("Missing Mandatory Fields", {
-        description: `Please provide values for: ${missingFields.join(", ")}`,
+    // Apply JSON Value Mapping translation layer
+    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request")
+      || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
+
+    input = applyTranslationMapping(input, mapping) as Record<string, string | number | boolean>;
+
+    // Validate payload against field catalog constraints
+    const validationErrors = validatePayload(input, fieldCatalog);
+    if (validationErrors.length > 0) {
+      toast.error("Payload Validation Failed", {
+        description: validationErrors.map((e) => e.error).join(" • ")
       });
       return;
     }
 
     setRunning(true);
-    const input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
 
     if (domain === "Lending") {
       const income = Number(input.monthly_income) || 1;
@@ -174,13 +181,13 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
           : `${product.name} scenario, outcome ${sim.outcome}.`,
         decisionContext: responseConfig.enableAuditLogging
           ? {
-              correlationId: dr.correlationId,
-              triggeredRules: dr.triggeredRules,
-              ruleVersions: dr.ruleVersions,
-              executionTimeMs: dr.totalDurationMs,
-              requestPayload: dr.input,
-              responsePayload: buildApiResponsePayload(dr, "full-audit", responseConfig),
-            }
+            correlationId: dr.correlationId,
+            triggeredRules: dr.triggeredRules,
+            ruleVersions: dr.ruleVersions,
+            executionTimeMs: dr.totalDurationMs,
+            requestPayload: dr.input,
+            responsePayload: buildApiResponsePayload(dr, "full-audit", responseConfig),
+          }
           : undefined,
       });
       toast[sim.outcome === "Approved" ? "success" : sim.outcome === "Rejected" ? "error" : "warning"](
@@ -314,9 +321,8 @@ function WorkflowSteps({ product, jsonReady, running, hasResult }: { product: Pr
         { icon: CheckCircle2, label: "View Results", done: hasResult },
       ].map((step, idx) => (
         <div key={idx} className="flex items-center gap-2 shrink-0">
-          <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${
-            step.done ? "bg-emerald-500 text-white" : step.active ? "bg-primary text-white animate-pulse" : "bg-muted text-muted-foreground"
-          }`}>
+          <div className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold ${step.done ? "bg-emerald-500 text-white" : step.active ? "bg-primary text-white animate-pulse" : "bg-muted text-muted-foreground"
+            }`}>
             <step.icon className="size-3.5" />
           </div>
           <span className="text-sm whitespace-nowrap text-muted-foreground">{step.label}</span>

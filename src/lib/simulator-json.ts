@@ -32,7 +32,10 @@ export function buildTemplateJson(
       }
     }
   }
-  return buildSampleRequestJson(fieldCatalog, Array.from(keys));
+  return {
+    productCode: product.code,
+    ...buildSampleRequestJson(fieldCatalog, Array.from(keys))
+  };
 }
 
 // Panel 2 — API Request envelope, a pure wrap of whatever Template JSON

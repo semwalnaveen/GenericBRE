@@ -13,6 +13,7 @@ import {
   RuleAction,
   SimulationResult,
   TraceStep,
+  JsonMapping,
 } from "./types";
 
 export const DEFAULT_EXECUTION_SETTINGS: ExecutionSettings = { conflictResolution: "execute-all" };
@@ -432,3 +433,91 @@ export function applyAction(
 // runRuleSetExecution removed — Execution Manager deleted.
 // RuleSetStepResult, RuleSetExecutionResult interfaces also removed.
 // FUTURE: restore if multi-step Rule Set orchestration is reintroduced.
+
+export function validatePayload(
+  input: InputMap,
+  catalog: BusinessField[]
+): { field: string; error: string }[] {
+  const errors: { field: string; error: string }[] = [];
+  
+  for (const [key, value] of Object.entries(input)) {
+    const field = getField(catalog, key);
+    if (!field) continue;
+    
+    // Arrays not fully supported by scalar validators yet, skip them
+    if (Array.isArray(value)) continue;
+    
+    if (field.type === "number" || field.type === "currency") {
+      const num = coerceNumber(value);
+      if (!Number.isNaN(num)) {
+        if (field.minValue !== undefined && num < field.minValue) {
+          errors.push({ field: field.label, error: `${field.label} cannot be less than ${field.minValue}` });
+        }
+        if (field.maxValue !== undefined && num > field.maxValue) {
+          errors.push({ field: field.label, error: `${field.label} cannot be greater than ${field.maxValue}` });
+        }
+      }
+    } else if (field.type === "string") {
+      const str = String(value);
+      if (field.minLength !== undefined && str.length < field.minLength) {
+        errors.push({ field: field.label, error: `${field.label} must be at least ${field.minLength} characters` });
+      }
+      if (field.maxLength !== undefined && str.length > field.maxLength) {
+        errors.push({ field: field.label, error: `${field.label} cannot exceed ${field.maxLength} characters` });
+      }
+      if (field.regexPattern) {
+        try {
+          const regex = new RegExp(field.regexPattern);
+          if (!regex.test(str)) {
+            errors.push({ field: field.label, error: `${field.label} format is invalid` });
+          }
+        } catch (e) {
+          // Ignore invalid regex patterns authored by user
+        }
+      }
+    }
+  }
+  
+  return errors;
+}
+
+export function applyTranslationMapping(
+  payload: InputMap,
+  mapping?: JsonMapping
+): InputMap {
+  if (!mapping || !mapping.entries.length) return payload;
+
+  const output: InputMap = { ...payload };
+
+  for (const entry of mapping.entries) {
+    if (entry.status !== "Mapped" || !entry.mappedField) continue;
+
+    const extKey = entry.externalAttribute;
+    const intKey = entry.mappedField;
+
+    if (extKey in output) {
+      let val = output[extKey];
+
+      // Translate Value if map exists
+      if (entry.valueMap && val !== null && val !== undefined && !Array.isArray(val)) {
+        const strVal = String(val);
+        if (entry.valueMap[strVal] !== undefined) {
+          // If the translated value is purely numeric, cast it
+          const translated = entry.valueMap[strVal];
+          const num = Number(translated);
+          val = !Number.isNaN(num) && String(num) === translated ? num : translated;
+        }
+      }
+
+      // Translate Key
+      if (extKey !== intKey) {
+        output[intKey] = val;
+        delete output[extKey];
+      } else {
+        output[intKey] = val;
+      }
+    }
+  }
+
+  return output;
+}

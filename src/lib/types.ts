@@ -418,6 +418,13 @@ export interface BusinessField {
   status?: "Active" | "Draft" | "Deprecated";
   updatedAt?: string;
   updatedBy?: string;
+  
+  // Validation constraints
+  minValue?: number;
+  maxValue?: number;
+  minLength?: number;
+  maxLength?: number;
+  regexPattern?: string;
 }
 
 // Foundational JSON Mapping — a table-based attribute-to-field mapping set,
@@ -432,6 +439,7 @@ export interface JsonMappingEntry {
   dataType: FieldDataType;
   required: boolean;
   transformationRule?: string;
+  valueMap?: Record<string, string>;
   defaultValue?: string;
   validationRule?: string;
   status: "Mapped" | "Unmapped";
