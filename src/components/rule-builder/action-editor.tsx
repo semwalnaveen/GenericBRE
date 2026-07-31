@@ -247,6 +247,7 @@ function ActionRow({
                 currentRuleId={currentRuleId}
                 rootGroup={rootGroup}
                 priorActions={priorActions}
+                outputField={action.outputField}
               />
             ) : (
               <Input

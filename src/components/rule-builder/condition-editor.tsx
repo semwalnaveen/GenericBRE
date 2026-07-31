@@ -42,14 +42,25 @@ export function ConditionEditor({
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
   const fields = fieldsForDomain(fieldCatalog, domain);
   const variables = getGeneratedVariables(rules, currentRuleId);
+  const isRuleOutput = condition.sourceType === "RULE_OUTPUT";
   const field = getField(fieldCatalog, condition.field);
-  const variable = variables.find((v) => v.key === condition.field);
+  const variable = variables.find((v) => v.key === condition.field && (!isRuleOutput || v.sourceRuleId === condition.sourceRuleId));
   const availableOperators = OPERATORS.filter((o) => !field || o.types.includes(field.type));
-  const fieldLabel = field?.label ?? variable?.key ?? "";
+  
+  // Calculate display label prioritizing the correct source
+  let fieldLabel = "";
+  if (condition.field) {
+    if (isRuleOutput) {
+      const base = getField(fieldCatalog, condition.field);
+      fieldLabel = base?.label ?? condition.field;
+    } else {
+      fieldLabel = field?.label ?? condition.field;
+    }
+  }
 
-  const selectField = (key: string) => {
+  const selectField = (key: string, sourceType?: "BUSINESS_FIELD" | "RULE_OUTPUT", sourceRuleId?: string) => {
     recordRecentField(key);
-    onChange({ field: key, value: "", value2: undefined });
+    onChange({ field: key, value: "", value2: undefined, sourceType, sourceRuleId });
     setFieldPickerOpen(false);
   };
 
@@ -58,9 +69,17 @@ export function ConditionEditor({
   // A row with no field yet stays neutral (it's just not configured, not
   // wrong); red only appears once configuration has started and is invalid.
   const isNumeric = field?.type === "number" || field?.type === "currency";
+  const isMissing = condition.field && (
+    isRuleOutput 
+      ? !variables.some(v => v.key === condition.field && v.sourceRuleId === condition.sourceRuleId)
+      : !fields.some(f => f.key === condition.field)
+  );
+
   const issue = !condition.field
     ? null
-    : condition.value === ""
+    : isMissing
+      ? `Missing Dependency: '${condition.field}' not found`
+      : condition.value === ""
       ? "Enter a value"
       : isNumeric && Number.isNaN(Number(condition.value))
         ? "Value must be a number"
@@ -171,22 +190,28 @@ export function ConditionEditor({
               <CommandEmpty>No matching fields.</CommandEmpty>
               <CommandGroup heading="Business Fields">
                 {fields.map((f) => (
-                  <CommandItem key={f.key} value={f.label} onSelect={() => selectField(f.key)} className="gap-2">
-                    <Check className={cn("size-3.5", condition.field === f.key ? "opacity-100" : "opacity-0")} />
+                  <CommandItem key={f.key} value={f.label} onSelect={() => selectField(f.key, "BUSINESS_FIELD")} className="gap-2">
+                    <Check className={cn("size-3.5", condition.field === f.key && !isRuleOutput ? "opacity-100" : "opacity-0")} />
                     {f.label}
                   </CommandItem>
                 ))}
               </CommandGroup>
               {variables.length > 0 && (
-                <CommandGroup heading="Generated Variables">
-                  {variables.map((v) => (
-                    <CommandItem key={v.key} value={v.key} onSelect={() => selectField(v.key)} className="gap-2">
-                      <Check className={cn("size-3.5", condition.field === v.key ? "opacity-100" : "opacity-0")} />
-                      <Variable className="size-3.5 shrink-0 text-primary" />
-                      <span className="truncate">{v.key}</span>
-                      <span className="ml-auto shrink-0 text-sm text-muted-foreground">from {v.sourceRuleName}</span>
-                    </CommandItem>
-                  ))}
+                <CommandGroup heading="Rule Outputs">
+                  {variables.map((v) => {
+                    const baseField = getField(fieldCatalog, v.key);
+                    const label = baseField?.label ?? v.key;
+                    // We must append the sourceRuleId to the CommandItem key to ensure uniqueness
+                    // if multiple rules output the same key.
+                    return (
+                      <CommandItem key={`${v.key}-${v.sourceRuleId}`} value={`${label} ${v.sourceRuleName}`} onSelect={() => selectField(v.key, "RULE_OUTPUT", v.sourceRuleId)} className="gap-2">
+                        <Check className={cn("size-3.5", condition.field === v.key && isRuleOutput && condition.sourceRuleId === v.sourceRuleId ? "opacity-100" : "opacity-0")} />
+                        <Variable className="size-3.5 shrink-0 text-primary" />
+                        <span className="truncate font-medium">{label}</span>
+                        <span className="ml-auto shrink-0 text-xs text-muted-foreground/70">via '{v.sourceRuleName}'</span>
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               )}
             </CommandList>

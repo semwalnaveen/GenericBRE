@@ -101,6 +101,17 @@ export function collectFieldKeys(node: ConditionGroup, out = new Set<string>()):
   return out;
 }
 
+export function collectRuleDependencies(node: ConditionGroup, out = new Set<string>()): Set<string> {
+  for (const c of node.children) {
+    if (c.type === "group") {
+      collectRuleDependencies(c, out);
+    } else if (c.type === "condition" && c.sourceType === "RULE_OUTPUT" && c.sourceRuleId) {
+      out.add(c.sourceRuleId);
+    }
+  }
+  return out;
+}
+
 // Where a Field Catalog entry is actually used — walks each rule's condition
 // tree (IF) plus its THEN/ELSE action output fields, so the Field Catalog can
 // show a real "N rules depend on this" count instead of a guess.

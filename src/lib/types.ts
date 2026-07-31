@@ -95,6 +95,8 @@ export interface Condition {
   /** How this condition joins its earlier siblings — see `Connector`. Absent
    *  on every pre-existing rule; falls back to the parent group's `logic`. */
   connector?: Connector;
+  sourceType?: "BUSINESS_FIELD" | "RULE_OUTPUT";
+  sourceRuleId?: string; // Present when sourceType === "RULE_OUTPUT"
 }
 
 export interface ConditionGroup {

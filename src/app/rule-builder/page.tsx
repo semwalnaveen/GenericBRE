@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   FolderPlus,
   Trash2,
+  Network
 } from "lucide-react";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { BusinessField, BusinessRule, CaseWhenClause, Condition, ConditionGroup, RuleAction, RuleTemplate } from "@/lib/types";
@@ -33,6 +34,7 @@ import {
   validateTree,
   cloneGroupWithFreshIds,
   collectFieldKeys,
+  collectRuleDependencies,
   countConditions,
   duplicateNode,
   moveNode,
@@ -59,6 +61,7 @@ import { TemplatePicker } from "@/components/rule-builder/template-picker";
 import { SampleJsonPanel } from "@/components/rule-builder/sample-json-panel";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 
@@ -157,6 +160,29 @@ function RuleBuilderContent() {
     }
     return existingRule ?? blankRule(nextRuleId(rules), industries[0]?.id ?? "", owners[0] ?? "");
   });
+
+  const dependencies = useMemo(() => {
+    const dependsOn = new Set<string>();
+    const usedBy = new Set<string>();
+
+    // Depends On: Walk this rule's conditions for explicitly selected RULE_OUTPUTs.
+    const ruleDeps = collectRuleDependencies(rule.rootGroup);
+    ruleDeps.forEach(depId => {
+      const sourceRule = rules.find(r => r.id === depId);
+      if (sourceRule) dependsOn.add(sourceRule.name);
+    });
+
+    // Used By: Check every other rule to see if it explicitly depends on this rule's ID.
+    rules.forEach(r => {
+      if (r.id === rule.id) return;
+      const theirDeps = collectRuleDependencies(r.rootGroup);
+      if (theirDeps.has(rule.id)) {
+        usedBy.add(r.name);
+      }
+    });
+
+    return { dependsOn: Array.from(dependsOn), usedBy: Array.from(usedBy) };
+  }, [rule, rules]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [showElseBranch, setShowElseBranch] = useState(() => !!existingRule?.elseActions?.length);
@@ -684,18 +710,7 @@ function RuleBuilderContent() {
           )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            {attrPanelOpen && (
-              <div className="lg:col-span-3">
-                <div className="h-80 lg:sticky lg:top-4 lg:h-[calc(100dvh-230px)]">
-                  <AttributePanel
-                    fields={fieldsForDomain(fieldCatalog, rule.domain)}
-                    entities={entities}
-                    onAddField={addFieldToRoot}
-                  />
-                </div>
-              </div>
-            )}
-            <div className={cn("flex flex-col gap-4", attrPanelOpen ? "lg:col-span-6" : "lg:col-span-9")}>
+            <div className={cn("flex flex-col gap-4", attrPanelOpen ? "lg:col-span-8" : "lg:col-span-12")}>
               {caseBuilderOpen ? (
                 <div>
                   <CaseBuilder
@@ -824,24 +839,77 @@ function RuleBuilderContent() {
                 </>
               )}
             </div>
-
-            <div className="flex flex-col gap-4 lg:col-span-3">
-              {/* FUTURE: Re-enable ExpressionPreview if needed
-              <ExpressionPreview rootGroup={rule.rootGroup} catalog={fieldCatalog} />
-              */}
-              <RulePreviewPanel
-                rule={rule}
-                fieldCatalog={fieldCatalog}
-                caseWhens={rule.caseWhens}
-                caseElseActions={rule.caseElseActions}
-              />
-              <SampleJsonPanel data={sampleJson} />
-              <InlineTestPanel
-                rootGroup={rule.rootGroup}
-                actions={rule.actions}
-                elseActions={rule.elseActions}
-              />
-            </div>
+            {attrPanelOpen && (
+              <div className="flex flex-col gap-4 lg:col-span-4">
+                <div className="h-80 lg:sticky lg:top-4 lg:h-[calc(100dvh-230px)] rounded-xl border bg-card/50 p-2 shadow-sm flex flex-col">
+                  <Tabs defaultValue="attributes" className="flex h-full flex-col">
+                    <TabsList className="grid w-full grid-cols-4 shrink-0">
+                      <TabsTrigger value="attributes" className="text-xs px-1">Attrs</TabsTrigger>
+                      <TabsTrigger value="preview" className="text-xs px-1">Preview</TabsTrigger>
+                      <TabsTrigger value="test" className="text-xs px-1">Test</TabsTrigger>
+                      <TabsTrigger value="deps" className="text-xs px-1">Deps</TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="min-h-0 flex-1 overflow-y-auto mt-2 pr-1">
+                      <TabsContent value="attributes" className="m-0 h-full">
+                        <AttributePanel
+                          fields={fieldsForDomain(fieldCatalog, rule.domain)}
+                          entities={entities}
+                          onAddField={addFieldToRoot}
+                        />
+                      </TabsContent>
+                      <TabsContent value="preview" className="m-0 space-y-4">
+                        <RulePreviewPanel
+                          rule={rule}
+                          fieldCatalog={fieldCatalog}
+                          caseWhens={rule.caseWhens}
+                          caseElseActions={rule.caseElseActions}
+                        />
+                      </TabsContent>
+                      <TabsContent value="test" className="m-0 space-y-4">
+                        <InlineTestPanel
+                          rootGroup={rule.rootGroup}
+                          actions={rule.actions}
+                          elseActions={rule.elseActions}
+                        />
+                      </TabsContent>
+                      <TabsContent value="deps" className="m-0 space-y-4">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Network className="size-4 text-emerald-600" />
+                          <h3 className="text-sm font-semibold text-emerald-900 dark:text-emerald-50">Dependencies</h3>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="rounded-lg border bg-muted/20 p-3">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Depends On</h4>
+                            {dependencies.dependsOn.length > 0 ? (
+                              <ul className="space-y-1">
+                                {dependencies.dependsOn.map(name => (
+                                  <li key={name} className="text-sm text-foreground flex items-center gap-1.5"><ArrowLeft className="size-3 text-muted-foreground" /> {name}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">No inputs from other rules.</p>
+                            )}
+                          </div>
+                          <div className="rounded-lg border bg-muted/20 p-3">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Used By</h4>
+                            {dependencies.usedBy.length > 0 ? (
+                              <ul className="space-y-1">
+                                {dependencies.usedBy.map(name => (
+                                  <li key={name} className="text-sm text-foreground flex items-center gap-1.5"><ArrowLeft className="size-3 text-muted-foreground rotate-180" /> {name}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">No rules use outputs from this rule.</p>
+                            )}
+                          </div>
+                        </div>
+                      </TabsContent>
+                    </div>
+                  </Tabs>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </ScrollArea>

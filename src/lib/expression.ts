@@ -163,3 +163,38 @@ function evaluateArithmetic(source: string): number {
   if (i !== s.length) fail(`Unexpected trailing input "${s.slice(i)}"`);
   return result;
 }
+
+export type FormulaTokenType = "operator" | "variable" | "number";
+
+export interface FormulaToken {
+  type: FormulaTokenType;
+  value?: string; // operator string or number string
+  key?: string;  // variable key (e.g. loan_amount)
+}
+
+/** Parses a raw arithmetic expression string into structured tokens for the visual formula builder. */
+export function parseExpressionToTokens(expr: string): FormulaToken[] {
+  const tokens: FormulaToken[] = [];
+  // Match variable {{key}}, number, operator, or skip whitespace
+  const regex = /(\{\{\s*[\w.]+\s*\}\})|([0-9]+(?:\.[0-9]+)?)|([+\-*/%()])|\s+/g;
+  let match;
+  while ((match = regex.exec(expr)) !== null) {
+    if (match[1]) {
+      const key = match[1].replace(/[{ }\s]/g, "");
+      tokens.push({ type: "variable", value: match[1], key });
+    } else if (match[2]) {
+      tokens.push({ type: "number", value: match[2] });
+    } else if (match[3]) {
+      tokens.push({ type: "operator", value: match[3] });
+    }
+  }
+  return tokens;
+}
+
+/** Serializes visual tokens back into a raw string expression compatible with evaluateExpression. */
+export function compileTokensToExpression(tokens: FormulaToken[]): string {
+  return tokens.map((t) => {
+    if (t.type === "variable") return `{{${t.key}}}`;
+    return t.value ?? "";
+  }).join("");
+}

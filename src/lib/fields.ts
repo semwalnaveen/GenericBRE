@@ -18,7 +18,7 @@ export const DEFAULT_FIELD_CATALOG: BusinessField[] = [
   { key: "loan_type", label: "Loan Type", domain: "Lending", type: "enum", options: ["Personal Loan", "Home Loan", "Vehicle Loan", "Business Loan"], entity: "loan-account" },
   { key: "dti_ratio", label: "Debt-to-Income Ratio", domain: "Lending", type: "number", unit: "%", computed: true, entity: "applicant" },
   { key: "employment_type", label: "Employment Type", domain: "Lending", type: "enum", options: ["Salaried", "Self-Employed", "Business Owner", "Government"], entity: "applicant" },
-  { key: "ltv_ratio", label: "LTV Ratio", domain: "Lending", type: "string", computed: true, entity: "loan-account" },
+  { key: "ltv_ratio", label: "LTV Ratio", domain: "Lending", type: "number", unit: "%", computed: true, entity: "loan-account" },
   { key: "eligible_loan_amount", label: "Eligible Loan Amount", domain: "Lending", type: "number", unit: "₹", computed: true, entity: "loan-account" },
   { key: "currency", label: "Currency", domain: "Lending", type: "string", computed: true, entity: "loan-account" },
   { key: "property_value", label: "Property Value", domain: "Lending", type: "currency", unit: "₹", entity: "loan-account" },

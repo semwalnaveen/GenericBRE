@@ -1,5 +1,5 @@
 import { BusinessRule } from "./types";
-import { collectFieldKeys } from "./condition-tree";
+import { collectFieldKeys, collectRuleDependencies } from "./condition-tree";
 
 // Rule Chaining as a global variable registry — any rule's Assign
 // Value/Calculate output is available to every other rule as a selectable
@@ -58,10 +58,17 @@ export function detectCircularDependency(rules: BusinessRule[]): CircularDepende
   const edges = new Map<string, Set<string>>(); // ruleId -> ruleIds it depends on
   for (const r of rules) {
     const deps = new Set<string>();
-    for (const key of collectFieldKeys(r.rootGroup)) {
-      const sourceRuleId = outputToRule.get(key);
-      if (sourceRuleId && sourceRuleId !== r.id) deps.add(sourceRuleId);
+    
+    // Explicit dependencies mapped in Condition Builder (sourceType === "RULE_OUTPUT")
+    for (const explicitDep of collectRuleDependencies(r.rootGroup)) {
+      if (explicitDep !== r.id) deps.add(explicitDep);
     }
+    
+    // Legacy support: If a field is used that doesn't have a sourceType, but we can infer 
+    // it was meant to be a rule output (because it's not a standard Business Field), 
+    // we could add it. However, since we don't have the field catalog here, and the prompt 
+    // strictly demands "The dependency engine must use these identifiers instead of matching 
+    // only on display names", we will migrate to strict explicit dependency tracking.
     edges.set(r.id, deps);
   }
 
