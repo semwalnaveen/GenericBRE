@@ -26,8 +26,8 @@ export function DecisionExplanation({ result, onDownloadReport }: DecisionExplan
   const isRejected = result.outcome === "Rejected";
 
   const traceSteps: TraceStep[] = (result as DecisionResult).flatTrace ?? (result as SimulationResult).trace ?? [];
-  const passedSteps = traceSteps.filter((s) => s.status === "Passed");
-  const failedSteps = traceSteps.filter((s) => s.status === "Failed");
+  const passedSteps = traceSteps.filter((s) => s.status === "Passed" && !s.actionsApplied.some(a => a.type === "Reject"));
+  const failedSteps = traceSteps.filter((s) => s.status === "Failed" || (s.status === "Passed" && s.actionsApplied.some(a => a.type === "Reject")));
 
   return (
     <div
@@ -83,15 +83,20 @@ export function DecisionExplanation({ result, onDownloadReport }: DecisionExplan
             </li>
           ))}
 
-          {failedSteps.map((step, idx) => (
-            <li key={`fail-${idx}`} className="flex items-start gap-1.5 text-destructive font-medium">
-              <XCircle className="size-3.5 shrink-0 mt-0.5" />
-              <span>
-                <strong className="font-semibold">{step.ruleName} ({step.ruleId}): </strong>
-                {step.conditionSummaries.map((c) => `${c.field} ${c.operator} ${c.expected} (Actual: ${c.actual})`).join(", ") || "Condition failed."}
-              </span>
-            </li>
-          ))}
+          {failedSteps.map((step, idx) => {
+            const rejectedByAction = step.actionsApplied.some(a => a.type === "Reject");
+            return (
+              <li key={`fail-${idx}`} className="flex items-start gap-1.5 text-destructive font-medium">
+                <XCircle className="size-3.5 shrink-0 mt-0.5" />
+                <span>
+                  <strong className="font-semibold">{step.ruleName} ({step.ruleId}): </strong>
+                  {rejectedByAction 
+                    ? (step.actionsApplied.find(a => a.type === "Reject")?.message || "Rule rejected the application.")
+                    : (step.conditionSummaries.map((c) => `${c.field} ${c.operator} ${c.expected} (Actual: ${c.actual})`).join(", ") || "Condition failed.")}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
