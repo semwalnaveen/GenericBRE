@@ -205,7 +205,16 @@ function ActionRow({
     <div className="rounded-xl border bg-background p-3">
       <div className="flex items-center gap-2">
         <meta.icon className={cn("size-4", meta.accent)} />
-        <Select value={action.type} onValueChange={(v) => onChange({ type: v as ActionType })}>
+        <Select 
+          value={action.type} 
+          onValueChange={(v) => {
+            if (v === "Calculate") {
+              onChange({ type: v as ActionType, outputTarget: "RUNTIME_VARIABLE", outputField: undefined });
+            } else {
+              onChange({ type: v as ActionType });
+            }
+          }}
+        >
           <SelectTrigger size="sm" className="h-8 w-40">
             <SelectValue />
           </SelectTrigger>
@@ -227,21 +236,24 @@ function ActionRow({
               <span className="text-xs font-medium text-muted-foreground">Target:</span>
               <RadioGroup 
                 className="flex items-center gap-4" 
-                value={action.outputTarget ?? "BUSINESS_FIELD"} 
+                value={action.type === "Calculate" ? "RUNTIME_VARIABLE" : (action.outputTarget ?? "BUSINESS_FIELD")} 
                 onValueChange={(v) => onChange({ outputTarget: v as "BUSINESS_FIELD" | "RUNTIME_VARIABLE", outputField: undefined, outputVariable: undefined })}
+                disabled={action.type === "Calculate"}
               >
-                <div className="flex items-center space-x-1.5">
-                  <RadioGroupItem value="BUSINESS_FIELD" id={`target-field-${action.id}`} />
-                  <Label htmlFor={`target-field-${action.id}`} className="text-xs font-normal cursor-pointer">Business Field</Label>
-                </div>
+                {action.type !== "Calculate" && (
+                  <div className="flex items-center space-x-1.5">
+                    <RadioGroupItem value="BUSINESS_FIELD" id={`target-field-${action.id}`} />
+                    <Label htmlFor={`target-field-${action.id}`} className="text-xs font-normal cursor-pointer">Business Field</Label>
+                  </div>
+                )}
                 <div className="flex items-center space-x-1.5">
                   <RadioGroupItem value="RUNTIME_VARIABLE" id={`target-var-${action.id}`} />
-                  <Label htmlFor={`target-var-${action.id}`} className="text-xs font-normal cursor-pointer">Runtime Variable</Label>
+                  <Label htmlFor={`target-var-${action.id}`} className={cn("text-xs font-normal", action.type !== "Calculate" && "cursor-pointer")}>Runtime Variable</Label>
                 </div>
               </RadioGroup>
             </div>
 
-            {(action.outputTarget ?? "BUSINESS_FIELD") === "BUSINESS_FIELD" ? (
+            {action.type !== "Calculate" && (action.outputTarget ?? "BUSINESS_FIELD") === "BUSINESS_FIELD" ? (
               <OutputFieldPicker
                 value={action.outputField ?? ""}
                 domain={domain}

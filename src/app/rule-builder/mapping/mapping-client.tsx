@@ -12,10 +12,12 @@ import {
   AlertTriangle,
   ChevronRight,
   ChevronDown,
-  FileCode2
+  FileCode2,
+  AlertCircle
 } from "lucide-react";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { BusinessRule, ProductRuleMapping, Priority } from "@/lib/types";
+import { collectRuleDependencies } from "@/lib/condition-tree";
 
 import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -120,6 +122,32 @@ export function MappingClient() {
   const isEffectiveDateMissing = effectiveDate === "";
   const isEffectiveDateInPast = effectiveDate !== "" && effectiveDate < new Date().toISOString().slice(0, 10);
 
+  const validateSequence = (): { ok: boolean; consumer?: string; producer?: string; productName?: string } => {
+    for (const pid of productIds) {
+      const seq = sequences[pid] || [];
+      for (let i = 0; i < seq.length; i++) {
+        const currentRuleId = seq[i];
+        const r = rules.find((x) => x.id === currentRuleId);
+        if (!r) continue;
+        const deps = new Set([...collectRuleDependencies(r.rootGroup)].filter(id => id !== r.id));
+        for (const depId of deps) {
+          const depIdx = seq.indexOf(depId);
+          if (depIdx !== -1 && depIdx > i) {
+            return {
+              ok: false,
+              consumer: r.name || r.id,
+              producer: rules.find(x => x.id === depId)?.name || depId,
+              productName: products.find(x => x.id === pid)?.name || pid
+            };
+          }
+        }
+      }
+    }
+    return { ok: true };
+  };
+
+  const validationResult = validateSequence();
+
   const handleSaveMapping = () => {
     setSubmitAttempted(true);
     if (productIds.length === 0) {
@@ -132,6 +160,10 @@ export function MappingClient() {
     }
     if (isEffectiveDateInPast) {
       toast.error("Effective Date can't be in the past.");
+      return;
+    }
+    if (!validationResult.ok) {
+      toast.error(`Sequence Error in ${validationResult.productName}`, { description: `"${validationResult.consumer}" depends on "${validationResult.producer}", so it must be executed AFTER it.` });
       return;
     }
     const res = mapRuleToProducts(rule.id, buildConfig());
@@ -154,6 +186,10 @@ export function MappingClient() {
     }
     if (isEffectiveDateInPast) {
       toast.error("Effective Date can't be in the past.");
+      return;
+    }
+    if (!validationResult.ok) {
+      toast.error(`Sequence Error in ${validationResult.productName}`, { description: `"${validationResult.consumer}" depends on "${validationResult.producer}", so it must be executed AFTER it.` });
       return;
     }
     const mapped = mapRuleToProducts(rule.id, buildConfig());
@@ -369,15 +405,28 @@ export function MappingClient() {
             </Card>
 
             {productIds.length > 0 && (
-              <Card className="p-5 border-emerald-500/30 bg-emerald-500/5 shadow-sm">
-                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                   <CheckCircle2 className="size-4" />
-                   <h2 className="font-semibold">Conflict Check Passed</h2>
-                 </div>
-                 <p className="mt-2 text-sm text-emerald-700/80 dark:text-emerald-400/80">
-                   No duplicate rules, contradictory conditions, or circular dependencies detected in the mapped products.
-                 </p>
-              </Card>
+              validationResult.ok ? (
+                <Card className="p-5 border-emerald-500/30 bg-emerald-500/5 shadow-sm">
+                   <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                     <CheckCircle2 className="size-4" />
+                     <h2 className="font-semibold">Conflict Check Passed</h2>
+                   </div>
+                   <p className="mt-2 text-sm text-emerald-700/80 dark:text-emerald-400/80">
+                     No duplicate rules, contradictory conditions, or circular dependencies detected in the mapped products.
+                   </p>
+                </Card>
+              ) : (
+                <Card className="p-5 border-destructive/30 bg-destructive/5 shadow-sm">
+                   <div className="flex items-center gap-2 text-destructive">
+                     <AlertCircle className="size-4" />
+                     <h2 className="font-semibold">Sequence Error</h2>
+                   </div>
+                   <p className="mt-2 text-sm text-destructive/90">
+                     In <strong>{validationResult.productName}</strong>, rule <strong>&quot;{validationResult.consumer}&quot;</strong> depends on <strong>&quot;{validationResult.producer}&quot;</strong>. 
+                     It must be sequenced <em>after</em> its dependency.
+                   </p>
+                </Card>
+              )
             )}
           </div>
         </div>
