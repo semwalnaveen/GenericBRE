@@ -27,10 +27,11 @@ const ACTION_TYPES: { value: ActionType; label: string; icon: React.ElementType;
 
 const OUTPUT_TYPES: { value: FieldDataType; label: string }[] = [
   { value: "number", label: "Number" },
-  { value: "string", label: "String" },
-  { value: "boolean", label: "Boolean" },
-  { value: "date", label: "Date" },
   { value: "currency", label: "Currency" },
+  { value: "percentage", label: "Percentage" },
+  { value: "boolean", label: "Boolean" },
+  { value: "string", label: "String" },
+  { value: "date", label: "Date" },
 ];
 
 function slugify(text: string) {

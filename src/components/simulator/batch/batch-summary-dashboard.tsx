@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { CheckCircle2, XCircle, AlertTriangle, Clock, ListChecks, Gauge } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Clock, ListChecks, Gauge, Hourglass } from "lucide-react";
 import { BatchRowResult } from "@/lib/batch-runner";
 import { BusinessRule } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function BatchSummaryDashboard({ results, rules }: { results: BatchRowRes
     const avgExecutionMs = total > 0 ? totalDuration / total : 0;
     const totalRulesExecuted = results.reduce((sum, r) => sum + (r.decision?.flatTrace.length ?? 0), 0);
     const avgRulesPerRecord = total > 0 ? totalRulesExecuted / total : 0;
-    return { total, passed, failed, review, errors, avgExecutionMs, totalRulesExecuted, avgRulesPerRecord };
+    return { total, passed, failed, review, errors, totalDuration, avgExecutionMs, totalRulesExecuted, avgRulesPerRecord };
   }, [results]);
 
   const decisionDistribution = useMemo(() => {
@@ -105,12 +105,18 @@ export function BatchSummaryDashboard({ results, rules }: { results: BatchRowRes
     { label: "Failed", value: stats.failed.toLocaleString(), icon: XCircle, accent: "text-red-600 bg-red-500/10 dark:text-red-400" },
     { label: "Warnings", value: (stats.review + stats.errors).toLocaleString(), icon: AlertTriangle, accent: "text-amber-600 bg-amber-500/10 dark:text-amber-400" },
     { label: "Avg Execution Time", value: `${stats.avgExecutionMs.toFixed(1)}ms`, icon: Clock, accent: "text-violet-600 bg-violet-500/10 dark:text-violet-400" },
+    {
+      label: "Total Duration",
+      value: stats.totalDuration >= 1000 ? `${(stats.totalDuration / 1000).toFixed(2)}s` : `${stats.totalDuration.toFixed(0)}ms`,
+      icon: Hourglass,
+      accent: "text-teal-600 bg-teal-500/10 dark:text-teal-400",
+    },
     { label: "Avg Rules / Record", value: stats.avgRulesPerRecord.toFixed(1), icon: Gauge, accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400" },
   ];
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
         {kpis.map((k) => (
           <div key={k.label} className="flex h-20 flex-col justify-between gap-1 rounded-lg border bg-card px-2.5 py-2 shadow-2xs">
             <div className="flex items-center justify-between gap-1.5">

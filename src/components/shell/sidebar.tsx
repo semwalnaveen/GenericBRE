@@ -16,13 +16,13 @@ export function Sidebar() {
   // fights click-through and causes layout jumps on accidental mouse-over).
   return (
     <motion.aside
-      animate={{ width: collapsed ? 56 : 220 }}
+      animate={{ width: collapsed ? 56 : 230 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
-      className="sidebar-glass relative z-30 hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex"
+      className="sidebar-glass relative z-30 hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex"
       style={{ height: "100%" }}
     >
       <div className="bg-scoped-layer bg-scoped-layer--sidebar" />
-      <div className="flex h-14 items-center border-b border-sidebar-border px-3">
+      <div className="flex h-14 items-center border-b border-sidebar-border/30 px-3">
         <LogoLockup collapsed={collapsed} />
       </div>
 

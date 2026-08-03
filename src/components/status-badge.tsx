@@ -1,24 +1,27 @@
 import { cn } from "@/lib/utils";
 import { DecisionOutcome, RuleStatus } from "@/lib/types";
 
+// Single canonical status palette — dashboard/charts.tsx's STATUS_COLORS
+// mirrors these exact values so a status never renders a different colour
+// depending on which screen draws it.
 const RULE_STATUS_STYLES: Record<RuleStatus, string> = {
-  Draft: "text-amber-600 dark:text-amber-400",
-  "Pending Approval": "text-blue-600 dark:text-blue-400",
+  Draft: "text-blue-600 dark:text-blue-400",
+  "Pending Approval": "text-amber-600 dark:text-amber-400",
   Approved: "text-violet-600 dark:text-violet-400",
   Rejected: "text-red-600 dark:text-red-400",
   Published: "text-emerald-600 dark:text-emerald-400",
-  Inactive: "text-zinc-600 dark:text-zinc-400",
-  Archived: "text-zinc-500 dark:text-zinc-500",
+  Inactive: "text-slate-500 dark:text-slate-400",
+  Archived: "text-slate-600 dark:text-slate-500",
 };
 
 const RULE_STATUS_DOT: Record<RuleStatus, string> = {
-  Draft: "bg-amber-500",
-  "Pending Approval": "bg-blue-500",
+  Draft: "bg-blue-500",
+  "Pending Approval": "bg-amber-500",
   Approved: "bg-violet-500",
   Rejected: "bg-red-500",
   Published: "bg-emerald-500",
-  Inactive: "bg-zinc-400",
-  Archived: "bg-zinc-500",
+  Inactive: "bg-slate-400",
+  Archived: "bg-slate-500",
 };
 
 export function StatusBadge({ status, className }: { status: RuleStatus; className?: string }) {

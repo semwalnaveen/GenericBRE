@@ -57,7 +57,7 @@ export function ConditionEditor({
   // on Save, surfaced immediately so problems are visible as they're typed.
   // A row with no field yet stays neutral (it's just not configured, not
   // wrong); red only appears once configuration has started and is invalid.
-  const isNumeric = field?.type === "number" || field?.type === "currency";
+  const isNumeric = field?.type === "number" || field?.type === "currency" || field?.type === "percentage";
   const issue = !condition.field
     ? null
     : condition.value === ""
@@ -130,7 +130,7 @@ export function ConditionEditor({
     }
     return (
       <Input
-        type={field?.type === "number" || field?.type === "currency" ? "number" : field?.type === "date" ? "date" : "text"}
+        type={field?.type === "number" || field?.type === "currency" || field?.type === "percentage" ? "number" : field?.type === "date" ? "date" : "text"}
         value={condition.value}
         onChange={(e) => onChange({ value: e.target.value })}
         placeholder={condition.operator === "in" ? "value1, value2, ..." : "Value"}

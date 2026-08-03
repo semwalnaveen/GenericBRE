@@ -150,7 +150,7 @@ export function CalculateExpressionEditor({
       const override = sampleOverrides[key];
       if (override === undefined || override === "") continue;
       const field = getField(fieldCatalog, key);
-      if (field?.type === "number" || field?.type === "currency") {
+      if (field?.type === "number" || field?.type === "currency" || field?.type === "percentage") {
         const n = parseFloat(override);
         if (!Number.isNaN(n)) ctx[key] = n;
       } else if (field?.type === "boolean") {
@@ -243,7 +243,7 @@ export function CalculateExpressionEditor({
                     {labelForKey(key)}
                   </label>
                   <Input
-                    type={field?.type === "number" || field?.type === "currency" ? "number" : "text"}
+                    type={field?.type === "number" || field?.type === "currency" || field?.type === "percentage" ? "number" : "text"}
                     value={currentVal}
                     onChange={(e) => setSampleOverrides((s) => ({ ...s, [key]: e.target.value }))}
                     className="h-7 w-28 shrink-0 font-mono text-sm"

@@ -41,7 +41,7 @@ export function InlineTestPanel({
       const field = getField(fieldCatalog, key);
       const raw = values[key] ?? "";
       let v: string | number | boolean = raw;
-      if (field?.type === "number" || field?.type === "currency") v = parseFloat(String(v)) || 0;
+      if (field?.type === "number" || field?.type === "currency" || field?.type === "percentage") v = parseFloat(String(v)) || 0;
       if (field?.type === "boolean") v = v === "true";
       input[key] = v;
     }
@@ -112,7 +112,7 @@ export function InlineTestPanel({
                     </Select>
                   ) : (
                     <Input
-                      type={field?.type === "number" || field?.type === "currency" ? "number" : field?.type === "date" ? "date" : "text"}
+                      type={field?.type === "number" || field?.type === "currency" || field?.type === "percentage" ? "number" : field?.type === "date" ? "date" : "text"}
                       value={values[key] ?? ""}
                       onChange={(e) => setValues((s) => ({ ...s, [key]: e.target.value }))}
                       className="h-8 text-sm"

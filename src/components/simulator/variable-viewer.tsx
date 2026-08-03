@@ -3,13 +3,17 @@
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Variable, Layers, CheckCircle2 } from "lucide-react";
-import { TraceStep, BusinessField } from "@/lib/types";
+import { TraceStep, BusinessField, BusinessRule } from "@/lib/types";
+import { formatVariableValue } from "@/lib/variable-format";
 import { Badge } from "@/components/ui/badge";
 
 export interface VariableViewerProps {
   traceSteps: TraceStep[];
   jsonText: string;
   fieldCatalog: BusinessField[];
+  /** Optional — when provided, calculated values are formatted per their
+   *  declared Return Type (percentage/currency), see variable-format.ts. */
+  rules?: BusinessRule[];
 }
 
 export interface VariableItem {
@@ -19,7 +23,7 @@ export interface VariableItem {
   consumedByRule: string;
 }
 
-export function VariableViewer({ traceSteps, jsonText, fieldCatalog }: VariableViewerProps) {
+export function VariableViewer({ traceSteps, jsonText, fieldCatalog, rules }: VariableViewerProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const variables = useMemo(() => {
@@ -47,7 +51,7 @@ export function VariableViewer({ traceSteps, jsonText, fieldCatalog }: VariableV
       if (step.producedValues) {
         for (const [k, v] of Object.entries(step.producedValues)) {
           const field = fieldCatalog.find((f) => f.key === k);
-          const valStr = field?.mask ? "***" : String(v);
+          const valStr = field?.mask ? "***" : rules ? formatVariableValue(rules, k, v) : String(v);
           const existing = items.find((i) => i.key === k);
           if (existing) {
             existing.currentValue = valStr;
@@ -65,7 +69,7 @@ export function VariableViewer({ traceSteps, jsonText, fieldCatalog }: VariableV
     }
 
     return items;
-  }, [traceSteps, jsonText, fieldCatalog]);
+  }, [traceSteps, jsonText, fieldCatalog, rules]);
 
   if (variables.length === 0) {
     return (

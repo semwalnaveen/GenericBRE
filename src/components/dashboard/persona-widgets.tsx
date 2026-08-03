@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Search, AlertTriangle, ShieldQuestion } from "lucide-react";
+import { Search, AlertTriangle, ShieldQuestion, FileText, CheckSquare, ClipboardList, ShieldAlert, FileSearch } from "lucide-react";
 import { useAppStore, useScopedRules } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
 import { StatusBadge } from "@/components/status-badge";
@@ -29,7 +29,7 @@ export function DraftRulesPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Draft Rules (org-wide)" action="View all" onAction={() => router.push("/repository?status=Draft")} />
+      <PanelHeader title="Draft Rules (org-wide)" icon={FileText} action="View all" onAction={() => router.push("/repository?status=Draft")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y">
           {drafts.slice(0, 8).map((r) => (
@@ -58,7 +58,7 @@ export function RulesAwaitingReviewPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Rules Awaiting Review" action="View all" onAction={() => router.push("/repository?status=Testing")} />
+      <PanelHeader title="Rules Awaiting Review" icon={CheckSquare} action="View all" onAction={() => router.push("/repository?status=Testing")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y">
           {testing.slice(0, 8).map((r) => (
@@ -96,7 +96,7 @@ export function ApprovalQueuePanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Approval Queue" action="View all" onAction={() => router.push("/repository?status=Testing")} />
+      <PanelHeader title="Approval Queue" icon={ClipboardList} action="View all" onAction={() => router.push("/repository?status=Testing")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y">
           {pending.slice(0, 8).map((a) => {
@@ -123,37 +123,47 @@ export function ApprovalQueuePanel() {
   );
 }
 
+import { PerformanceListWidget } from "./premium-widgets";
+
 export function RuleConflictsPanel() {
   const rules = useScopedRules();
   const router = useRouter();
   const conflicts = useMemo(() => detectRuleConflicts(rules), [rules]);
 
+  if (conflicts.length === 0) {
+    return (
+      <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+        <PanelHeader title="Rule Conflicts" icon={ShieldAlert} />
+        <EmptyRow>No conflicts detected among Active rules.</EmptyRow>
+      </div>
+    );
+  }
+
+  const items = conflicts.slice(0, 8).map((c, i) => ({
+    name: `${c.ruleAId} vs ${c.ruleBId}`,
+    dotColor: "#f59e0b",
+    badgeText: "Conflict",
+    badgeClass: "bg-amber-100 text-amber-700",
+    stats: [
+      { label: "Reason", value: c.reason },
+      { label: "Field", value: c.field }
+    ]
+  }));
+
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Rule Conflicts" />
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
-          {conflicts.slice(0, 8).map((c, i) => (
-            <button
-              key={`${c.ruleAId}-${c.ruleBId}-${i}`}
-              onClick={() => router.push(`/repository?search=${c.ruleAId}`)}
-              className="flex w-full items-start gap-2.5 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
-            >
-              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{c.ruleAId} vs {c.ruleBId}</p>
-                <p className="text-sm text-muted-foreground">{c.reason} (on {c.field})</p>
-              </div>
-            </button>
-          ))}
-          {conflicts.length === 0 && <EmptyRow>No conflicts detected among Active rules.</EmptyRow>}
-        </div>
-      </ScrollArea>
+    <div className="h-full overflow-y-auto">
+      <PerformanceListWidget
+        title="Rule Conflicts"
+        subtitle="Active conflicts detected"
+        items={items}
+      />
     </div>
   );
 }
 
 const OPERATIONAL_ACTIONS = new Set(["Ran Simulation", "Published Rule", "Disabled Rule", "Export Delivered"]);
+
+import { CleanListWidget } from "./premium-widgets";
 
 export function ExecutionLogsPanel() {
   const auditLog = useAppStore((s) => s.auditLog);
@@ -170,37 +180,22 @@ export function ExecutionLogsPanel() {
       .slice(0, 5);
   }, [auditLog, allRules, domainFilter, scopedRuleIds]);
 
+  const items = logs.map((a, i) => ({
+    id: a.id,
+    indexNumber: i + 1,
+    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-slate-400",
+    title: a.action,
+    subtitle: a.entityId,
+    primaryValue: formatDistanceToNow(new Date(a.timestamp), { addSuffix: true }),
+    secondaryValue: `by ${a.user}`
+  }));
+
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Execution Logs" action="View audit log" onAction={() => router.push("/audit-log")} />
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
-          {logs.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => router.push("/audit-log")}
-              className="flex w-full items-center gap-2 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
-            >
-              <span className={cn("size-1.5 shrink-0 rounded-full", ACTION_DOT[a.action] ?? "bg-muted-foreground")} />
-              <span className="min-w-0 flex-1 truncate text-sm">
-                <span className="font-medium">{a.action}</span>{" "}
-                <span className="font-mono text-sm text-muted-foreground">{a.entityId}</span>
-              </span>
-              <span
-                className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground"
-                title={a.user}
-              >
-                {initials(a.user)}
-              </span>
-              <span className="w-14 shrink-0 text-right text-sm text-muted-foreground">
-                {formatDistanceToNow(new Date(a.timestamp))}
-              </span>
-            </button>
-          ))}
-          {logs.length === 0 && <EmptyRow>No execution activity logged yet.</EmptyRow>}
-        </div>
-      </ScrollArea>
-    </div>
+    <CleanListWidget
+      title="Execution Logs"
+      action={<span onClick={() => router.push("/audit-log")}>View all</span>}
+      items={items}
+    />
   );
 }
 
@@ -215,7 +210,7 @@ export function DecisionLookupPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Decision Lookup" />
+      <PanelHeader title="Decision Lookup" icon={Search} />
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
         <ShieldQuestion className="size-6 text-muted-foreground/50" />
         <p className="text-sm text-muted-foreground">Look up a rule ID or name to see its decision history in the Repository.</p>

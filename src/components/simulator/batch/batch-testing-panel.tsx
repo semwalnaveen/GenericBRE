@@ -39,11 +39,14 @@ type Phase = "idle" | "validating" | "ready" | "running" | "done";
 
 const REPORT_HEADERS = [
   "Customer ID",
+  "Product",
   "Status",
   "Pass/Fail",
   "Triggered Rules",
+  "Failed Rules",
   "Final Decision",
   "Decision Reason",
+  "Error Details",
   "Execution Time (ms)",
   "Errors",
   "Warnings",
@@ -215,18 +218,26 @@ export function BatchTestingPanel({ products, initialProduct }: { products: Prod
   };
 
   const handleDownloadReport = (fmt: "csv" | "xlsx") => {
-    const rows = results.map((r) => [
-      r.customerId,
-      r.status,
-      r.status === "Success" ? (r.outcome === "Approved" ? "Pass" : "Fail") : "Fail",
-      r.decision ? r.decision.triggeredRules.join("; ") : "",
-      r.outcome ?? "",
-      r.decision?.summary ?? r.errorMessage ?? "",
-      Number(r.durationMs.toFixed(2)),
-      r.status === "Error" ? 1 : 0,
-      r.outcome === "Review Required" ? 1 : 0,
-      Object.keys(r.decision?.calculatedValues ?? {}).length,
-    ]);
+    const rows = results.map((r) => {
+      const failedRuleNames = (r.decision?.flatTrace ?? [])
+        .filter((t) => t.status === "Failed")
+        .map((t) => t.ruleName);
+      return [
+        r.customerId,
+        product.name,
+        r.status,
+        r.status === "Success" ? (r.outcome === "Approved" ? "Pass" : "Fail") : "Fail",
+        r.decision ? r.decision.triggeredRules.join("; ") : "",
+        failedRuleNames.join("; "),
+        r.outcome ?? "",
+        r.decision?.summary ?? r.errorMessage ?? "",
+        r.errorMessage ?? "",
+        Number(r.durationMs.toFixed(2)),
+        r.status === "Error" ? 1 : 0,
+        r.outcome === "Review Required" ? 1 : 0,
+        Object.keys(r.decision?.calculatedValues ?? {}).length,
+      ];
+    });
     if (fmt === "csv") {
       downloadCsv(`batch_report_${product.code}`, rows.map((r) => Object.fromEntries(REPORT_HEADERS.map((h, i) => [h, r[i]]))));
     } else {

@@ -391,7 +391,7 @@ export interface DecisionMatrix {
 // no longer offers it (Field Catalog's own type dropdown excludes it), since
 // nothing consumes a list-typed BusinessField anymore now that Quantifier
 // conditions have been removed.
-export type FieldDataType = "number" | "string" | "boolean" | "enum" | "currency" | "date" | "list";
+export type FieldDataType = "number" | "string" | "boolean" | "enum" | "currency" | "percentage" | "date" | "list";
 
 export interface BusinessField {
   key: string;

@@ -447,7 +447,7 @@ export function validatePayload(
     // Arrays not fully supported by scalar validators yet, skip them
     if (Array.isArray(value)) continue;
     
-    if (field.type === "number" || field.type === "currency") {
+    if (field.type === "number" || field.type === "currency" || field.type === "percentage") {
       const num = coerceNumber(value);
       if (!Number.isNaN(num)) {
         if (field.minValue !== undefined && num < field.minValue) {

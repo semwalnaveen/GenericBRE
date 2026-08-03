@@ -19,6 +19,7 @@ import {
 import { WIDGET_LABELS } from "@/components/dashboard/manage-widgets-sheet";
 import { DashboardControls } from "@/components/dashboard/dashboard-controls";
 import { Button } from "@/components/ui/button";
+import { ProgressScoreWidget, DistributionDonutWidget, PerformanceListWidget } from "@/components/dashboard/premium-widgets";
 import { useAppStore } from "@/lib/store";
 import { useDashboardLayout, WIDGET_SIZE_SPAN } from "@/lib/dashboard-layout";
 import { WidgetDef, WidgetSize } from "@/lib/types";
@@ -138,21 +139,6 @@ export default function DashboardPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5 sm:px-5">
         <div className="mx-auto max-w-350">
-          {showInsights && (pendingReview > 0 || criticalDrafts > 0) && (
-            <div className="mb-4 flex items-center gap-2.5 rounded-xl border bg-accent px-3.5 py-1.5 text-sm text-accent-foreground">
-              <Sparkles className="size-4 shrink-0 text-primary" />
-              <p>
-                <span className="font-semibold">Smart Insight:</span>{" "}
-                {pendingReview > 0 && (
-                  <>
-                    {pendingReview} rule{pendingReview === 1 ? "" : "s"} awaiting review
-                    {criticalDrafts > 0 ? " · " : "."}
-                  </>
-                )}
-                {criticalDrafts > 0 && <>{criticalDrafts} critical-priority rule{criticalDrafts === 1 ? "" : "s"} still in Draft.</>}
-              </p>
-            </div>
-          )}
           <div className="mb-4">
             <KpiCards />
           </div>

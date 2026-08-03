@@ -38,7 +38,7 @@ import {
 // "list" is deliberately excluded — it's still a valid FieldDataType (JSON
 // Mapping uses it independently for JSON array attribute inference), but no
 // BusinessField consumer exists for it anymore, so it isn't offered here.
-const FIELD_TYPES: FieldDataType[] = ["number", "string", "boolean", "enum", "currency", "date"];
+const FIELD_TYPES: FieldDataType[] = ["number", "string", "boolean", "enum", "currency", "percentage", "date"];
 const STATUSES: NonNullable<BusinessField["status"]>[] = ["Active", "Draft", "Deprecated"];
 
 const BLANK: BusinessField = { key: "", label: "", domain: "Common", type: "string", status: "Active" };
@@ -533,7 +533,7 @@ export function FieldCatalogManager() {
             <div className="pt-3 mt-3 border-t">
               <Label className="text-sm font-semibold text-muted-foreground mb-3 block">Validation Constraints (Optional)</Label>
               
-              {(draft.type === "number" || draft.type === "currency") && (
+              {(draft.type === "number" || draft.type === "currency" || draft.type === "percentage") && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Minimum Value</Label>
@@ -565,7 +565,7 @@ export function FieldCatalogManager() {
                 </div>
               )}
               
-              {draft.type !== "number" && draft.type !== "currency" && draft.type !== "string" && (
+              {draft.type !== "number" && draft.type !== "currency" && draft.type !== "percentage" && draft.type !== "string" && (
                  <p className="text-sm text-muted-foreground italic">No validation constraints available for {draft.type} fields.</p>
               )}
             </div>

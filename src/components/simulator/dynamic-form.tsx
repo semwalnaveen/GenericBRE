@@ -60,10 +60,10 @@ export function DynamicForm({
               </Select>
             ) : (
               <Input
-                type={field.type === "number" || field.type === "currency" ? "number" : "text"}
+                type={field.type === "number" || field.type === "currency" || field.type === "percentage" ? "number" : "text"}
                 value={value === undefined ? "" : String(value)}
                 onChange={(e) =>
-                  onChange(key, field.type === "number" || field.type === "currency" ? Number(e.target.value) : e.target.value)
+                  onChange(key, field.type === "number" || field.type === "currency" || field.type === "percentage" ? Number(e.target.value) : e.target.value)
                 }
                 className="h-9"
               />

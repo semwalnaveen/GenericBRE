@@ -128,7 +128,7 @@ export function CaseBuilder({
                     </div>
                   ) : (
                     <Input
-                      type={field?.type === "number" || field?.type === "currency" ? "number" : "text"}
+                      type={field?.type === "number" || field?.type === "currency" || field?.type === "percentage" ? "number" : "text"}
                       value={when.value}
                       onChange={(e) => updateWhen(when.id, { value: e.target.value })}
                       placeholder="Value"
