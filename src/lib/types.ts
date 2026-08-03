@@ -130,7 +130,9 @@ export interface RuleBracket {
 export interface RuleAction {
   id: string;
   type: ActionType;
+  outputTarget?: "BUSINESS_FIELD" | "RUNTIME_VARIABLE";
   outputField?: string;
+  outputVariable?: string;
   outputValue?: string;
   /** Data type metadata for a generated variable (Calculate/Assign Value only) — informs the Output Field picker/Rule Preview, not used for coercion at execution time. */
   outputType?: FieldDataType;

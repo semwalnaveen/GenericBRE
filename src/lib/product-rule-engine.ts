@@ -1,5 +1,6 @@
 import { BusinessField, BusinessRule, ExecutionSettings, Product, ProductRuleMapping, SimulationResult } from "./types";
 import { DEFAULT_EXECUTION_SETTINGS, InputMap, runRulesForCase } from "./engine";
+import { topologicalSortRules } from "./topological-sort";
 
 // Every rule currently mapped to a product (mapping.active only), ordered by
 // the mapping's `order` (the Rule Sequencer for product execution — see
@@ -20,7 +21,7 @@ export function getMappedRules(
   // this guard the same rule would render twice (duplicate React key) and be
   // evaluated twice by the engine. Keep the first occurrence only.
   const seen = new Set<string>();
-  return allRules
+  const sortedByPriority = allRules
     .filter((r) => {
       if (!ruleIds.has(r.id) || seen.has(r.id)) return false;
       seen.add(r.id);
@@ -34,6 +35,8 @@ export function getMappedRules(
       if (ob !== undefined) return 1;
       return a.priority - b.priority;
     });
+
+  return topologicalSortRules(sortedByPriority);
 }
 
 export interface ProductExecutionResult {

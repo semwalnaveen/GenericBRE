@@ -118,9 +118,12 @@ function findInvalidReferences(group: ConditionGroup, fieldCatalog: BusinessFiel
 function findDuplicateVariableName(actions: RuleAction[]): string | null {
   const seen = new Set<string>();
   for (const a of actions) {
-    if ((a.type === "Assign Value" || a.type === "Calculate") && a.outputField) {
-      if (seen.has(a.outputField)) return a.outputField;
-      seen.add(a.outputField);
+    if (a.type === "Assign Value" || a.type === "Calculate") {
+      const outKey = a.outputTarget === "RUNTIME_VARIABLE" ? a.outputVariable : a.outputField;
+      if (outKey) {
+        if (seen.has(outKey)) return outKey;
+        seen.add(outKey);
+      }
     }
   }
   return null;
@@ -480,8 +483,11 @@ function RuleBuilderContent() {
       if (caseElseActions.length === 0) {
         errs.caseElse = "CASE: add at least one ELSE action.";
       } else {
-        const missingOutput = caseElseActions.find((a) => (a.type === "Calculate" || a.type === "Assign Value") && !a.outputField);
-        if (missingOutput) errs.caseElse = "CASE ELSE: a Calculate/Assign Value action needs an Output Field.";
+        const missingOutput = caseElseActions.find((a) => {
+          if (a.type !== "Calculate" && a.type !== "Assign Value") return false;
+          return a.outputTarget === "RUNTIME_VARIABLE" ? !a.outputVariable : !a.outputField;
+        });
+        if (missingOutput) errs.caseElse = "CASE ELSE: a Calculate/Assign Value action needs an Output Field/Variable.";
         const dup = findDuplicateVariableName(caseElseActions);
         if (dup) errs.caseElse = `CASE ELSE: more than one action sets the same variable "${dup}".`;
       }
@@ -491,8 +497,11 @@ function RuleBuilderContent() {
       if (rule.actions.length === 0) errs.actions = "Add at least one THEN action before saving.";
 
       for (const [label, list] of [["THEN", rule.actions], ["ELSE", rule.elseActions ?? []]] as const) {
-        const missingOutput = list.find((a) => (a.type === "Calculate" || a.type === "Assign Value") && !a.outputField);
-        if (missingOutput) errs.outputField = `${label}: a Calculate/Assign Value action needs an Output Field.`;
+        const missingOutput = list.find((a) => {
+          if (a.type !== "Calculate" && a.type !== "Assign Value") return false;
+          return a.outputTarget === "RUNTIME_VARIABLE" ? !a.outputVariable : !a.outputField;
+        });
+        if (missingOutput) errs.outputField = `${label}: a Calculate/Assign Value action needs an Output Field/Variable.`;
         const dup = findDuplicateVariableName(list);
         if (dup) errs.duplicateVariable = `${label}: more than one action sets the same variable "${dup}".`;
 
@@ -606,19 +615,6 @@ function RuleBuilderContent() {
     const saved = persistRule("Draft");
     if (!saved.ok) {
       toast.error("Couldn't save", { description: saved.reason });
-      return;
-    }
-    const alreadyMapped = productRuleMappings.some((m) => m.ruleId === saved.rule.id);
-    if (alreadyMapped) {
-      const submitted = submitForReview(saved.rule.id);
-      if (!submitted.ok) {
-        toast.error("Couldn't submit for approval", { description: submitted.reason });
-        return;
-      }
-      toast.success("Submitted for approval", {
-        description: `${saved.rule.id} · ${saved.rule.name} is now Pending Approval. Its existing product mapping and sequence carried over unchanged.`,
-      });
-      router.push("/repository");
       return;
     }
     router.push(`/rule-builder/mapping?ruleId=${saved.rule.id}`);
