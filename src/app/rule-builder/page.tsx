@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   FolderPlus,
   Trash2,
-  Network
+  Network,
+  Variable
 } from "lucide-react";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { BusinessField, BusinessRule, CaseWhenClause, Condition, ConditionGroup, RuleAction, RuleTemplate } from "@/lib/types";
@@ -35,6 +36,7 @@ import {
   cloneGroupWithFreshIds,
   collectFieldKeys,
   collectRuleDependencies,
+  collectRuleDependencyDetails,
   countConditions,
   duplicateNode,
   moveNode,
@@ -182,26 +184,32 @@ function RuleBuilderContent() {
   });
 
   const dependencies = useMemo(() => {
-    const dependsOn = new Set<string>();
-    const usedBy = new Set<string>();
+    const dependsOn = new Map<string, { ruleName: string, ruleId: string, field: string }>();
+    const usedBy = new Map<string, { ruleName: string, ruleId: string, field: string }>();
 
     // Depends On: Walk this rule's conditions for explicitly selected RULE_OUTPUTs.
-    const ruleDeps = collectRuleDependencies(rule.rootGroup);
-    ruleDeps.forEach(depId => {
-      const sourceRule = rules.find(r => r.id === depId);
-      if (sourceRule) dependsOn.add(sourceRule.name);
-    });
-
-    // Used By: Check every other rule to see if it explicitly depends on this rule's ID.
-    rules.forEach(r => {
-      if (r.id === rule.id) return;
-      const theirDeps = collectRuleDependencies(r.rootGroup);
-      if (theirDeps.has(rule.id)) {
-        usedBy.add(r.name);
+    const ruleDeps = collectRuleDependencyDetails(rule.rootGroup);
+    ruleDeps.forEach(dep => {
+      const sourceRule = rules.find(r => r.id === dep.ruleId);
+      if (sourceRule) {
+        const key = `${dep.ruleId}-${dep.field}`;
+        dependsOn.set(key, { ruleName: sourceRule.name, ruleId: sourceRule.id, field: dep.field });
       }
     });
 
-    return { dependsOn: Array.from(dependsOn), usedBy: Array.from(usedBy) };
+    // Used By: Check every other rule to see if it explicitly depends on this rule's outputs.
+    rules.forEach(r => {
+      if (r.id === rule.id) return;
+      const theirDeps = collectRuleDependencyDetails(r.rootGroup);
+      theirDeps.forEach(dep => {
+        if (dep.ruleId === rule.id) {
+          const key = `${r.id}-${dep.field}`;
+          usedBy.set(key, { ruleName: r.name, ruleId: r.id, field: dep.field });
+        }
+      });
+    });
+
+    return { dependsOn: Array.from(dependsOn.values()), usedBy: Array.from(usedBy.values()) };
   }, [rule, rules]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
@@ -938,10 +946,10 @@ function RuleBuilderContent() {
               <div className="flex flex-col gap-4 lg:col-span-4">
                 <div className="h-80 lg:sticky lg:top-4 lg:h-[calc(100dvh-230px)] rounded-xl border bg-card/50 p-2 shadow-sm flex flex-col">
                   <Tabs defaultValue="preview" className="flex h-full flex-col">
-                    <TabsList className="grid w-full grid-cols-2 shrink-0">
+                    <TabsList className="grid w-full grid-cols-3 shrink-0">
                       
                       <TabsTrigger value="preview" className="text-xs px-1">Preview</TabsTrigger>
-                      
+                      <TabsTrigger value="test" className="text-xs px-1">Test</TabsTrigger>
                       <TabsTrigger value="deps" className="text-xs px-1">Deps</TabsTrigger>
                     </TabsList>
                     
@@ -977,10 +985,22 @@ function RuleBuilderContent() {
                           <div className="rounded-lg border bg-muted/20 p-3">
                             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Depends On</h4>
                             {dependencies.dependsOn.length > 0 ? (
-                              <ul className="space-y-1">
-                                {dependencies.dependsOn.map(name => (
-                                  <li key={name} className="text-sm text-foreground flex items-center gap-1.5"><ArrowLeft className="size-3 text-muted-foreground" /> {name}</li>
-                                ))}
+                              <ul className="space-y-2">
+                                {dependencies.dependsOn.map(dep => {
+                                  const baseField = getField(fieldCatalog, dep.field);
+                                  const fieldLabel = baseField?.label ?? dep.field;
+                                  return (
+                                    <li key={`${dep.ruleId}-${dep.field}`} className="text-sm text-foreground flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-1.5 font-medium">
+                                        <ArrowLeft className="size-3 text-muted-foreground shrink-0" /> 
+                                        {dep.ruleName} <span className="text-xs text-muted-foreground font-mono font-normal">({dep.ruleId})</span>
+                                      </div>
+                                      <div className="pl-4.5 text-xs text-muted-foreground flex items-center gap-1">
+                                        <Variable className="size-3" /> {fieldLabel}
+                                      </div>
+                                    </li>
+                                  )
+                                })}
                               </ul>
                             ) : (
                               <p className="text-xs text-muted-foreground italic">No inputs from other rules.</p>
@@ -989,10 +1009,22 @@ function RuleBuilderContent() {
                           <div className="rounded-lg border bg-muted/20 p-3">
                             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Used By</h4>
                             {dependencies.usedBy.length > 0 ? (
-                              <ul className="space-y-1">
-                                {dependencies.usedBy.map(name => (
-                                  <li key={name} className="text-sm text-foreground flex items-center gap-1.5"><ArrowLeft className="size-3 text-muted-foreground rotate-180" /> {name}</li>
-                                ))}
+                              <ul className="space-y-2">
+                                {dependencies.usedBy.map(dep => {
+                                  const baseField = getField(fieldCatalog, dep.field);
+                                  const fieldLabel = baseField?.label ?? dep.field;
+                                  return (
+                                    <li key={`${dep.ruleId}-${dep.field}`} className="text-sm text-foreground flex flex-col gap-0.5">
+                                      <div className="flex items-center gap-1.5 font-medium">
+                                        <ArrowLeft className="size-3 text-muted-foreground rotate-180 shrink-0" /> 
+                                        {dep.ruleName} <span className="text-xs text-muted-foreground font-mono font-normal">({dep.ruleId})</span>
+                                      </div>
+                                      <div className="pl-4.5 text-xs text-muted-foreground flex items-center gap-1">
+                                        <Variable className="size-3" /> {fieldLabel}
+                                      </div>
+                                    </li>
+                                  )
+                                })}
                               </ul>
                             ) : (
                               <p className="text-xs text-muted-foreground italic">No rules use outputs from this rule.</p>
