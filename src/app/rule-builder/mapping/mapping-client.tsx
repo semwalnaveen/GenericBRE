@@ -47,6 +47,7 @@ export function MappingClient() {
   const [effectiveDate, setEffectiveDate] = useState("");
   const [remarks, setRemarks] = useState("");
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   // State to track draggable sequence per product
   // Record<productId, array of mapped rule IDs including this one>
@@ -116,11 +117,17 @@ export function MappingClient() {
     remarks: remarks.trim() || undefined,
   });
 
+  const isEffectiveDateMissing = effectiveDate === "";
   const isEffectiveDateInPast = effectiveDate !== "" && effectiveDate < new Date().toISOString().slice(0, 10);
 
   const handleSaveMapping = () => {
+    setSubmitAttempted(true);
     if (productIds.length === 0) {
       toast.error("Select at least one product to map.");
+      return;
+    }
+    if (isEffectiveDateMissing) {
+      toast.error("Effective Date is required.");
       return;
     }
     if (isEffectiveDateInPast) {
@@ -136,8 +143,13 @@ export function MappingClient() {
   };
 
   const handleSubmitForApproval = () => {
+    setSubmitAttempted(true);
     if (productIds.length === 0) {
       toast.error("Map at least one product before submitting for approval.");
+      return;
+    }
+    if (isEffectiveDateMissing) {
+      toast.error("Effective Date is required.");
       return;
     }
     if (isEffectiveDateInPast) {
@@ -321,19 +333,26 @@ export function MappingClient() {
               <h2 className="mb-4 text-base font-semibold">Rule Details</h2>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Effective Date</Label>
+                  <Label>Effective Date *</Label>
                   <Input
                     type="date"
                     value={effectiveDate}
                     onChange={(e) => setEffectiveDate(e.target.value)}
                     min={new Date().toISOString().slice(0, 10)}
-                    aria-invalid={isEffectiveDateInPast}
+                    aria-invalid={submitAttempted && (isEffectiveDateMissing || isEffectiveDateInPast)}
                     className="bg-card"
                   />
-                  <p className={cn("text-[11px]", isEffectiveDateInPast ? "text-destructive" : "text-muted-foreground")}>
-                    {isEffectiveDateInPast
-                      ? "This date is in the past — pick today or later."
-                      : "Must be today or a future date — this mapping can't take effect in the past."}
+                  <p
+                    className={cn(
+                      "text-[11px]",
+                      submitAttempted && (isEffectiveDateMissing || isEffectiveDateInPast) ? "text-destructive" : "text-muted-foreground"
+                    )}
+                  >
+                    {submitAttempted && isEffectiveDateMissing
+                      ? "Required — pick a date this mapping should take effect."
+                      : isEffectiveDateInPast
+                        ? "This date is in the past — pick today or later."
+                        : "Must be today or a future date — this mapping can't take effect in the past."}
                   </p>
                 </div>
                 <div className="space-y-1.5">
