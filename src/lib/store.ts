@@ -67,6 +67,7 @@ import { DEFAULT_FIELD_CATALOG, DEFAULT_RULE_CATEGORIES, DEFAULT_OWNERS } from "
 import { DEFAULT_DASHBOARD_CONFIGS } from "./dashboards";
 // DEFAULT_REQUEST_PARAMETER_DEFS import removed — Execution Manager deleted
 import { DEFAULT_DECISION_RESPONSE_CONFIG } from "./decision-response";
+import { effectiveConnector, collectRuleDependencies } from "./condition-tree";
 import { hashAuditEntry, buildHashChain } from "./audit-chain";
 import { ALL_CAPABILITIES, CATEGORY_SCOPABLE_CAPABILITIES } from "./capabilities";
 
@@ -291,7 +292,7 @@ interface AppState {
   productRuleMappings: ProductRuleMapping[];
   // Full-replace semantics for a given product — simplest correct behavior
   // for a checklist-style mapping UI (see product-rule-mapping-manager.tsx).
-  saveProductRuleMapping: (productId: string, ruleIds: string[]) => void;
+  saveProductRuleMapping: (productId: string, ruleIds: string[]) => { ok: boolean; reason?: string };
 
   // Rule Simulator's "Recently Used" quick-access list — most-recent-first,
   // capped at 5. Recorded on an actual simulation run (see useRunSimulator's
@@ -782,8 +783,24 @@ export const useAppStore = create<AppState>()(
 
       productRuleMappings: DEFAULT_PRODUCT_RULE_MAPPINGS,
       saveProductRuleMapping: (productId, ruleIdsInput) => {
-        const { currentUser } = get();
-        if (!can(get(), "config.manage")) return;
+        const { currentUser, rules } = get();
+        if (!can(get(), "config.manage")) return { ok: false, reason: "You don't have permission to manage product mappings." };
+        
+        // --- PIPELINE VALIDATION ---
+        const pipelineDepsRuleIds = [...new Set(ruleIdsInput)];
+        for (const rid of pipelineDepsRuleIds) {
+          const rule = rules.find((r) => r.id === rid);
+          if (rule) {
+            for (const depId of collectRuleDependencies(rule.rootGroup)) {
+              if (depId !== rid && !pipelineDepsRuleIds.includes(depId)) {
+                const depRule = rules.find((r) => r.id === depId);
+                return { ok: false, reason: `Cannot add "${rule.name}" because it depends on "${depRule?.name || depId}", which is missing from this product.` };
+              }
+            }
+          }
+        }
+        // ---------------------------
+
         const now = new Date().toISOString();
         // De-dupe: a rule is only ever mapped once per product (guards against
         // a duplicate (product, rule) row — see findDuplicateRules).
@@ -819,6 +836,7 @@ export const useAppStore = create<AppState>()(
         }));
         const reverted = get().rules.filter((r) => changedRuleIds.has(r.id) && r.status === "Draft").length;
         get().logAudit({ user: currentUser.name, action: "Mapped Rules to Product", entity: "Product", entityId: productId, details: `${ruleIds.length} rule(s) mapped${reverted ? ` — ${reverted} live rule(s) returned to Draft for re-approval` : ""}.` });
+        return { ok: true };
       },
 
       recentProductIds: [],
@@ -1062,12 +1080,28 @@ export const useAppStore = create<AppState>()(
       // product, and — since the mapping is part of the approved configuration
       // — reverts an already Approved/Published rule to Draft for re-approval.
       mapRuleToProducts: (ruleId, config) => {
-        const rule = get().rules.find((r) => r.id === ruleId);
+        const { rules, productRuleMappings } = get();
+        const rule = rules.find((r) => r.id === ruleId);
         if (!rule) return { ok: false, reason: "Rule not found." };
         const { currentUser } = get();
         if (!can(get(), "rule.edit")) {
           return { ok: false, reason: `${currentUser.name} doesn't have permission to map rules.` };
         }
+        
+        // --- PIPELINE VALIDATION ---
+        const deps = new Set([...collectRuleDependencies(rule.rootGroup)].filter(id => id !== ruleId));
+        if (deps.size > 0) {
+          for (const productId of config.productIds) {
+            const mappedToProduct = new Set(productRuleMappings.filter(m => m.productId === productId).map(m => m.ruleId));
+            for (const depId of deps) {
+              if (!mappedToProduct.has(depId)) {
+                const depRule = rules.find((r) => r.id === depId);
+                return { ok: false, reason: `Cannot map "${rule.name}" to this product because it depends on "${depRule?.name || depId}", which is missing from the product.` };
+              }
+            }
+          }
+        }
+        // ---------------------------
         if (config.productIds.length === 0) {
           return { ok: false, reason: "Select at least one product to map." };
         }

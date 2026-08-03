@@ -177,7 +177,11 @@ export function MappedRulesChecklist({
       toast.error("You don't have permission to change this product's rule mapping.");
       return;
     }
-    saveProductRuleMapping(product.id, Array.from(activeSelection));
+    const res = saveProductRuleMapping(product.id, Array.from(activeSelection));
+    if (res && !res.ok) {
+      toast.error(res.reason);
+      return;
+    }
     setSelection(null);
     toast.success(`Mapping saved — ${activeSelection.size} rule${activeSelection.size === 1 ? "" : "s"} mapped to "${product.name}".`);
   };
@@ -500,7 +504,11 @@ export function ProductRuleMappingManager() {
 
   const reorderMapped = (orderedIds: string[]) => {
     if (!selectedProduct) return;
-    saveProductRuleMapping(selectedProduct.id, orderedIds);
+    const res = saveProductRuleMapping(selectedProduct.id, orderedIds);
+    if (res && !res.ok) {
+      toast.error(res.reason);
+      return;
+    }
     toast.success("Execution sequence updated.");
   };
 

@@ -9,6 +9,8 @@ import { getGeneratedVariables } from "@/lib/rule-chaining";
 import { useAppStore } from "@/lib/store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -221,13 +223,40 @@ function ActionRow({
       <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {needsOutput && (
           <>
-            <OutputFieldPicker
-              value={action.outputField ?? ""}
-              domain={domain}
-              rules={rules}
-              currentRuleId={currentRuleId}
-              onChange={(key) => onChange({ outputField: key })}
-            />
+            <div className="sm:col-span-2 flex items-center gap-4 bg-muted/30 p-2 rounded-md border">
+              <span className="text-xs font-medium text-muted-foreground">Target:</span>
+              <RadioGroup 
+                className="flex items-center gap-4" 
+                value={action.outputTarget ?? "BUSINESS_FIELD"} 
+                onValueChange={(v) => onChange({ outputTarget: v as "BUSINESS_FIELD" | "RUNTIME_VARIABLE", outputField: undefined, outputVariable: undefined })}
+              >
+                <div className="flex items-center space-x-1.5">
+                  <RadioGroupItem value="BUSINESS_FIELD" id={`target-field-${action.id}`} />
+                  <Label htmlFor={`target-field-${action.id}`} className="text-xs font-normal cursor-pointer">Business Field</Label>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <RadioGroupItem value="RUNTIME_VARIABLE" id={`target-var-${action.id}`} />
+                  <Label htmlFor={`target-var-${action.id}`} className="text-xs font-normal cursor-pointer">Runtime Variable</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {(action.outputTarget ?? "BUSINESS_FIELD") === "BUSINESS_FIELD" ? (
+              <OutputFieldPicker
+                value={action.outputField ?? ""}
+                domain={domain}
+                rules={rules}
+                currentRuleId={currentRuleId}
+                onChange={(key) => onChange({ outputField: key })}
+              />
+            ) : (
+              <Input
+                placeholder="Variable Name (e.g. Calculated LTV)"
+                value={action.outputVariable ?? ""}
+                onChange={(e) => onChange({ outputVariable: e.target.value })}
+                className="h-8 w-full text-sm"
+              />
+            )}
             <Select
               value={action.outputType ?? "number"}
               onValueChange={(v) => onChange({ outputType: v as FieldDataType })}

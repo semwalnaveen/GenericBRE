@@ -1,5 +1,6 @@
 import { getField } from "./fields";
 import { evaluateExpression, ExpressionResult } from "./expression";
+import { topologicalSortRules } from "./topological-sort";
 import { effectiveConnector } from "./condition-tree";
 import {
   BusinessField,
@@ -348,11 +349,13 @@ export function runSimulation(
 ): SimulationResult {
   const start = performance.now();
   const sortDirection = executionSettings.conflictResolution === "lowest-priority" ? -1 : 1;
-  const domainRules = rules
+  const sortedByPriority = rules
     .filter((r) => r.domain === domain && r.simulatable)
     .sort((a, b) => sortDirection * (a.priority - b.priority));
 
-  const core = runRulesForCase(domainRules, input, catalog, sandboxRuleIds, executionSettings);
+  const domainRules = topologicalSortRules(sortedByPriority);
+
+  const core = runRulesForCase(domainRules, input, catalog, sandboxRuleIds, executionSettings, true);
   const totalDurationMs = Math.max(1, performance.now() - start);
   const sandbox = core.trace.some((t) => t.sandbox);
 
@@ -410,12 +413,13 @@ export function applyAction(
   stepErrors?: string[]
 ) {
   if (action.type === "Calculate" || action.type === "Assign Value") {
-    if (action.outputField && action.outputValue !== undefined) {
+    const outKey = action.outputTarget === "RUNTIME_VARIABLE" ? action.outputVariable : action.outputField;
+    if (outKey && action.outputValue !== undefined) {
       const resolved = resolveActionValue(action, context);
       if (resolved.error) {
         if (stepErrors) stepErrors.push(resolved.error);
       } else {
-        calculatedValues[action.outputField] = resolved.value;
+        calculatedValues[outKey] = resolved.value;
       }
     }
   } else if (action.type === "Bracket Lookup") {
