@@ -2233,7 +2233,10 @@ export const DEFAULT_USER_ACCESS_MAPPINGS: UserProductAccess[] = [
     userId: "usr-kavita-rao",
     productId: "prod-home-loan",
     categoryId: "eligibility",
-    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    // Credit/Risk Manager is a Checker role — approves rules a Business
+    // Analyst/Product Manager creates, but per Maker-Checker policy never
+    // creates or edits rule content themselves.
+    capabilities: ["rule.view", "rule.simulate", "rule.publish"],
     createdBy: "Vikram Chawla",
     createdAt: USER_SEED_TIMESTAMP,
     status: "Active",
@@ -2253,7 +2256,9 @@ export const DEFAULT_USER_ACCESS_MAPPINGS: UserProductAccess[] = [
     userId: "usr-arjun-nair",
     productId: "prod-auto-loan",
     categoryId: "underwriting",
-    capabilities: ["rule.view", "rule.create", "rule.edit", "rule.simulate", "rule.publish"],
+    // Underwriter/Claims is a Checker role — same Maker-Checker reasoning as
+    // Kavita Rao above: reviews/approves, never creates or edits rules.
+    capabilities: ["rule.view", "rule.simulate", "rule.publish"],
     createdBy: "Vikram Chawla",
     createdAt: USER_SEED_TIMESTAMP,
     status: "Active",
@@ -2263,7 +2268,7 @@ export const DEFAULT_USER_ACCESS_MAPPINGS: UserProductAccess[] = [
     userId: "usr-arjun-nair",
     productId: "prod-gold-loan",
     categoryId: "collateral",
-    capabilities: ["rule.view", "rule.edit", "rule.simulate"],
+    capabilities: ["rule.view", "rule.simulate"],
     createdBy: "Vikram Chawla",
     createdAt: USER_SEED_TIMESTAMP,
     status: "Active",

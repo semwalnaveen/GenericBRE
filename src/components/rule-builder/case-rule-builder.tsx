@@ -174,7 +174,7 @@ export function CaseRuleBuilder({
                 </div>
                 <div className="p-2">
                   <Input
-                    type={field?.type === "number" || field?.type === "currency" ? "number" : "text"}
+                    type={field?.type === "number" || field?.type === "currency" || field?.type === "percentage" ? "number" : "text"}
                     value={condition.value}
                     onChange={(e) => updateWhere(condition.id, { value: e.target.value })}
                     placeholder="Value"

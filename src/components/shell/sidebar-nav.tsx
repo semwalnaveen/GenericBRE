@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "framer-motion";
 import { NAV_ITEMS, NAV_ITEMS_SECONDARY, visibleNavItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,13 +31,13 @@ function NavLink({
   const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
   const linkClassName = cn(
-    "group relative flex h-9.5 items-center gap-3 rounded-lg px-2.5 text-sm font-medium transition-colors",
+    "group relative flex h-9.5 items-center gap-3 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
     collapsed && "justify-center px-0",
     disabled
       ? "cursor-not-allowed text-sidebar-foreground/35"
       : active
-      ? "bg-sidebar-primary/15 text-sidebar-foreground"
-      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+      ? "bg-sidebar-accent text-sidebar-foreground"
+      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
   );
 
   const handleClick = (e: React.MouseEvent) => {
@@ -47,9 +48,12 @@ function NavLink({
   const linkContent = (
     <>
       {active && !collapsed && (
-        <span className="absolute left-0 top-1/2 h-4.5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary" />
+        <motion.span
+          layoutId="sidebar-active-indicator"
+          className="absolute left-0 top-1/2 h-4.5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-foreground"
+        />
       )}
-      <Icon className={cn("size-4 shrink-0", active && "text-sidebar-primary")} strokeWidth={2.2} />
+      <Icon className={cn("size-4 shrink-0 transition-transform duration-200 group-hover:scale-110", active && "text-sidebar-foreground")} strokeWidth={2.2} />
       {!collapsed && <span className="truncate" title={label}>{label}</span>}
       {!collapsed && badge ? (
         <Badge className="ml-auto h-4.5 min-w-4.5 rounded-full px-1 text-sm">{badge}</Badge>

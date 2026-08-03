@@ -178,7 +178,7 @@ export function DynamicFormView({
       </div>
 
       {/* ACCORDION CATEGORIZED SECTIONS */}
-      <Accordion type="multiple" defaultValue={["applicant", "income", "loan", "collateral"]} className="space-y-2">
+      <Accordion type="multiple" defaultValue={["applicant"]} className="space-y-2">
         {categoryGroups.map((group) => {
           if (group.entries.length === 0) return null;
           return (

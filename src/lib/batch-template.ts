@@ -63,6 +63,7 @@ function exampleValueFor(column: BatchColumn): CellScalar {
   switch (column.type) {
     case "number":
     case "currency":
+    case "percentage":
       return 0;
     case "boolean":
       return true;

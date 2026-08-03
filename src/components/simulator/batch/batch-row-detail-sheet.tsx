@@ -85,7 +85,7 @@ export function BatchRowDetailSheet({
                   </TabsContent>
 
                   <TabsContent value="variables">
-                    <VariableViewer traceSteps={row.decision.flatTrace} jsonText={JSON.stringify(row.decision.input)} fieldCatalog={fieldCatalog} />
+                    <VariableViewer traceSteps={row.decision.flatTrace} jsonText={JSON.stringify(row.decision.input)} fieldCatalog={fieldCatalog} rules={rules} />
                   </TabsContent>
 
                   <TabsContent value="audit">

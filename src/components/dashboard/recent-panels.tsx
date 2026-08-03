@@ -3,18 +3,21 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, FileEdit, Clock, Rocket } from "lucide-react";
 import { useAppStore, useScopedRules } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-export function PanelHeader({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+export function PanelHeader({ title, action, onAction, icon: Icon }: { title: string; action?: string; onAction?: () => void; icon?: React.ElementType }) {
   return (
-    <div className="flex shrink-0 items-center justify-between border-b px-3.5 py-2.5">
-      <h3 className="text-sm font-semibold">{title}</h3>
+    <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-3 rounded-t-xl dark:bg-muted/30">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="size-4 text-muted-foreground/70" />}
+        <h3 className="text-sm font-bold text-[#0f2942] dark:text-foreground">{title}</h3>
+      </div>
       {action && (
-        <button onClick={onAction} className="flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+        <button onClick={onAction} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
           {action} <ArrowUpRight className="size-3" />
         </button>
       )}
@@ -29,7 +32,7 @@ export function RecentRulesPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Recently Modified Rules" action="View all" onAction={() => router.push("/repository")} />
+      <PanelHeader title="Recently Modified Rules" icon={FileEdit} action="View all" onAction={() => router.push("/repository")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y">
           {recent.map((r) => (
@@ -75,6 +78,8 @@ export function initials(name: string): string {
     .toUpperCase();
 }
 
+import { CleanListWidget } from "./premium-widgets";
+
 export function RecentActivityPanel() {
   const auditLog = useAppStore((s) => s.auditLog);
   const allRules = useAppStore((s) => s.rules);
@@ -88,36 +93,22 @@ export function RecentActivityPanel() {
     return auditLog.filter((a) => !domainFilter.length || !isRuleEvent(a.entityId) || scopedRuleIds.has(a.entityId)).slice(0, 5);
   }, [auditLog, allRules, domainFilter, scopedRuleIds]);
 
+  const items = logs.map((a, i) => ({
+    id: a.id,
+    indexNumber: i + 1,
+    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-slate-400",
+    title: a.action,
+    subtitle: a.entityId,
+    primaryValue: formatDistanceToNow(new Date(a.timestamp), { addSuffix: true }),
+    secondaryValue: `by ${a.user}`
+  }));
+
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Recent Activity" action="View audit log" onAction={() => router.push("/audit-log")} />
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
-          {logs.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => router.push("/audit-log")}
-              className="flex w-full items-center gap-2 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
-            >
-              <span className={cn("size-1.5 shrink-0 rounded-full", ACTION_DOT[a.action] ?? "bg-muted-foreground")} />
-              <span className="min-w-0 flex-1 truncate text-sm" title={`${a.action} ${a.entityId} by ${a.user}`}>
-                <span className="font-medium">{a.action}</span>{" "}
-                <span className="font-mono text-sm text-foreground/70">{a.entityId}</span>
-              </span>
-              <span
-                className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground"
-                title={a.user}
-              >
-                {initials(a.user)}
-              </span>
-              <span className="w-14 shrink-0 text-right text-sm text-muted-foreground">
-                {formatDistanceToNow(new Date(a.timestamp))}
-              </span>
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
-    </div>
+    <CleanListWidget
+      title="Recent Activity"
+      action={<span onClick={() => router.push("/audit-log")}>View all</span>}
+      items={items}
+    />
   );
 }
 
@@ -130,21 +121,23 @@ export function RecentDeploymentsPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Recent Deployments" />
-      <div className="flex-1 space-y-0.5 p-2">
-        {recent.map((r) => (
-          <div key={r.id} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1">
-            <span className={cn("size-1.5 shrink-0 rounded-full", "bg-emerald-500")} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{r.name}</p>
-              <p className="text-sm text-muted-foreground">{r.domain}</p>
+      <PanelHeader title="Recent Deployments" icon={Rocket} />
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-0.5 p-2">
+          {recent.map((r) => (
+            <div key={r.id} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1">
+              <span className={cn("size-1.5 shrink-0 rounded-full", "bg-emerald-500")} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{r.name}</p>
+                <p className="text-sm text-muted-foreground">{r.domain}</p>
+              </div>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
+              </span>
             </div>
-            <span className="shrink-0 text-sm text-muted-foreground">
-              {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

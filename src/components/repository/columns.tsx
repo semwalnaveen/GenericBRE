@@ -86,14 +86,14 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
     {
       accessorKey: "id",
       header: ({ column }) => <SortHeader label="Rule ID" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
-      cell: ({ row }) => <span className="font-mono text-sm font-medium">{row.original.id}</span>,
+      cell: ({ row }) => <span className="font-mono text-[13px] font-medium">{row.original.id}</span>,
       size: 75,
     },
     {
       accessorKey: "name",
       header: ({ column }) => <SortHeader label="Rule Name" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
       cell: ({ row }) => (
-        <button onClick={() => actions.onEdit(row.original)} className="text-left font-medium hover:text-primary hover:underline truncate max-w-[130px] block text-sm" title={row.original.name}>
+        <button onClick={() => actions.onEdit(row.original)} className="text-left font-medium hover:text-primary hover:underline truncate max-w-[130px] block text-[13px]" title={row.original.name}>
           {row.original.name}
         </button>
       ),
@@ -102,7 +102,7 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
     {
       accessorKey: "category",
       header: "Category",
-      cell: ({ row }) => <span className="truncate max-w-28 block text-sm">{row.original.category}</span>,
+      cell: ({ row }) => <span className="truncate max-w-28 block text-[13px]">{row.original.category}</span>,
       size: 100,
     },
     {
@@ -112,11 +112,11 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
         const names = context.productRuleMappings
           .filter((m) => m.ruleId === row.original.id)
           .map((m) => context.products.find((p) => p.id === m.productId)?.name ?? m.productId);
-        if (names.length === 0) return <span className="text-sm text-muted-foreground/50">Unmapped</span>;
+        if (names.length === 0) return <span className="text-[13px] text-muted-foreground/50">Unmapped</span>;
         return (
           <div className="flex max-w-36 flex-wrap gap-1">
             {names.map((n) => (
-              <span key={n} className="rounded-md border border-border/80 bg-muted/60 px-1.5 py-0.5 text-sm truncate max-w-32">{n}</span>
+              <span key={n} className="rounded-md border border-border/80 bg-muted/60 px-1.5 py-0.5 text-[13px] truncate max-w-32">{n}</span>
             ))}
           </div>
         );
@@ -135,12 +135,12 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
       cell: ({ row }) => {
         const { submitted } = govFor(row.original.id, context.approvalRequests);
         return submitted ? (
-          <span className="text-sm">
+          <span className="text-[13px]">
             <span className="block font-medium truncate max-w-32">{submitted.requestedBy}</span>
             <span className="block text-xs text-muted-foreground whitespace-nowrap">{formatDistanceToNow(new Date(submitted.requestedAt), { addSuffix: true })}</span>
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground/50">—</span>
+          <span className="text-[13px] text-muted-foreground/50">—</span>
         );
       },
       size: 130,
@@ -151,12 +151,12 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
       cell: ({ row }) => {
         const { approved } = govFor(row.original.id, context.approvalRequests);
         return approved?.decidedBy ? (
-          <span className="text-sm">
+          <span className="text-[13px]">
             <span className="block font-medium truncate max-w-32">{approved.decidedBy}</span>
             <span className="block text-xs text-muted-foreground whitespace-nowrap">{approved.decidedAt ? formatDistanceToNow(new Date(approved.decidedAt), { addSuffix: true }) : ""}</span>
           </span>
         ) : (
-          <span className="text-sm text-muted-foreground/50">—</span>
+          <span className="text-[13px] text-muted-foreground/50">—</span>
         );
       },
       size: 130,
@@ -167,18 +167,18 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
     // {
     //   accessorKey: "owner",
     //   header: "Owner",
-    //   cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.owner}</span>,
+    //   cell: ({ row }) => <span className="text-[13px] text-muted-foreground">{row.original.owner}</span>,
     //   size: 170,
     // },
     {
       accessorKey: "updatedAt",
       header: ({ column }) => <SortHeader label="Updated" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} />,
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
+        <span className="text-xs text-muted-foreground">
           {formatDistanceToNow(new Date(row.original.updatedAt), { addSuffix: true })}
         </span>
       ),
-      size: 95,
+      size: 130,
     },
     {
       id: "actions",

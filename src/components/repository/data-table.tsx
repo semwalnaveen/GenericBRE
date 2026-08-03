@@ -36,6 +36,7 @@ interface DataTableProps<TData, TValue> {
   toolbar?: React.ReactNode;
   leftToolbar?: React.ReactNode;
   rightToolbar?: React.ReactNode;
+  renderTopToolbar?: (table: any) => React.ReactNode;
   className?: string;
 }
 
@@ -48,6 +49,7 @@ export function DataTable<TData, TValue>({
   toolbar,
   leftToolbar,
   rightToolbar,
+  renderTopToolbar,
   className,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -82,46 +84,16 @@ export function DataTable<TData, TValue>({
   }, [rowSelection]);
 
   return (
-    <div className={cn("flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b px-3 py-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="px-1 text-sm text-muted-foreground whitespace-nowrap">
-            {table.getFilteredRowModel().rows.length} rule{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
-          </p>
-          {leftToolbar ?? toolbar}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {rightToolbar}
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
-              <Columns3 className="size-3.5" /> Columns
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              {table
-                .getAllColumns()
-                .filter((c) => c.getCanHide())
-                .map((c) => (
-                  <DropdownMenuCheckboxItem
-                    key={c.id}
-                    checked={c.getIsVisible()}
-                    onCheckedChange={(v) => c.toggleVisibility(!!v)}
-                    className="capitalize"
-                  >
-                    {c.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-auto">
+    <>
+      {renderTopToolbar?.(table)}
+      <div className={cn("flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
+        <div className="min-h-0 flex-1 overflow-auto">
         <Table className="table-fixed">
           <TableHeader className="sticky top-0 z-10 bg-card">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="hover:bg-transparent">
                 {hg.headers.map((header) => (
-                  <TableHead key={header.id} style={{ width: header.getSize() }} className="text-sm font-semibold text-muted-foreground">
+                  <TableHead key={header.id} style={{ width: header.getSize() }} className="text-[13px] font-semibold text-muted-foreground">
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
@@ -131,7 +103,7 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="text-sm">
+                <TableRow key={row.id} className="text-[13px]">
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
@@ -139,7 +111,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={columns.length} className="h-32 text-center text-[13px] text-muted-foreground">
                   No rules match the current filters.
                 </TableCell>
               </TableRow>
@@ -150,7 +122,7 @@ export function DataTable<TData, TValue>({
 
       <div className="flex items-center justify-between border-t px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page</span>
+          <span className="text-[13px] text-muted-foreground">Rows per page</span>
           <Select
             value={String(table.getState().pagination.pageSize)}
             onValueChange={(v) => table.setPageSize(Number(v))}
@@ -166,9 +138,12 @@ export function DataTable<TData, TValue>({
               ))}
             </SelectContent>
           </Select>
+          <span className="ml-2 text-[13px] text-muted-foreground whitespace-nowrap">
+            Total {table.getFilteredRowModel().rows.length} rule{table.getFilteredRowModel().rows.length !== 1 ? "s" : ""}
+          </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             Page {table.getState().pagination.pageIndex + 1} of {Math.max(1, table.getPageCount())}
           </span>
           <div className="flex gap-1">
@@ -181,6 +156,7 @@ export function DataTable<TData, TValue>({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

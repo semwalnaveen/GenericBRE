@@ -63,9 +63,9 @@ function FormulaTokenChip({ token, variables, fieldCatalog, onRemove }: { token:
     <div className={cn("group relative flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm shadow-sm transition-colors", chipClass)}>
       {content}
       {onRemove && (
-        <button 
-          type="button" 
-          onClick={(e) => { e.stopPropagation(); onRemove(); }} 
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-destructive hover:text-destructive-foreground hover:border-destructive group-hover:opacity-100"
         >
           <X className="size-2.5" />
@@ -218,7 +218,7 @@ export function CalculateExpressionEditor({
       const override = sampleOverrides[key];
       if (override === undefined || override === "") continue;
       const field = getField(fieldCatalog, key);
-      if (field?.type === "number" || field?.type === "currency") {
+      if (field?.type === "number" || field?.type === "currency" || field?.type === "percentage") {
         const n = parseFloat(override);
         if (!Number.isNaN(n)) ctx[key] = n;
       } else if (field?.type === "boolean") {
@@ -233,7 +233,7 @@ export function CalculateExpressionEditor({
   const preview = useMemo(() => previewExpression(localExpr, previewContext), [localExpr, previewContext]);
   const hasExpression = localExpr.trim().length > 0;
   const isValid = hasExpression && unknownKeys.length === 0 && !preview.result.error;
-  
+
   const labelExpression = useMemo(() => {
     return localTokens.map(t => {
       if (t.type === "variable") {
@@ -285,14 +285,14 @@ export function CalculateExpressionEditor({
               Formula Builder
             </SheetTitle>
           </div>
-          
+
           <div className="flex min-h-0 flex-1 flex-col md:flex-row overflow-hidden">
             {/* Main Editor Area */}
             <div className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6">
               <div className="mb-4 text-sm font-medium">Expression</div>
-              
+
               {/* Token Display */}
-              <div 
+              <div
                 className="mb-4 min-h-24 rounded-xl border bg-muted/20 p-3 shadow-inner cursor-text"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setCursorIndex(localTokens.length);
@@ -308,13 +308,13 @@ export function CalculateExpressionEditor({
                     <>
                       {localTokens.map((t, i) => (
                         <Fragment key={i}>
-                          <div 
+                          <div
                             onClick={(e) => { e.stopPropagation(); setCursorIndex(i); }}
                             className="group flex h-8 w-3 cursor-text items-center justify-center shrink-0"
                           >
                             <div className={cn("h-5 w-[2px] rounded-full", cursorIndex === i ? "bg-primary animate-pulse" : "bg-transparent group-hover:bg-primary/30")} />
                           </div>
-                          <div 
+                          <div
                             draggable
                             onDragStart={(e) => handleDragStart(e, i)}
                             onDragOver={(e) => handleDragOver(e, i)}
@@ -326,10 +326,10 @@ export function CalculateExpressionEditor({
                               draggedIdx === i && "opacity-50"
                             )}
                           >
-                            <FormulaTokenChip 
-                              token={t} 
-                              variables={variables} 
-                              fieldCatalog={fieldCatalog} 
+                            <FormulaTokenChip
+                              token={t}
+                              variables={variables}
+                              fieldCatalog={fieldCatalog}
                               onRemove={() => {
                                 saveTokens(localTokens.filter((_, idx) => idx !== i));
                                 if (cursorIndex !== null) {
@@ -341,7 +341,7 @@ export function CalculateExpressionEditor({
                           </div>
                         </Fragment>
                       ))}
-                      <div 
+                      <div
                         onClick={(e) => { e.stopPropagation(); setCursorIndex(localTokens.length); }}
                         className="group flex h-8 w-3 cursor-text items-center justify-center shrink-0"
                       >
@@ -364,10 +364,10 @@ export function CalculateExpressionEditor({
                   <Button variant="outline" size="sm" className="font-mono font-bold" onClick={() => handleAddToken({ type: "operator", value: "(" })}>(</Button>
                   <Button variant="outline" size="sm" className="font-mono font-bold" onClick={() => handleAddToken({ type: "operator", value: ")" })}>)</Button>
                   <div className="mx-1 h-6 hidden sm:block w-px bg-border"></div>
-                  <Input 
-                    type="number" 
-                    placeholder="Num..." 
-                    className="h-8 w-20 font-mono text-sm" 
+                  <Input
+                    type="number"
+                    placeholder="Num..."
+                    className="h-8 w-20 font-mono text-sm"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -377,10 +377,10 @@ export function CalculateExpressionEditor({
                           e.currentTarget.value = "";
                         }
                       }
-                    }} 
+                    }}
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="sm" onClick={handleClear} className="text-muted-foreground hover:text-destructive">Clear</Button>
                   <Button variant="secondary" size="sm" onClick={handleRemoveLast} className="gap-1.5"><ArrowLeft className="size-3.5" /> Backspace</Button>
@@ -414,7 +414,7 @@ export function CalculateExpressionEditor({
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="space-y-2">
                     <div className="text-xs font-semibold uppercase tracking-wider text-emerald-800/70 dark:text-emerald-200/70">Expression</div>
                     <div className="font-mono text-sm leading-relaxed text-emerald-900/90 dark:text-emerald-100/90">

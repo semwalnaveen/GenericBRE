@@ -48,6 +48,8 @@ import { getField, fieldsForDomain } from "@/lib/fields";
 import { copyToClipboard, pasteFromClipboard, useConditionClipboard } from "@/lib/condition-clipboard";
 import { recordRecentField } from "@/components/rule-builder/builder-shared";
 import { getGeneratedVariables, detectCircularDependency } from "@/lib/rule-chaining";
+import { evaluateExpression, extractVariableKeys, findUnknownVariableKeys } from "@/lib/expression";
+import { getAvailableVariables, availableVariableKeys } from "@/lib/available-variables";
 import { buildSampleRequestJson } from "@/lib/sample-json";
 import { MetadataForm } from "@/components/rule-builder/metadata-form";
 import { ConditionGroupEditor, TreeHandlers } from "@/components/rule-builder/condition-group-editor";
@@ -122,6 +124,22 @@ function findDuplicateVariableName(actions: RuleAction[]): string | null {
   return null;
 }
 
+// Every non-empty Assign Value/Calculate/Bracket Lookup output field a rule
+// produces, across both authoring modes (normal THEN/ELSE actions and the
+// CASE Builder's WHEN clauses/CASE ELSE) — the same "what does this rule
+// output" concept getGeneratedVariables (rule-chaining.ts) already uses,
+// just scoped to one rule instead of the whole rule set.
+function ruleOutputFields(r: BusinessRule): string[] {
+  const fields: string[] = [];
+  for (const a of [...r.actions, ...(r.elseActions ?? []), ...(r.caseElseActions ?? [])]) {
+    if ((a.type === "Assign Value" || a.type === "Calculate" || a.type === "Bracket Lookup") && a.outputField) fields.push(a.outputField);
+  }
+  for (const w of r.caseWhens ?? []) {
+    if (w.outputField) fields.push(w.outputField);
+  }
+  return fields;
+}
+
 function draftKeyFor(editId: string | null) {
   return `bre-rule-builder-draft:${editId ?? "new"}`;
 }
@@ -135,6 +153,8 @@ function RuleBuilderContent() {
   const addRule = useAppStore((s) => s.addRule);
   const updateRule = useAppStore((s) => s.updateRule);
   const cloneRule = useAppStore((s) => s.cloneRule);
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const submitForReview = useAppStore((s) => s.submitForReview);
   const logAudit = useAppStore((s) => s.logAudit);
   const currentUser = useAppStore((s) => s.currentUser);
   const industries = useAppStore((s) => s.industries);
@@ -467,6 +487,37 @@ function RuleBuilderContent() {
         if (missingOutput) errs.outputField = `${label}: a Calculate/Assign Value action needs an Output Field.`;
         const dup = findDuplicateVariableName(list);
         if (dup) errs.duplicateVariable = `${label}: more than one action sets the same variable "${dup}".`;
+
+        // Calculate formula validation — the live editor (calculate-expression-editor.tsx)
+        // already warns about these inline, but nothing blocked Save until now.
+        list.forEach((action, idx) => {
+          if (errs.formula || action.type !== "Calculate" || !action.outputValue?.trim()) return;
+          const availableKeys = availableVariableKeys(
+            getAvailableVariables({
+              fieldCatalog,
+              domain: rule.domain,
+              rules,
+              currentRuleId: rule.id,
+              rootGroup: rule.rootGroup,
+              priorActions: list.slice(0, idx),
+            })
+          );
+          const unknown = findUnknownVariableKeys(action.outputValue, availableKeys);
+          if (unknown.length > 0) {
+            errs.formula = `${label}: "${action.outputField || "Calculate"}" formula references unknown field(s): ${unknown.map((k) => `{{${k}}}`).join(", ")}.`;
+            return;
+          }
+          // Syntax-only check — every referenced key gets a safe non-zero
+          // stand-in value so a legitimate "{{a}} / {{generated_var}}" divide
+          // isn't flagged just because a generated variable's own preview
+          // default happens to be 0; a literal "/0" in the formula itself
+          // still fails this the same way regardless of variable values.
+          const syntaxContext = Object.fromEntries(extractVariableKeys(action.outputValue).map((k) => [k, 1]));
+          const check = evaluateExpression(action.outputValue, syntaxContext);
+          if (check.error) {
+            errs.formula = `${label}: "${action.outputField || "Calculate"}" formula is invalid — ${check.error}.`;
+          }
+        });
       }
 
       const availableVars = new Set(getGeneratedVariables(rules, rule.id).map((v) => v.key));
@@ -479,6 +530,22 @@ function RuleBuilderContent() {
     const simulatedRules = [...rules.filter((r) => r.id !== rule.id), rule];
     const cycle = detectCircularDependency(simulatedRules);
     if (cycle) errs.chain = `Circular rule dependency detected: ${cycle.cycle.join(" → ")}.`;
+
+    // Cross-rule duplicate output variable name — today getGeneratedVariables
+    // silently dedupes same-name outputs across different rules (first one
+    // wins, the second is simply invisible in the "Generated Variables"
+    // picker) with no warning anywhere. Surface it as a blocking error instead.
+    const outputOwner = new Map<string, string>();
+    for (const r of simulatedRules) {
+      if (r.id === rule.id) continue;
+      for (const key of ruleOutputFields(r)) {
+        if (!outputOwner.has(key)) outputOwner.set(key, r.id);
+      }
+    }
+    const collidingField = ruleOutputFields(rule).find((key) => outputOwner.has(key));
+    if (collidingField) {
+      errs.crossRuleDuplicate = `"${collidingField}" is already produced by rule ${outputOwner.get(collidingField)} — choose a different variable name or edit that rule.`;
+    }
 
     setErrors(errs);
     if (Object.keys(errs).length > 0 || conditionErrors.length > 0) {
@@ -520,15 +587,30 @@ function RuleBuilderContent() {
     router.push("/repository");
   };
 
-  // "Submit Rule" first persists the Draft, then redirects to the
-  // full-page Product Mapping screen. The rule only enters the approval queue
-  // (Pending Approval) once the Maker completes product mapping and clicks
-  // "Submit for Approval" on that page.
+  // "Submit Rule" persists the Draft, then either goes straight into the
+  // approval queue (if this rule is already mapped to product(s) — editing an
+  // existing rule doesn't need to revisit that screen, and its mapping/
+  // sequence/remarks are left completely untouched) or, for a rule that has
+  // never been mapped before, redirects to the full-page Product Mapping
+  // screen so the Maker can choose products for the first time.
   const handleSubmitForReview = () => {
     if (!validate()) return;
     const saved = persistRule("Draft");
     if (!saved.ok) {
       toast.error("Couldn't save", { description: saved.reason });
+      return;
+    }
+    const alreadyMapped = productRuleMappings.some((m) => m.ruleId === saved.rule.id);
+    if (alreadyMapped) {
+      const submitted = submitForReview(saved.rule.id);
+      if (!submitted.ok) {
+        toast.error("Couldn't submit for approval", { description: submitted.reason });
+        return;
+      }
+      toast.success("Submitted for approval", {
+        description: `${saved.rule.id} · ${saved.rule.name} is now Pending Approval. Its existing product mapping and sequence carried over unchanged.`,
+      });
+      router.push("/repository");
       return;
     }
     router.push(`/rule-builder/mapping?ruleId=${saved.rule.id}`);
@@ -684,13 +766,26 @@ function RuleBuilderContent() {
       <ScrollArea className="min-h-0 flex-1">
         <div className="flex w-full flex-col gap-4 px-5 py-5 sm:px-6">
           <MetadataForm data={rule} onChange={patchRule} errors={errors} />
-          {(errors.condition || errors.outputField || errors.duplicateVariable || errors.variables || errors.chain) && (
+          {(errors.condition || errors.outputField || errors.duplicateVariable || errors.variables || errors.chain || errors.formula || errors.crossRuleDuplicate) && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
               {errors.condition && <p>{errors.condition}</p>}
               {errors.outputField && <p>{errors.outputField}</p>}
               {errors.duplicateVariable && <p>{errors.duplicateVariable}</p>}
+              {errors.crossRuleDuplicate && <p>{errors.crossRuleDuplicate}</p>}
+              {errors.formula && <p>{errors.formula}</p>}
               {errors.variables && <p>{errors.variables}</p>}
               {errors.chain && <p>{errors.chain}</p>}
+            </div>
+          )}
+
+          {existingRule && (existingRule.status === "Approved" || existingRule.status === "Published") && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-sm text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="size-4 shrink-0" />
+              <p>
+                This rule is currently <span className="font-semibold">{existingRule.status}</span> and live. Saving changes will
+                move it back to Draft and take it offline until a Checker re-approves the new version — its current product
+                mapping and sequence will carry over unchanged.
+              </p>
             </div>
           )}
 

@@ -3,38 +3,25 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  User,
-  Lock,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  KeyRound,
-  ScrollText,
-  Workflow,
-  FileEdit,
-  Grid3x3,
-  GitBranch,
-  LayoutTemplate,
-  AlertTriangle,
-} from "lucide-react";
+import { User, Lock, Eye, EyeOff, ShieldCheck, KeyRound, ScrollText, Workflow, AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { LogoMark } from "@/components/shell/logo";
+import { NetworkBackground } from "@/components/login/network-background";
+import { SparkleAccent } from "@/components/login/sparkle-accent";
+import { ProductMockup } from "@/components/login/product-mockup";
+import { FeatureBadge } from "@/components/login/feature-badge";
 import { RoleSwitcherDialog } from "@/components/shell/role-switcher-dialog";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@/components/ui/input-group";
 
-const LIFECYCLE_STAGES = ["Draft", "Testing", "Active", "Inactive", "Archived"];
-
 const CAPABILITIES = [
-  { icon: FileEdit, label: "No-Code Rule Builder", desc: "Compose IF/THEN logic visually, no syntax required." },
-  { icon: Grid3x3, label: "Decision Matrix Configuration", desc: "Edit pricing and threshold slabs like a spreadsheet." },
-  { icon: ShieldCheck, label: "Approval Workflow & Governance", desc: "Draft → Testing → Review → Publish, fully audited." },
-  { icon: LayoutTemplate, label: "Rule Templates & Groups", desc: "Reusable starting shapes and organizational collections." },
-  { icon: GitBranch, label: "Conflict Detection", desc: "Flags contradictory rules before they reach production." },
-  { icon: ScrollText, label: "Full Audit Trail", desc: "Every configuration change is logged and traceable." },
+  "No-Code Rule Builder",
+  "Decision Matrix Configuration",
+  "Approval Workflow & Governance",
+  "Conflict Detection",
+  "Full Audit Trail",
 ];
 
 const TRUST_BADGES = [
@@ -72,6 +59,7 @@ export default function LoginPage() {
   const totalRules = rules.length;
   const activeRules = rules.filter((r) => r.status === "Published").length;
   const simulationsRun = simulations.length + 256;
+  const sampleRules = rules.filter((r) => r.simulatable).slice(0, 3).map((r) => ({ id: r.id, name: r.name, status: r.status }));
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,11 +74,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid h-full grid-cols-1 overflow-y-auto md:grid-cols-2 md:overflow-hidden">
+    <div
+      className="relative flex h-full flex-col overflow-y-auto md:flex-row md:overflow-hidden"
+      style={
+        {
+          // The sign-in hero is a fixed brand visual (navy → teal, matching
+          // the constellation backdrop below) — deliberately independent of
+          // the authenticated app's Appearance Studio theme/color-mode, the
+          // same way most products give their login screen its own fixed
+          // look. Scoping these as local --sidebar-* overrides (rather than
+          // touching every text-sidebar-foreground/bg-sidebar-accent/etc.
+          // class already used throughout this page) means the existing
+          // markup below picks up the fixed palette for free. Applied on the
+          // full-width root (not just a half-width column) so the gradient
+          // spans the whole screen, with the sign-in card floating on top of
+          // it near the right edge — matches the shared reference layout.
+          "--sidebar": "#0f2744",
+          "--sidebar-foreground": "#f3f8fb",
+          "--sidebar-primary": "#5eead4",
+          "--sidebar-primary-foreground": "#082433",
+          "--sidebar-accent": "#173a5a",
+          "--sidebar-accent-foreground": "#f3f8fb",
+          "--sidebar-border": "rgba(243, 248, 251, 0.14)",
+          background:
+            "linear-gradient(135deg, color-mix(in oklch, var(--sidebar) 88%, black 12%) 0%, var(--sidebar) 45%, color-mix(in oklch, var(--sidebar) 78%, var(--sidebar-primary) 22%) 100%)",
+        } as React.CSSProperties
+      }
+    >
       {/* Compact brand banner — mobile only (<768px). Replaces the old
           logo-only fallback so the trust story survives on phones instead
           of vanishing entirely. */}
-      <div className="flex flex-col gap-3 border-b bg-sidebar px-5 py-4 text-sidebar-foreground md:hidden">
+      <div className="flex flex-col gap-3 border-b border-sidebar-border px-5 py-4 text-sidebar-foreground md:hidden">
         <div className="flex items-center gap-2.5">
           <LogoMark className="size-8" />
           <div>
@@ -108,81 +122,40 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Left — branding panel. Full detail from desktop (lg, ≥1024px);
-          a condensed logo + hero + stat-row subset from tablet (md,
-          ≥768px) — the lifecycle stepper and capability grid step in only
-          at lg so the panel degrades gracefully instead of disappearing. */}
-      <div
-        className="relative hidden flex-col justify-between overflow-hidden px-6 py-6 text-sidebar-foreground md:flex md:px-8 md:py-8 lg:px-10 lg:py-10 xl:px-14"
-        style={{
-          background:
-            "linear-gradient(135deg, color-mix(in oklch, var(--sidebar) 88%, black 12%) 0%, var(--sidebar) 45%, color-mix(in oklch, var(--sidebar) 78%, var(--sidebar-primary) 22%) 100%)",
-        }}
-      >
-        <div>
+      {/* Left/center — branding content, floating on the full-width gradient.
+          Full detail from desktop (lg, ≥1024px); a condensed logo + hero
+          subset from tablet (md, ≥768px) — the mockup/badges step in only at
+          lg so the panel degrades gracefully instead of disappearing. */}
+      <div className="relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden px-6 py-6 text-sidebar-foreground md:flex md:px-8 md:py-8 lg:px-10 lg:py-10 xl:px-14">
+        <NetworkBackground className="pointer-events-none absolute inset-0 h-full w-full" />
+
+        <div className="relative">
           <div className="flex items-center gap-3">
             <LogoMark className="size-10" />
             <div>
               <p className="text-lg font-semibold tracking-tight">{appName}</p>
               <p className="text-sm text-sidebar-foreground/85">{tagline}</p>
             </div>
+            <SparkleAccent className="ml-1 size-7 lg:size-9" />
           </div>
 
-          <h1 className="mt-10 max-w-md text-xl font-semibold tracking-tight text-balance">
-            One decision platform for every industry.
+          <h1 className="mt-8 max-w-md text-3xl leading-tight font-bold tracking-tight text-balance lg:text-4xl">
+            <span className="text-sidebar-foreground">One decision platform</span>
+            <br />
+            <span className="text-sidebar-primary">for every industry.</span>
           </h1>
-          <p className="mt-2 max-w-sm text-sm text-sidebar-foreground/85">
+          <p className="mt-3 max-w-sm text-sm text-sidebar-foreground/80">
             Configure once, evaluate everywhere — no code required to add an industry, a rule, or a workflow.
           </p>
-
-          <div className="mt-8 grid max-w-sm grid-cols-3 gap-3">
-            <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_10px_24px_-8px_rgba(0,0,0,0.65)]">
-              <p className="text-xl font-semibold text-sidebar-primary">{totalRules}</p>
-              <p className="text-sm text-sidebar-foreground/80">Total Rules</p>
-            </div>
-            <div className="rounded-xl border border-sidebar-primary/40 bg-sidebar-primary/10 p-3 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_10px_24px_-6px_rgba(0,0,0,0.65)]">
-              <p className="text-xl font-semibold text-sidebar-primary">{activeRules}</p>
-              <p className="text-sm text-sidebar-foreground/90">Active Rules</p>
-            </div>
-            <div className="rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 text-center shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_10px_24px_-8px_rgba(0,0,0,0.65)]">
-              <p className="text-xl font-semibold text-sidebar-primary">{simulationsRun}</p>
-              <p className="text-sm text-sidebar-foreground/80">Simulations</p>
-            </div>
-          </div>
-
-          <div className="mt-8 hidden max-w-sm lg:block">
-            <p className="mb-2.5 text-sm font-semibold uppercase tracking-wider text-sidebar-foreground/70">
-              Rule Lifecycle
-            </p>
-            <div className="flex items-center">
-              {LIFECYCLE_STAGES.map((stage, i) => (
-                <div key={stage} className="flex flex-1 items-center last:flex-none">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <span
-                      className={`flex size-6 items-center justify-center rounded-full text-sm font-semibold ${
-                        i === 2
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                          : "bg-sidebar-accent text-sidebar-foreground/85"
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="text-sm text-sidebar-foreground/80">{stage}</span>
-                  </div>
-                  {i < LIFECYCLE_STAGES.length - 1 && <div className="mx-1 h-px flex-1 bg-sidebar-border" />}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
-        <div className="hidden max-w-xl gap-x-4 gap-y-2.5 lg:grid lg:grid-cols-[repeat(auto-fit,minmax(15.5rem,1fr))]">
-          {CAPABILITIES.map((cap) => (
-            <div key={cap.label} className="flex items-center gap-2">
-              <cap.icon className="size-3.5 shrink-0 text-sidebar-primary" />
-              <p className="text-sm whitespace-nowrap text-sidebar-foreground/90">{cap.label}</p>
-            </div>
-          ))}
+        <div className="relative flex flex-1 items-center justify-center py-8">
+          <ProductMockup totalRules={totalRules} activeRules={activeRules} simulationsRun={simulationsRun} sampleRules={sampleRules} />
+          <FeatureBadge label={CAPABILITIES[0]} className="absolute top-10 -left-6 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.8s ease-in-out infinite' }} />
+          <FeatureBadge label={CAPABILITIES[1]} className="absolute top-1/4 -right-4 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 6.2s ease-in-out infinite 0.5s' }} />
+          <FeatureBadge label={CAPABILITIES[2]} className="absolute bottom-[18px] -right-6 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.5s ease-in-out infinite 1s' }} />
+          <FeatureBadge label={CAPABILITIES[3]} className="absolute bottom-20 -left-14 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 6.0s ease-in-out infinite 1.5s' }} />
+          <FeatureBadge label={CAPABILITIES[4]} className="absolute -bottom-4 left-10 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.7s ease-in-out infinite 0.2s' }} />
         </div>
       </div>
 
@@ -190,17 +163,16 @@ export default function LoginPage() {
           rounded-xl/border/bg-card pattern used elsewhere in the app) so
           the credential form reads as the page's secure surface, with a
           single visually dominant CTA. */}
-      <div
-        className="flex flex-col items-center justify-center px-6 py-10 sm:px-10 md:py-12"
-        style={{
-          background:
-            "radial-gradient(800px 600px at 100% 0%, rgb(192 207 243) 0%, transparent 60%), radial-gradient(600px 500px at 0% 100%, rgb(165 164 162) 0%, transparent 60%), rgb(241 231 231)",
-        }}
-      >
+      <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-10 sm:px-10 md:flex-none md:justify-center md:px-10 md:py-12 lg:pr-10 xl:pr-12">
         <div className="w-full max-w-[30rem]">
-          <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
-            <h2 className="text-2xl font-bold tracking-tight text-[#0a1230]">Welcome Back</h2>
-            <p className="mt-1 text-sm text-[#0a1230]/70">Sign in to your {appName} account</p>
+          <div className="rounded-2xl border border-white/10 bg-card p-6 shadow-2xl shadow-black/50 sm:p-8">
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-4 flex h-14 w-full items-center justify-center overflow-hidden mix-blend-multiply">
+                <img src="/custom-logo.png" alt="Logo" className="h-32 max-w-[220px] object-contain" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-[#0a1230]">Welcome Back</h2>
+              <p className="mt-1 text-sm text-[#0a1230]/70">Sign in to your {appName} account</p>
+            </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleSignIn}>
               <div className="space-y-1.5">
@@ -267,7 +239,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              <Button type="submit" size="lg" className="w-full font-semibold shadow-sm">
+              <Button type="submit" size="lg" className="w-full h-12 font-semibold shadow-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 border-0 text-white">
                 Sign In
               </Button>
             </form>
@@ -282,14 +254,7 @@ export default function LoginPage() {
               </button>
             </div>
 
-            <div className="mt-6 grid gap-x-3 gap-y-2.5 border-t pt-5 [grid-template-columns:repeat(auto-fit,minmax(11.5rem,1fr))]">
-              {TRUST_BADGES.map((badge) => (
-                <div key={badge.label} className="flex items-center gap-1.5 text-sm whitespace-nowrap text-[#0a1230]/80">
-                  <badge.icon className="size-3.5 shrink-0 text-primary/70" />
-                  {badge.label}
-                </div>
-              ))}
-            </div>
+
           </div>
         </div>
       </div>

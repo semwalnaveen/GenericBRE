@@ -8,6 +8,7 @@ import { buildApiResponsePayload } from "@/lib/decision-response";
 import { DecisionBanner } from "./decision-banner";
 import { DecisionCallout } from "./decision-callout";
 import { ExecutionTimeline } from "./execution-timeline";
+import { CalculatedVariablesCard } from "./calculated-variables-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,20 +100,7 @@ export function DecisionResultView({
             </div>
           )}
 
-          {Object.keys(result.calculatedValues).length > 0 && (
-            <div className="rounded-xl border bg-card p-4">
-              <p className="mb-2.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Rule Chaining Variables</p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(result.calculatedValues).map(([key, value]) => (
-                  <div key={key} className="flex items-center gap-1.5 rounded-lg border bg-background px-2.5 py-1.5 text-sm">
-                    <span className="font-mono text-muted-foreground">{key}</span>
-                    <span className="font-semibold">=</span>
-                    <span className="font-mono font-medium">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <CalculatedVariablesCard calculatedValues={result.calculatedValues} rules={rules} />
 
           <div className="rounded-xl border bg-card p-4">
             <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Rule Evaluation Timeline</p>

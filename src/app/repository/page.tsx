@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info } from "lucide-react";
+import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info, Columns3 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
 import { RuleViewSheet } from "@/components/repository/rule-view-sheet";
@@ -75,7 +81,7 @@ function RepositoryContent() {
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [viewRule, setViewRule] = useState<BusinessRule | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
-  const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[] } | null>(null);
+  const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[]; remarks?: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -218,8 +224,9 @@ function RepositoryContent() {
           onSubmitForReview: (r) => router.push(`/rule-builder/mapping?ruleId=${r.id}`),
           onApprove: (r) => {
             const candidateConflicts = detectConflictsForCandidate(r, rules);
-            if (candidateConflicts.length > 0) {
-              setApprovalConfirm({ rule: r, conflicts: candidateConflicts });
+            const remarks = productRuleMappings.find((m) => m.ruleId === r.id)?.remarks;
+            if (candidateConflicts.length > 0 || remarks) {
+              setApprovalConfirm({ rule: r, conflicts: candidateConflicts, remarks });
             } else {
               performApprove(r);
             }
@@ -322,51 +329,74 @@ function RepositoryContent() {
         </div>
       )}
 
-      {/* FILTER TOOLBAR */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card/40 px-5 py-2.5 sm:px-6">
-        <div className="relative min-w-48 flex-1 sm:max-w-64">
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search rules, categories..."
-            className="h-8 pl-8 text-sm"
-          />
-        </div>
-
-        <MultiSelect
-          label="Status"
-          options={[
-            { value: "Draft", label: "Draft" },
-            { value: "Pending Approval", label: "Pending Approval" },
-            { value: "Published", label: "Published" },
-            { value: "Inactive", label: "Inactive" },
-            { value: "Archived", label: "Archived" },
-          ]}
-          selected={statuses}
-          onChange={setStatuses}
-        />
-
-        <MultiSelect
-          label="Category"
-          options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
-          selected={categoryFilters}
-          onChange={setCategoryFilters}
-        />
-
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 gap-1 px-2 text-xs text-muted-foreground">
-            <X className="size-3" /> Reset filters
-          </Button>
-        )}
-      </div>
-
       <div className="min-h-0 flex-1 p-5 sm:p-6">
         <DataTable
           columns={columns}
           data={filtered}
           onSelectionChange={setSelectedRows}
           resetSelectionSignal={resetSelectionSignal}
+          renderTopToolbar={(table) => (
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card/40 px-5 py-2.5 sm:px-6 -mx-5 -mt-5 mb-5 sm:-mx-6 sm:-mt-6 sm:mb-6">
+              <div className="relative min-w-48 flex-1 sm:max-w-64">
+                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search rules, categories..."
+                  className="h-8 pl-8 text-sm"
+                />
+              </div>
+
+              <MultiSelect
+                label="Status"
+                options={[
+                  { value: "Draft", label: "Draft" },
+                  { value: "Pending Approval", label: "Pending Approval" },
+                  { value: "Published", label: "Published" },
+                  { value: "Inactive", label: "Inactive" },
+                  { value: "Archived", label: "Archived" },
+                ]}
+                selected={statuses}
+                onChange={setStatuses}
+              />
+
+              <MultiSelect
+                label="Category"
+                options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
+                selected={categoryFilters}
+                onChange={setCategoryFilters}
+              />
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 text-xs">
+                    <Columns3 className="size-3.5" /> Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {table
+                    .getAllColumns()
+                    .filter((c: any) => c.getCanHide())
+                    .map((c: any) => (
+                      <DropdownMenuCheckboxItem
+                        key={c.id}
+                        checked={c.getIsVisible()}
+                        onCheckedChange={(v) => c.toggleVisibility(!!v)}
+                        className="capitalize"
+                      >
+                        {c.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 gap-1 px-2 text-xs text-muted-foreground">
+                  <X className="size-3" /> Reset filters
+                </Button>
+              )}
+            </div>
+          )}
         />
       </div>
 
@@ -460,21 +490,32 @@ function RepositoryContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-destructive" /> Possible conflict detected
+              <AlertTriangle className="size-4 text-destructive" />
+              {approvalConfirm && approvalConfirm.conflicts.length > 0 ? "Possible conflict detected" : "Review before approving"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Publishing {approvalConfirm?.rule.id} would create
-              {approvalConfirm && approvalConfirm.conflicts.length > 1 ? " these conflicts" : " this conflict"} with
-              rules already Active. You can still approve — this is advisory, not a hard block.
-            </AlertDialogDescription>
+            {approvalConfirm && approvalConfirm.conflicts.length > 0 && (
+              <AlertDialogDescription>
+                Publishing {approvalConfirm.rule.id} would create
+                {approvalConfirm.conflicts.length > 1 ? " these conflicts" : " this conflict"} with
+                rules already Active. You can still approve — this is advisory, not a hard block.
+              </AlertDialogDescription>
+            )}
           </AlertDialogHeader>
-          <ul className="space-y-1.5 rounded-lg border bg-destructive/5 p-2.5 text-sm">
-            {approvalConfirm?.conflicts.map((c, i) => (
-              <li key={i} className="text-destructive">
-                {c.ruleAId} vs {c.ruleBId} — {c.reason}
-              </li>
-            ))}
-          </ul>
+          {approvalConfirm && approvalConfirm.conflicts.length > 0 && (
+            <ul className="space-y-1.5 rounded-lg border bg-destructive/5 p-2.5 text-sm">
+              {approvalConfirm.conflicts.map((c, i) => (
+                <li key={i} className="text-destructive">
+                  {c.ruleAId} vs {c.ruleBId} — {c.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+          {approvalConfirm?.remarks && (
+            <div className="space-y-1 rounded-lg border bg-muted/30 p-2.5 text-sm">
+              <p className="font-semibold text-muted-foreground">Submission Remarks</p>
+              <p className="whitespace-pre-wrap">{approvalConfirm.remarks}</p>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

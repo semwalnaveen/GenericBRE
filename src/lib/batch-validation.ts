@@ -41,7 +41,8 @@ function coerceCell(
 
   switch (column.type) {
     case "number":
-    case "currency": {
+    case "currency":
+    case "percentage": {
       const n = typeof raw === "number" ? raw : Number(str);
       if (str === "" || Number.isNaN(n)) return { value: str, error: `Expected a number, got "${str}".` };
       return { value: n };

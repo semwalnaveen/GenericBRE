@@ -22,7 +22,6 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +34,6 @@ export function MappingClient() {
 
   const rules = useAppStore((s) => s.rules);
   const products = useAppStore((s) => s.products);
-  const ruleCategories = useAppStore((s) => s.ruleCategories);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const mapRuleToProducts = useAppStore((s) => s.mapRuleToProducts);
   const submitForReview = useAppStore((s) => s.submitForReview);
@@ -118,9 +116,15 @@ export function MappingClient() {
     remarks: remarks.trim() || undefined,
   });
 
+  const isEffectiveDateInPast = effectiveDate !== "" && effectiveDate < new Date().toISOString().slice(0, 10);
+
   const handleSaveMapping = () => {
     if (productIds.length === 0) {
       toast.error("Select at least one product to map.");
+      return;
+    }
+    if (isEffectiveDateInPast) {
+      toast.error("Effective Date can't be in the past.");
       return;
     }
     const res = mapRuleToProducts(rule.id, buildConfig());
@@ -134,6 +138,10 @@ export function MappingClient() {
   const handleSubmitForApproval = () => {
     if (productIds.length === 0) {
       toast.error("Map at least one product before submitting for approval.");
+      return;
+    }
+    if (isEffectiveDateInPast) {
+      toast.error("Effective Date can't be in the past.");
       return;
     }
     const mapped = mapRuleToProducts(rule.id, buildConfig());
@@ -313,25 +321,20 @@ export function MappingClient() {
               <h2 className="mb-4 text-base font-semibold">Rule Details</h2>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Category</Label>
-                  <Select 
-                    items={Object.fromEntries(ruleCategories.map((c) => [c.name, c.name]))} 
-                    value={category} 
-                    onValueChange={(v) => setCategory((v as string) ?? "")}
-                    disabled={!!rule.category}
-                  >
-                    <SelectTrigger className="w-full bg-card"><SelectValue placeholder="Select category" /></SelectTrigger>
-                    <SelectContent>
-                      {ruleCategories.map((c) => (
-                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!!rule.category && <p className="text-[11px] text-muted-foreground">Category inherited from rule creation.</p>}
-                </div>
-                <div className="space-y-1.5">
                   <Label>Effective Date</Label>
-                  <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="bg-card" />
+                  <Input
+                    type="date"
+                    value={effectiveDate}
+                    onChange={(e) => setEffectiveDate(e.target.value)}
+                    min={new Date().toISOString().slice(0, 10)}
+                    aria-invalid={isEffectiveDateInPast}
+                    className="bg-card"
+                  />
+                  <p className={cn("text-[11px]", isEffectiveDateInPast ? "text-destructive" : "text-muted-foreground")}>
+                    {isEffectiveDateInPast
+                      ? "This date is in the past — pick today or later."
+                      : "Must be today or a future date — this mapping can't take effect in the past."}
+                  </p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Remarks</Label>

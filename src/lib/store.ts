@@ -968,7 +968,14 @@ export const useAppStore = create<AppState>()(
             ...s.approvalRequests,
           ],
         }));
-        get().logAudit({ user: currentUser.name, action: "Submitted for Approval", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} submitted with its product mapping and queued for Checker review.` });
+        const remarks = get().productRuleMappings.find((m) => m.ruleId === ruleId)?.remarks;
+        get().logAudit({
+          user: currentUser.name,
+          action: "Submitted for Approval",
+          entity: "BusinessRule",
+          entityId: ruleId,
+          details: `${rule.name} submitted with its product mapping and queued for Checker review.${remarks ? ` Remarks: "${remarks}"` : ""}`,
+        });
         return { ok: true };
       },
       approveRule: (ruleId) => {
@@ -1099,7 +1106,13 @@ export const useAppStore = create<AppState>()(
           ),
         }));
         const wasLive = rule.status === "Approved" || rule.status === "Published";
-        get().logAudit({ user: currentUser.name, action: "Mapped Rule to Product(s)", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} mapped to ${config.productIds.length} product(s)${wasLive ? " — returned to Draft for re-approval" : ""}.` });
+        get().logAudit({
+          user: currentUser.name,
+          action: "Mapped Rule to Product(s)",
+          entity: "BusinessRule",
+          entityId: ruleId,
+          details: `${rule.name} mapped to ${config.productIds.length} product(s)${wasLive ? " — returned to Draft for re-approval" : ""}.${config.remarks ? ` Remarks: "${config.remarks}"` : ""}`,
+        });
         return { ok: true };
       },
 

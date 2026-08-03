@@ -62,6 +62,18 @@ const KPI_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   "business-categories": "kpi.businessCategories",
 };
 
+// Generates a deterministic sparkline array (values 20-100) based on a seed (e.g. the KPI value)
+function generateSparkline(seed: number, count: number = 7): number[] {
+  const result = [];
+  let current = (seed * 9301 + 49297) % 233280;
+  for (let i = 0; i < count; i++) {
+    current = (current * 9301 + 49297) % 233280;
+    result.push(20 + (current / 233280) * 80);
+  }
+  if (seed === 0) return [30, 40, 35, 50, 45, 60, 55];
+  return result;
+}
+
 export function KpiCards() {
   const t = useTranslate();
   const allRules = useAppStore((s) => s.rules);
@@ -108,7 +120,7 @@ export function KpiCards() {
       label: t(KPI_TRANSLATION_KEYS["draft-rules"]),
       value: rules.filter((r) => r.status === "Draft").length,
       icon: FileEdit,
-      accent: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
+      accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
       href: "/repository?status=Draft",
     },
     "pending-review": {
@@ -122,7 +134,7 @@ export function KpiCards() {
       label: t(KPI_TRANSLATION_KEYS["pending-approvals"]),
       value: approvalRequests.filter((a) => a.stage === "Pending Review").length,
       icon: UserCheck,
-      accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
+      accent: "text-orange-600 bg-orange-500/10 dark:text-orange-400",
       href: "/repository?status=Testing",
     },
     "rule-conflicts": {
@@ -136,7 +148,7 @@ export function KpiCards() {
       label: t(KPI_TRANSLATION_KEYS.deployments),
       value: deploymentEvents.length,
       icon: Rocket,
-      accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
+      accent: "text-purple-600 bg-purple-500/10 dark:text-purple-400",
       href: "/repository?status=Active", // FUTURE: restore "/repository?environment=Prod" when environment is reintroduced
     },
     "rule-executions": {
@@ -145,7 +157,7 @@ export function KpiCards() {
       label: t(KPI_TRANSLATION_KEYS["rule-executions"]),
       value: domainFilter.length ? simulations.length : simulations.length + 256,
       icon: FlaskConical,
-      accent: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+      accent: "text-cyan-600 bg-cyan-500/10 dark:text-cyan-400",
       href: "/simulator",
     },
     "failed-simulations": {
@@ -160,7 +172,7 @@ export function KpiCards() {
       label: t(KPI_TRANSLATION_KEYS["business-categories"]),
       value: new Set(rules.map((r) => r.category)).size,
       icon: Layers,
-      accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
+      accent: "text-indigo-600 bg-indigo-500/10 dark:text-indigo-400",
       href: "/repository",
     },
   };
@@ -181,15 +193,25 @@ export function KpiCards() {
           whileTap={{ scale: 0.98 }}
           className="group flex h-22 flex-col justify-between gap-1 rounded-lg border bg-card px-2.5 py-2 text-left shadow-2xs transition-all duration-150 ease-out hover:bg-accent/60 hover:border-primary/40 hover:shadow-md"
         >
-          <div className="flex items-center justify-between gap-1.5 w-full min-w-0" title={k.label}>
-            <span className="truncate text-sm font-semibold uppercase tracking-wide text-muted-foreground">{k.label}</span>
-            <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-md", k.accent)}>
-              <k.icon className="size-3" />
+          <div className="flex items-start justify-between gap-1.5 w-full min-w-0" title={k.label}>
+            <span className="truncate text-xs font-semibold text-muted-foreground/90">{k.label}</span>
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-border/50 dark:bg-background", k.accent)}>
+              <k.icon className="size-3.5" />
             </span>
           </div>
-          <div>
-            <p className="text-xl font-bold tabular-nums leading-none">{k.value}</p>
-            {k.suffix && <p className="mt-0.5 truncate text-sm text-muted-foreground/70" title={k.suffix}>{k.suffix}</p>}
+          <div className="flex items-end justify-between w-full">
+            <div className="flex flex-col">
+              <span className="text-xl font-bold tracking-tight text-foreground leading-none">
+                {k.value > 1000 ? (k.value / 1000).toFixed(1) + "K" : k.value}
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate max-w-20 mt-1 leading-none">{k.suffix || "metrics"}</span>
+            </div>
+            {/* Dynamic fake sparkline based on KPI data */}
+            <div className="flex items-end gap-[2px] h-5 opacity-80 mb-0.5">
+              {generateSparkline(k.value + k.label.length).map((h, idx) => (
+                <div key={idx} className={cn("w-1 rounded-t-sm", k.accent.split(" ")[0].replace("text-", "bg-"))} style={{ height: `${h}%` }} />
+              ))}
+            </div>
           </div>
         </motion.button>
       ))}

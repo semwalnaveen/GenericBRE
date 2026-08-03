@@ -30,7 +30,7 @@ export default function RootLayout({
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="h-full overflow-hidden" suppressHydrationWarning>
+      <body className="h-full overflow-hidden bg-bre-custom" suppressHydrationWarning>
         <div className="app-wallpaper-layer" />
         <Providers>
           <AppShell>{children}</AppShell>

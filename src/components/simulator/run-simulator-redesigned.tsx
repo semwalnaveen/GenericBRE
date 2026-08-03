@@ -17,6 +17,7 @@ import { ValidationPanel } from "./validation-panel";
 import { DynamicFormView } from "./dynamic-form-view";
 import { VariableViewer } from "./variable-viewer";
 import { DecisionExplanation } from "./decision-explanation";
+import { CalculatedVariablesCard } from "./calculated-variables-card";
 
 interface RunSimulatorRedesignedProps {
   product: Product;
@@ -200,13 +201,17 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
           <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={requiredFields} />
         </div>
 
-        {/* RIGHT COLUMN — DECISION, VARIABLE INSPECTOR & CONTEXT (6 COLS) */}
+        {/* RIGHT COLUMN — CALCULATED VARIABLES, DECISION, VARIABLE INSPECTOR & CONTEXT (6 COLS) */}
         <div className="col-span-12 lg:col-span-6 space-y-4">
+          {/* CALCULATED VARIABLES — shown right after the Input payload (left column),
+              before the Decision, matching Input -> Calculated Variables -> Decision. */}
+          {result && <CalculatedVariablesCard calculatedValues={result.calculatedValues} rules={sim.rules} />}
+
           {/* DECISION EXPLANATION CARD */}
           <DecisionExplanation result={result} onDownloadReport={handleDownloadReport} />
 
           {/* VARIABLE INSPECTOR (FULL 6-COLUMN WIDTH) */}
-          {result && <VariableViewer traceSteps={result.flatTrace} jsonText={sim.jsonText || "{}"} fieldCatalog={sim.fieldCatalog} />}
+          {result && <VariableViewer traceSteps={result.flatTrace} jsonText={sim.jsonText || "{}"} fieldCatalog={sim.fieldCatalog} rules={sim.rules} />}
 
           {/* STICKY SUMMARY PANEL */}
           <div className="rounded-xl border bg-card p-4 space-y-3 shadow-xs">

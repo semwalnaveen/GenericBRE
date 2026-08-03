@@ -20,7 +20,7 @@ function Value({ children }: { children: React.ReactNode }) {
 }
 
 function quoteIfText(value: string, field?: BusinessField): React.ReactNode {
-  const numeric = field?.type === "number" || field?.type === "currency";
+  const numeric = field?.type === "number" || field?.type === "currency" || field?.type === "percentage";
   const boolLike = field?.type === "boolean" || value === "true" || value === "false";
   if (numeric || boolLike) return <Value>{value || "…"}</Value>;
   return <Value>&apos;{value || "…"}&apos;</Value>;

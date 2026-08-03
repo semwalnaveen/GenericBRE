@@ -42,7 +42,8 @@ function defaultSampleForField(field: BusinessField): string | number | boolean 
   switch (field.type) {
     case "number":
     case "currency":
-      return field.type === "currency" ? 500000 : 100;
+    case "percentage":
+      return field.type === "currency" ? 500000 : field.type === "percentage" ? 50 : 100;
     case "boolean":
       return true;
     case "enum":
