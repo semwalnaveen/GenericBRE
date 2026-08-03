@@ -4,11 +4,10 @@ import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { ChevronDown, History, RotateCcw, Boxes, Variable, MessageSquare, CheckCheck, Clock, ScrollText } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import {
   AlertDialog,
@@ -166,42 +165,39 @@ function ProductMappingSection({
   );
 
   return (
-    <>
-      <Separator />
-      <div className="py-4">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          <Boxes className="size-3.5" /> Product Mapping &amp; Sequence
-        </p>
-        {rows.length === 0 ? (
-          <p className="text-sm italic text-muted-foreground">Not yet mapped to any product.</p>
-        ) : (
-          <div className="space-y-2">
-            {rows.map(({ mapping, product }) => (
-              <div key={mapping.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{product?.name ?? mapping.productId}</span>
-                  {mapping.order !== undefined && (
-                    <Badge variant="outline" className="font-mono">Sequence #{mapping.order}</Badge>
-                  )}
-                  {!mapping.active && <Badge variant="outline">Inactive</Badge>}
-                  {mapping.effectiveDate && (
-                    <span className="text-muted-foreground">
-                      Effective {new Date(mapping.effectiveDate).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-                {mapping.remarks && (
-                  <p className="mt-1.5 flex items-start gap-1.5 text-muted-foreground">
-                    <MessageSquare className="mt-0.5 size-3.5 shrink-0" />
-                    <span className="whitespace-pre-wrap">{mapping.remarks}</span>
-                  </p>
+    <Card className="p-4 shadow-sm sm:p-5">
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Boxes className="size-3.5" /> Product Mapping &amp; Sequence
+      </p>
+      {rows.length === 0 ? (
+        <p className="text-sm italic text-muted-foreground">Not yet mapped to any product.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map(({ mapping, product }) => (
+            <div key={mapping.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{product?.name ?? mapping.productId}</span>
+                {mapping.order !== undefined && (
+                  <Badge variant="outline" className="font-mono">Sequence #{mapping.order}</Badge>
+                )}
+                {!mapping.active && <Badge variant="outline">Inactive</Badge>}
+                {mapping.effectiveDate && (
+                  <span className="text-muted-foreground">
+                    Effective {new Date(mapping.effectiveDate).toLocaleDateString()}
+                  </span>
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </>
+              {mapping.remarks && (
+                <p className="mt-1.5 flex items-start gap-1.5 text-muted-foreground">
+                  <MessageSquare className="mt-0.5 size-3.5 shrink-0" />
+                  <span className="whitespace-pre-wrap">{mapping.remarks}</span>
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -209,22 +205,19 @@ function GeneratedVariablesSection({ rule }: { rule: BusinessRule }) {
   const vars = useMemo(() => ownGeneratedVariables(rule), [rule]);
   if (vars.length === 0) return null;
   return (
-    <>
-      <Separator />
-      <div className="py-4">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          <Variable className="size-3.5" /> Generated Variables
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {vars.map((v) => (
-            <span key={v.key} className="rounded-md border bg-muted/30 px-2 py-1 text-sm">
-              <span className="font-mono font-medium">{v.key}</span>{" "}
-              <span className="text-muted-foreground">via {v.type}</span>
-            </span>
-          ))}
-        </div>
+    <Card className="p-4 shadow-sm sm:p-5">
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <Variable className="size-3.5" /> Generated Variables
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {vars.map((v) => (
+          <span key={v.key} className="rounded-md border bg-muted/30 px-2 py-1 text-sm">
+            <span className="font-mono font-medium">{v.key}</span>{" "}
+            <span className="text-muted-foreground">via {v.type}</span>
+          </span>
+        ))}
       </div>
-    </>
+    </Card>
   );
 }
 
@@ -239,49 +232,46 @@ function ApprovalTimelineSection({ rule, approvalRequests }: { rule: BusinessRul
   if (requests.length === 0) return null;
 
   return (
-    <>
-      <Separator />
-      <div className="py-4">
-        <Accordion defaultValue={["approval-timeline"]}>
-          <AccordionItem value="approval-timeline">
-            <AccordionTrigger className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-              <span className="flex items-center gap-1.5">
-                <CheckCheck className="size-3.5" /> Approval Timeline
-              </span>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                {requests.map((a) => (
-                  <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={a.stage === "Approved" ? "default" : a.stage === "Rejected" ? "destructive" : "outline"}>
-                        {a.stage}
-                      </Badge>
-                      <span className="text-muted-foreground">
-                        Submitted by <span className="font-medium text-foreground">{a.requestedBy}</span> ·{" "}
-                        {new Date(a.requestedAt).toLocaleString()}
-                      </span>
-                    </div>
-                    {a.decidedBy && (
-                      <p className="mt-1 text-muted-foreground">
-                        Decided by <span className="font-medium text-foreground">{a.decidedBy}</span>
-                        {a.decidedAt && <> · {new Date(a.decidedAt).toLocaleString()}</>}
-                      </p>
-                    )}
-                    {a.comment && (
-                      <p className="mt-1.5 flex items-start gap-1.5">
-                        <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                        <span className="whitespace-pre-wrap">{a.comment}</span>
-                      </p>
-                    )}
+    <Card className="p-4 shadow-sm sm:p-5">
+      <Accordion defaultValue={["approval-timeline"]}>
+        <AccordionItem value="approval-timeline" className="border-none">
+          <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+            <span className="flex items-center gap-1.5">
+              <CheckCheck className="size-3.5" /> Approval Timeline
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-3">
+            <div className="space-y-2">
+              {requests.map((a) => (
+                <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={a.stage === "Approved" ? "default" : a.stage === "Rejected" ? "destructive" : "outline"}>
+                      {a.stage}
+                    </Badge>
+                    <span className="text-muted-foreground">
+                      Submitted by <span className="font-medium text-foreground">{a.requestedBy}</span> ·{" "}
+                      {new Date(a.requestedAt).toLocaleString()}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-    </>
+                  {a.decidedBy && (
+                    <p className="mt-1 text-muted-foreground">
+                      Decided by <span className="font-medium text-foreground">{a.decidedBy}</span>
+                      {a.decidedAt && <> · {new Date(a.decidedAt).toLocaleString()}</>}
+                    </p>
+                  )}
+                  {a.comment && (
+                    <p className="mt-1.5 flex items-start gap-1.5">
+                      <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                      <span className="whitespace-pre-wrap">{a.comment}</span>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </Card>
   );
 }
 
@@ -296,36 +286,33 @@ function AuditTimelineSection({ rule, auditLog }: { rule: BusinessRule; auditLog
   if (entries.length === 0) return null;
 
   return (
-    <>
-      <Separator />
-      <div className="py-4">
-        <Accordion>
-          <AccordionItem value="audit-timeline">
-            <AccordionTrigger className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-              <span className="flex items-center gap-1.5">
-                <ScrollText className="size-3.5" /> Audit Timeline ({entries.length})
-              </span>
-            </AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-2">
-                {entries.map((e) => (
-                  <div key={e.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{e.action}</span>
-                      <span className="inline-flex items-center gap-1 text-muted-foreground">
-                        by {e.user} · <Clock className="size-3 shrink-0" />
-                        {formatDistanceToNow(new Date(e.timestamp), { addSuffix: true })}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-muted-foreground">{e.details}</p>
+    <Card className="p-4 shadow-sm sm:p-5">
+      <Accordion>
+        <AccordionItem value="audit-timeline" className="border-none">
+          <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+            <span className="flex items-center gap-1.5">
+              <ScrollText className="size-3.5" /> Audit Timeline ({entries.length})
+            </span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-3">
+            <div className="space-y-2">
+              {entries.map((e) => (
+                <div key={e.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{e.action}</span>
+                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                      by {e.user} · <Clock className="size-3 shrink-0" />
+                      {formatDistanceToNow(new Date(e.timestamp), { addSuffix: true })}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-    </>
+                  <p className="mt-1 text-muted-foreground">{e.details}</p>
+                </div>
+              ))}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </Card>
   );
 }
 
@@ -354,9 +341,8 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
 
   return (
     <>
-      <Separator />
-      <div className="py-4">
-        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <Card className="p-4 shadow-sm sm:p-5">
+        <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           <History className="size-3.5" /> Version History
         </p>
         <div className="space-y-2">
@@ -426,7 +412,7 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
             );
           })}
         </div>
-      </div>
+      </Card>
 
       <AlertDialog open={!!restoreTarget} onOpenChange={(v) => !v && setRestoreTarget(null)}>
         <AlertDialogContent>
@@ -448,98 +434,88 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
   );
 }
 
-export function RuleViewSheet({ rule, open, onOpenChange }: { rule: BusinessRule | null; open: boolean; onOpenChange: (v: boolean) => void }) {
+// Full-content, read-only rule detail — rendered by /repository/view (a routed
+// page, not a modal) so there's enough width for Product Mapping/Conditions/
+// Actions/Timelines to actually be readable, instead of squeezed into a side
+// sheet. The caller owns the page chrome (header/back button/bottom action bar).
+export function RuleDetailView({ rule }: { rule: BusinessRule }) {
   const fieldCatalog = useAppStore((s) => s.fieldCatalog);
   const products = useAppStore((s) => s.products);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const approvalRequests = useAppStore((s) => s.approvalRequests);
   const auditLog = useAppStore((s) => s.auditLog);
   const submission = useMemo(() => {
-    if (!rule) return undefined;
     return approvalRequests
       .filter((a) => a.ruleId === rule.id)
       .sort((a, b) => new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime())[0];
-  }, [approvalRequests, rule]);
+  }, [approvalRequests, rule.id]);
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col gap-0 w-full sm:max-w-lg">
-        {rule && (
+    <div className="flex flex-col gap-4">
+      <Card className="p-4 shadow-sm sm:p-5">
+        <p className="text-sm text-muted-foreground">{rule.description || "No description provided."}</p>
+        <div className="flex flex-wrap gap-2 py-4">
+          <StatusBadge status={rule.status} />
+          <PriorityBadge priority={rule.priority} />
+          <span className="rounded-full border px-2 py-0.5 text-sm">{rule.domain}</span>
+          <span className="rounded-full border px-2 py-0.5 text-sm">{rule.category}</span>
+        </div>
+        <Separator />
+        <div className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <p className="text-muted-foreground">Version</p>
+            <p className="font-medium">v{rule.version}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Created</p>
+            <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Updated</p>
+            <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
+          </div>
+          {submission && (
+            <>
+              <div>
+                <p className="text-muted-foreground">Submitted By</p>
+                <p className="font-medium">{submission.requestedBy}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Submission Date</p>
+                <p className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</p>
+              </div>
+            </>
+          )}
+        </div>
+      </Card>
+
+      <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
+
+      <Card className="p-4 shadow-sm sm:p-5">
+        <div>
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
+          <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
+        </div>
+        <Separator className="my-4" />
+        <div>
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
+          <ActionRowList actions={rule.actions} />
+        </div>
+        {rule.elseActions && rule.elseActions.length > 0 && (
           <>
-            <SheetHeader className="shrink-0">
-              <SheetTitle className="flex items-center gap-2">
-                <span className="font-mono text-sm text-muted-foreground">{rule.id}</span>
-                {rule.name}
-              </SheetTitle>
-              <SheetDescription>{rule.description || "No description provided."}</SheetDescription>
-            </SheetHeader>
-            <ScrollArea className="flex-1 min-h-0 px-4">
-              <div className="flex flex-wrap gap-2 pb-4">
-                <StatusBadge status={rule.status} />
-                <PriorityBadge priority={rule.priority} />
-                <span className="rounded-full border px-2 py-0.5 text-sm">{rule.domain}</span>
-                <span className="rounded-full border px-2 py-0.5 text-sm">{rule.category}</span>
-              </div>
-              <Separator />
-              <div className="grid grid-cols-2 gap-3 py-4 text-sm">
-                {/* FUTURE: Owner metadata removed for demo. Restore when reintroduced:
-                <div>
-                  <p className="text-muted-foreground">Owner</p>
-                  <p className="font-medium">{rule.owner}</p>
-                </div>
-                */}
-                <div>
-                  <p className="text-muted-foreground">Version</p>
-                  <p className="font-medium">v{rule.version}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Created</p>
-                  <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Updated</p>
-                  <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
-                </div>
-                {submission && (
-                  <>
-                    <div>
-                      <p className="text-muted-foreground">Submitted By</p>
-                      <p className="font-medium">{submission.requestedBy}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Submission Date</p>
-                      <p className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</p>
-                    </div>
-                  </>
-                )}
-              </div>
-              <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
-              <Separator />
-              <div className="py-4">
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
-                <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
-              </div>
-              <Separator />
-              <div className="py-4">
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
-                <ActionRowList actions={rule.actions} />
-              </div>
-              {rule.elseActions && rule.elseActions.length > 0 && (
-                <>
-                  <Separator />
-                  <div className="py-4">
-                    <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
-                    <ActionRowList actions={rule.elseActions} />
-                  </div>
-                </>
-              )}
-              <GeneratedVariablesSection rule={rule} />
-              <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
-              <AuditTimelineSection rule={rule} auditLog={auditLog} />
-              <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
-            </ScrollArea>
+            <Separator className="my-4" />
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
+              <ActionRowList actions={rule.elseActions} />
+            </div>
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </Card>
+
+      <GeneratedVariablesSection rule={rule} />
+      <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
+      <AuditTimelineSection rule={rule} auditLog={auditLog} />
+      <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
+    </div>
   );
 }

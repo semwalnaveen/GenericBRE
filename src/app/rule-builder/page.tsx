@@ -62,6 +62,7 @@ import { InlineTestPanel } from "@/components/rule-builder/inline-test-panel";
 import { TemplatePicker } from "@/components/rule-builder/template-picker";
 import { SampleJsonPanel } from "@/components/rule-builder/sample-json-panel";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
@@ -823,7 +824,7 @@ function RuleBuilderContent() {
                 </div>
               ) : (
                 <>
-                  <div>
+                  <Card className="p-4 shadow-sm sm:p-5">
                     <div className="mb-2 flex items-center gap-2 px-1">
                       <Button
                         variant="ghost"
@@ -882,15 +883,15 @@ function RuleBuilderContent() {
                         </Button>
                       </div>
                     )}
-                  </div>
-                  <div>
+                  </Card>
+                  <Card className="p-4 shadow-sm sm:p-5">
                     <h2 className="mb-2 px-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       THEN — Action Builder
                     </h2>
                     <ActionListEditor actions={rule.actions} domain={rule.domain} rules={rules} currentRuleId={rule.id} rootGroup={rule.rootGroup} onChange={setActions} />
                     {errors.actions && <p className="mt-1.5 px-1 text-sm text-destructive">{errors.actions}</p>}
-                  </div>
-                  <div>
+                  </Card>
+                  <Card className="p-4 shadow-sm sm:p-5">
                     <div className="mb-2 flex items-center justify-between px-1">
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         ELSE — Otherwise
@@ -930,7 +931,7 @@ function RuleBuilderContent() {
                         No ELSE branch — this rule does nothing when its conditions don&apos;t match.
                       </p>
                     )}
-                  </div>
+                  </Card>
                 </>
               )}
             </div>

@@ -348,7 +348,7 @@ export function ChatBot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask a question..."
-                className="h-9 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 flex-1 rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               <Button size="icon" type="submit" className="size-9 shrink-0">
                 <Send className="size-4" />

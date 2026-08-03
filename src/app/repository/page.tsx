@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info, Columns3 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,11 +36,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
-import { RuleViewSheet } from "@/components/repository/rule-view-sheet";
 import { downloadCsv, parseCsv } from "@/lib/csv";
 import { emptyGroup } from "@/lib/condition-tree";
 import { BusinessRule } from "@/lib/types";
-import { detectConflictsForCandidate, RuleConflict } from "@/lib/conflict-detection";
 import { detectProductRuleConflicts, ProductConflictFinding } from "@/lib/product-conflict-detection";
 
 function nextRuleId(existing: BusinessRule[], taken: Set<string>) {
@@ -60,8 +58,6 @@ function RepositoryContent() {
   const addRule = useAppStore((s) => s.addRule);
   const cloneRule = useAppStore((s) => s.cloneRule);
   const setRuleStatus = useAppStore((s) => s.setRuleStatus);
-  const approveRule = useAppStore((s) => s.approveRule);
-  const rejectRule = useAppStore((s) => s.rejectRule);
   const products = useAppStore((s) => s.products);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const approvalRequests = useAppStore((s) => s.approvalRequests);
@@ -79,9 +75,6 @@ function RepositoryContent() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statuses, setStatuses] = useState<string[]>(searchParams.get("status") ? [searchParams.get("status")!] : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
-  const [viewRule, setViewRule] = useState<BusinessRule | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [approvalConfirm, setApprovalConfirm] = useState<{ rule: BusinessRule; conflicts: RuleConflict[]; remarks?: string } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -163,18 +156,6 @@ function RepositoryContent() {
     reader.readAsText(file);
   };
 
-  const performApprove = useCallback(
-    (rule: BusinessRule) => {
-      const result = approveRule(rule.id);
-      if (result.ok) {
-        toast.success(`${rule.id} approved & published`, { description: `${rule.name} is now live.` });
-      } else {
-        toast.error("Approval blocked", { description: result.reason });
-      }
-    },
-    [approveRule]
-  );
-
   const filtered = useMemo(() => {
     return rules.filter((r) => {
       if (search) {
@@ -192,10 +173,7 @@ function RepositoryContent() {
     () =>
       buildColumns(
         {
-          onView: (r) => {
-            setViewRule(r);
-            setViewOpen(true);
-          },
+          onView: (r) => router.push(`/repository/view?id=${r.id}`),
           onEdit: (r) => router.push(`/rule-builder?id=${r.id}`),
           onClone: (r) => {
             const result = cloneRule(r.id);
@@ -222,23 +200,6 @@ function RepositoryContent() {
             }
           },
           onSubmitForReview: (r) => router.push(`/rule-builder/mapping?ruleId=${r.id}`),
-          onApprove: (r) => {
-            const candidateConflicts = detectConflictsForCandidate(r, rules);
-            const remarks = productRuleMappings.find((m) => m.ruleId === r.id)?.remarks;
-            if (candidateConflicts.length > 0 || remarks) {
-              setApprovalConfirm({ rule: r, conflicts: candidateConflicts, remarks });
-            } else {
-              performApprove(r);
-            }
-          },
-          onReject: (r) => {
-            const result = rejectRule(r.id);
-            if (result.ok) {
-              toast.info(`${r.id} rejected`, { description: `${r.name} sent back — edit and resubmit.` });
-            } else {
-              toast.error("Action blocked", { description: result.reason });
-            }
-          },
           onReactivate: (r) => {
             const result = setRuleStatus(r.id, "Published");
             if (result.ok) {
@@ -255,7 +216,7 @@ function RepositoryContent() {
         },
         { canPublish, canCreate, canEdit, canDelete, ruleGroups, products, productRuleMappings, approvalRequests }
       ),
-    [router, cloneRule, setRuleStatus, rejectRule, canPublish, canCreate, canEdit, canDelete, ruleGroups, rules, performApprove, products, productRuleMappings, approvalRequests]
+    [router, cloneRule, setRuleStatus, canPublish, canCreate, canEdit, canDelete, ruleGroups, products, productRuleMappings, approvalRequests]
   );
 
   const clearAll = () => {
@@ -400,8 +361,6 @@ function RepositoryContent() {
         />
       </div>
 
-      <RuleViewSheet open={viewOpen} onOpenChange={setViewOpen} rule={viewRule} />
-
       {/* PRODUCT-LEVEL RULE CONFLICT DETECTION REPORT MODAL */}
       <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
         <DialogContent className="sm:max-w-4xl lg:max-w-5xl w-full">
@@ -485,50 +444,6 @@ function RepositoryContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={!!approvalConfirm} onOpenChange={(v) => !v && setApprovalConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-destructive" />
-              {approvalConfirm && approvalConfirm.conflicts.length > 0 ? "Possible conflict detected" : "Review before approving"}
-            </AlertDialogTitle>
-            {approvalConfirm && approvalConfirm.conflicts.length > 0 && (
-              <AlertDialogDescription>
-                Publishing {approvalConfirm.rule.id} would create
-                {approvalConfirm.conflicts.length > 1 ? " these conflicts" : " this conflict"} with
-                rules already Active. You can still approve — this is advisory, not a hard block.
-              </AlertDialogDescription>
-            )}
-          </AlertDialogHeader>
-          {approvalConfirm && approvalConfirm.conflicts.length > 0 && (
-            <ul className="space-y-1.5 rounded-lg border bg-destructive/5 p-2.5 text-sm">
-              {approvalConfirm.conflicts.map((c, i) => (
-                <li key={i} className="text-destructive">
-                  {c.ruleAId} vs {c.ruleBId} — {c.reason}
-                </li>
-              ))}
-            </ul>
-          )}
-          {approvalConfirm?.remarks && (
-            <div className="space-y-1 rounded-lg border bg-muted/30 p-2.5 text-sm">
-              <p className="font-semibold text-muted-foreground">Submission Remarks</p>
-              <p className="whitespace-pre-wrap">{approvalConfirm.remarks}</p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (approvalConfirm) performApprove(approvalConfirm.rule);
-                setApprovalConfirm(null);
-              }}
-            >
-              Approve Anyway
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={(v) => !v && setDeleteConfirm(null)}>
         <AlertDialogContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, Undo2, CheckCheck, MoreHorizontal, TestTube2, Trash2 } from "lucide-react";
+import { ArrowUpDown, Copy, Eye, FileEdit, Archive, Ban, PlayCircle, FlaskConical, MoreHorizontal, TestTube2, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ApprovalRequest, BusinessRule, Product, ProductRuleMapping, RuleGroup } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
@@ -31,8 +31,6 @@ export interface RepositoryActions {
   onDisable: (r: BusinessRule) => void;
   onArchive: (r: BusinessRule) => void;
   onSubmitForReview: (r: BusinessRule) => void;
-  onApprove: (r: BusinessRule) => void;
-  onReject: (r: BusinessRule) => void;
   onReactivate: (r: BusinessRule) => void;
   onTestInSimulator: (r: BusinessRule) => void;
   onPromote: (r: BusinessRule) => void;
@@ -193,7 +191,7 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onClick={() => actions.onView(r)}>
-                <Eye className="size-3.5" /> View
+                <Eye className="size-3.5" /> {r.status === "Pending Approval" ? "View and Approve" : "View"}
               </DropdownMenuItem>
               {r.status !== "Archived" && context.canEdit && (
                 <DropdownMenuItem onClick={() => actions.onEdit(r)}>
@@ -213,17 +211,9 @@ export function buildColumns(actions: RepositoryActions, context: RepositoryColu
                 </DropdownMenuItem>
               )}
               {r.status === "Pending Approval" && (
-                <>
-                  <DropdownMenuItem onClick={() => actions.onTestInSimulator(r)}>
-                    <TestTube2 className="size-3.5" /> Test in Simulator
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => actions.onApprove(r)} disabled={!context.canPublish}>
-                    <CheckCheck className="size-3.5" /> Approve
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => actions.onReject(r)} disabled={!context.canPublish}>
-                    <Undo2 className="size-3.5" /> Reject
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={() => actions.onTestInSimulator(r)}>
+                  <TestTube2 className="size-3.5" /> Test in Simulator
+                </DropdownMenuItem>
               )}
               {r.status === "Published" && (
                 <DropdownMenuItem onClick={() => actions.onDisable(r)} disabled={!context.canPublish}>

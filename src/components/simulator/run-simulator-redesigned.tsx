@@ -148,7 +148,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                 </TabsList>
               </div>
 
-              <TabsContent value="form" className="mt-3">
+              <TabsContent value="form" className="mt-3 max-h-[340px] overflow-auto">
                 <DynamicFormView
                   jsonText={sim.jsonText || "{}"}
                   onUpdateJsonText={sim.setJsonText}
@@ -176,7 +176,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                   value={sim.jsonText || "{}"}
                   onChange={(e) => sim.setJsonText(e.target.value)}
                   placeholder='{"key": "value"}'
-                  className="font-mono text-xs min-h-64 bg-slate-950 text-slate-100 border-slate-800 focus-visible:ring-primary"
+                  className="font-mono text-xs min-h-64 bg-slate-950 text-slate-100 border-slate-800 focus-visible:ring-primary max-h-[340px] overflow-auto"
                 />
               </TabsContent>
             </Tabs>

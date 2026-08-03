@@ -50,7 +50,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <button
           onClick={() => setPaletteOpen(true)}
           aria-label="Search"
-          className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border bg-background px-0 text-sm text-muted-foreground transition-colors hover:border-ring/50 sm:ml-3 sm:w-full sm:max-w-70 sm:justify-start sm:px-3"
+          className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card px-0 text-sm text-muted-foreground transition-colors hover:border-ring/50 sm:ml-3 sm:w-full sm:max-w-70 sm:justify-start sm:px-3"
         >
           <Search className="size-3.5 shrink-0" />
           <span className="hidden sm:inline">{t("header.searchPlaceholder")}</span>

@@ -1432,9 +1432,23 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 53,
+      version: 54,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v53 -> v54: every role now lands on /dashboard by default (some
+        // seeded users previously landed on /simulator or
+        // /configuration-studio instead) — still per-user configurable via
+        // Configuration Studio -> Dashboard Management's Landing Route
+        // dropdown after this one-time reset.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs) {
+            for (const cfg of Object.values(s.dashboardConfigs)) {
+              cfg.landingRoute = "/dashboard";
+            }
+          }
+        }
+
         // v52 -> v53 collapsed the Approve -> Publish governance step into
         // one action (approveRule now publishes atomically — see approveRule
         // in this file). Any rule left resting in "Approved" from before this
