@@ -97,6 +97,9 @@ export interface Condition {
   connector?: Connector;
   sourceType?: "BUSINESS_FIELD" | "RULE_OUTPUT";
   sourceRuleId?: string; // Present when sourceType === "RULE_OUTPUT"
+  rhsType?: "STATIC" | "FIELD_REFERENCE";
+  rhsSourceType?: "BUSINESS_FIELD" | "RULE_OUTPUT";
+  rhsSourceRuleId?: string; // Present when rhsSourceType === "RULE_OUTPUT"
 }
 
 export interface ConditionGroup {

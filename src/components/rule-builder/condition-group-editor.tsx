@@ -194,8 +194,8 @@ export function ConditionGroupEditor({ group, domain, handlers, selection, clipb
   return (
     <div
       className={cn(
-        "rounded-xl border",
-        isRoot ? "border-border bg-muted/20" : "ml-1 border-primary/25 bg-background/60",
+        "rounded-xl border transition-all",
+        isRoot ? "border-border bg-muted/20" : "ml-4 border-l-4 border-l-primary/40 border-y-primary/20 border-r-primary/20 bg-card shadow-sm",
         selected && "ring-2 ring-primary/40"
       )}
     >
@@ -362,10 +362,25 @@ export function ConditionGroupEditor({ group, domain, handlers, selection, clipb
                     if (payload.kind === "node") handlers.onMoveNode(payload.nodeId, group.id, 0);
                     else handlers.onInsertField(group.id, 0, payload.fieldKey);
                   }}
-                  className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground"
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 transition-colors",
+                    isRoot ? "bg-card/50 border-border" : "bg-background/40 border-primary/20",
+                    "hover:bg-muted/40 hover:border-primary/40"
+                  )}
                 >
-                  No conditions yet — this {isRoot ? "rule applies to every case" : "group always passes"}. Add a condition, or drag a
-                  field here from Available Attributes.
+                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10">
+                    <FolderPlus className="size-6 text-primary" />
+                  </div>
+                  <div className="text-center max-w-sm">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {isRoot ? "Start building your rule" : "Empty Condition Group"}
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {isRoot 
+                        ? "Click '+ Add Condition' or drag a field from the right to get started." 
+                        : "Add a condition to this nested group."}
+                    </p>
+                  </div>
                 </div>
               )}
               {group.children.map((child, i) => {

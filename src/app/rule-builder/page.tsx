@@ -314,7 +314,7 @@ function RuleBuilderContent() {
   // ---- SQL-style builder: attribute panel, selection, clipboard, DnD ----
   const entities = useAppStore((s) => s.entities);
   const clipboardCount = useConditionClipboard();
-  const [attrPanelOpen, setAttrPanelOpen] = useState(true);
+  const [sidebarOpen, setsidebarOpen] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Selection can go stale after deletes/undo — prune against the live tree
@@ -710,7 +710,7 @@ function RuleBuilderContent() {
           )}
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className={cn("flex flex-col gap-4", attrPanelOpen ? "lg:col-span-8" : "lg:col-span-12")}>
+            <div className={cn("flex flex-col gap-4", sidebarOpen ? "lg:col-span-8" : "lg:col-span-12")}>
               {caseBuilderOpen ? (
                 <div>
                   <CaseBuilder
@@ -734,10 +734,10 @@ function RuleBuilderContent() {
                         variant="ghost"
                         size="icon-sm"
                         className="text-muted-foreground"
-                        title={attrPanelOpen ? "Hide Available Attributes" : "Show Available Attributes"}
-                        onClick={() => setAttrPanelOpen((v) => !v)}
+                        title={sidebarOpen ? "Hide Summary & Deps" : "Show Summary & Deps"}
+                        onClick={() => setsidebarOpen((v) => !v)}
                       >
-                        {attrPanelOpen ? <PanelLeftClose className="size-3.5" /> : <PanelLeftOpen className="size-3.5" />}
+                        {sidebarOpen ? <PanelLeftClose className="size-3.5" /> : <PanelLeftOpen className="size-3.5" />}
                       </Button>
                       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                         Condition Builder
@@ -839,14 +839,14 @@ function RuleBuilderContent() {
                 </>
               )}
             </div>
-            {attrPanelOpen && (
+            {sidebarOpen && (
               <div className="flex flex-col gap-4 lg:col-span-4">
                 <div className="h-80 lg:sticky lg:top-4 lg:h-[calc(100dvh-230px)] rounded-xl border bg-card/50 p-2 shadow-sm flex flex-col">
-                  <Tabs defaultValue="attributes" className="flex h-full flex-col">
-                    <TabsList className="grid w-full grid-cols-4 shrink-0">
-                      <TabsTrigger value="attributes" className="text-xs px-1">Attrs</TabsTrigger>
+                  <Tabs defaultValue="preview" className="flex h-full flex-col">
+                    <TabsList className="grid w-full grid-cols-2 shrink-0">
+                      
                       <TabsTrigger value="preview" className="text-xs px-1">Preview</TabsTrigger>
-                      <TabsTrigger value="test" className="text-xs px-1">Test</TabsTrigger>
+                      
                       <TabsTrigger value="deps" className="text-xs px-1">Deps</TabsTrigger>
                     </TabsList>
                     
@@ -924,3 +924,4 @@ export default function RuleBuilderPage() {
     </Suspense>
   );
 }
+

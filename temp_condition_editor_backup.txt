@@ -40,7 +40,6 @@ export function ConditionEditor({
   const fieldCatalog = useAppStore((s) => s.fieldCatalog);
   const rules = useAppStore((s) => s.rules);
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
-  const [rhsFieldPickerOpen, setRhsFieldPickerOpen] = useState(false);
   const fields = fieldsForDomain(fieldCatalog, domain);
   const variables = getGeneratedVariables(rules, currentRuleId);
   const isRuleOutput = condition.sourceType === "RULE_OUTPUT";
@@ -63,11 +62,6 @@ export function ConditionEditor({
     recordRecentField(key);
     onChange({ field: key, value: "", value2: undefined, sourceType, sourceRuleId });
     setFieldPickerOpen(false);
-  };
-
-  const selectRhsField = (key: string, rhsSourceType?: "BUSINESS_FIELD" | "RULE_OUTPUT", rhsSourceRuleId?: string) => {
-    onChange({ value: key, rhsSourceType, rhsSourceRuleId } as any);
-    setRhsFieldPickerOpen(false);
   };
 
   // Live, per-row validation while building — same checks validateTree runs
