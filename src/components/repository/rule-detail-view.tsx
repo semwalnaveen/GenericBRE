@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { ChevronDown, History, RotateCcw, Boxes, Variable, MessageSquare, CheckCheck, Clock, ScrollText } from "lucide-react";
+import { ChevronDown, History, RotateCcw, Boxes, Variable, MessageSquare, CheckCheck, Clock, ScrollText, ListTree } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -165,7 +165,7 @@ function ProductMappingSection({
   );
 
   return (
-    <Card className="p-4 shadow-sm sm:p-5">
+    <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
       <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         <Boxes className="size-3.5" /> Product Mapping &amp; Sequence
       </p>
@@ -201,11 +201,85 @@ function ProductMappingSection({
   );
 }
 
+function RulePreviewSection({ rule, catalog }: { rule: BusinessRule; catalog: BusinessField[] }) {
+  const flatConds = useMemo(() => flattenConditions(rule.rootGroup), [rule.rootGroup]);
+  const inputFields = useMemo(() => {
+    const fields = new Set(flatConds.map((c) => c.field));
+    return Array.from(fields).map((f) => getField(catalog, f)?.label ?? f);
+  }, [flatConds, catalog]);
+  
+  const generatedVars = useMemo(() => ownGeneratedVariables(rule), [rule]);
+
+  return (
+    <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <ListTree className="size-3.5" /> Rule Preview
+      </p>
+      
+      <div className="space-y-4 text-sm">
+        {inputFields.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase text-muted-foreground">Input Fields</p>
+            <div className="flex flex-wrap gap-1.5">
+              {inputFields.map((f) => (
+                <Badge key={f} variant="outline" className="font-normal bg-background">
+                  {f}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase text-muted-foreground">Conditions</p>
+          <div className="space-y-1">
+            {flatConds.length === 0 ? (
+              <p className="text-muted-foreground">No conditions.</p>
+            ) : (
+              flatConds.map((c, i) => (
+                <p key={i}>
+                  {i === 0 ? "IF " : "AND "}
+                  {describeCondition(c, catalog)}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-xs font-semibold uppercase text-muted-foreground">Actions</p>
+          <div className="space-y-1">
+            {rule.actions.map((a, i) => (
+              <p key={i}>THEN {describeAction(a)}</p>
+            ))}
+            {rule.elseActions?.map((a, i) => (
+              <p key={`else-${i}`}>ELSE {describeAction(a)}</p>
+            ))}
+          </div>
+        </div>
+
+        {generatedVars.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase text-muted-foreground">Generated Variables</p>
+            <div className="flex flex-wrap gap-1.5">
+              {generatedVars.map((v) => (
+                <Badge key={v.key} variant="secondary" className="font-normal bg-muted/50">
+                  <Variable className="mr-1 size-3" /> {v.key}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 function GeneratedVariablesSection({ rule }: { rule: BusinessRule }) {
   const vars = useMemo(() => ownGeneratedVariables(rule), [rule]);
   if (vars.length === 0) return null;
   return (
-    <Card className="p-4 shadow-sm sm:p-5">
+    <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
       <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         <Variable className="size-3.5" /> Generated Variables
       </p>
@@ -232,46 +306,42 @@ function ApprovalTimelineSection({ rule, approvalRequests }: { rule: BusinessRul
   if (requests.length === 0) return null;
 
   return (
-    <Card className="p-4 shadow-sm sm:p-5">
-      <Accordion defaultValue={["approval-timeline"]}>
-        <AccordionItem value="approval-timeline" className="border-none">
-          <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-            <span className="flex items-center gap-1.5">
-              <CheckCheck className="size-3.5" /> Approval Timeline
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pt-3">
-            <div className="space-y-2">
-              {requests.map((a) => (
-                <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={a.stage === "Approved" ? "default" : a.stage === "Rejected" ? "destructive" : "outline"}>
-                      {a.stage}
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      Submitted by <span className="font-medium text-foreground">{a.requestedBy}</span> ·{" "}
-                      {new Date(a.requestedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  {a.decidedBy && (
-                    <p className="mt-1 text-muted-foreground">
-                      Decided by <span className="font-medium text-foreground">{a.decidedBy}</span>
-                      {a.decidedAt && <> · {new Date(a.decidedAt).toLocaleString()}</>}
-                    </p>
-                  )}
-                  {a.comment && (
-                    <p className="mt-1.5 flex items-start gap-1.5">
-                      <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                      <span className="whitespace-pre-wrap">{a.comment}</span>
-                    </p>
-                  )}
-                </div>
-              ))}
+    <AccordionItem value="approval-timeline" className="rounded-xl border border-[#D0E4F5] bg-card p-4 shadow-sm sm:p-5">
+      <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+        <span className="flex items-center gap-1.5">
+          <CheckCheck className="size-3.5" /> Approval Timeline
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="pt-3 pb-0">
+        <div className="space-y-2">
+          {requests.map((a) => (
+            <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={a.stage === "Approved" ? "default" : a.stage === "Rejected" ? "destructive" : "outline"}>
+                  {a.stage}
+                </Badge>
+                <span className="text-muted-foreground">
+                  Submitted by <span className="font-medium text-foreground">{a.requestedBy}</span> ·{" "}
+                  {new Date(a.requestedAt).toLocaleString()}
+                </span>
+              </div>
+              {a.decidedBy && (
+                <p className="mt-1 text-muted-foreground">
+                  Decided by <span className="font-medium text-foreground">{a.decidedBy}</span>
+                  {a.decidedAt && <> · {new Date(a.decidedAt).toLocaleString()}</>}
+                </p>
+              )}
+              {a.comment && (
+                <p className="mt-1.5 flex items-start gap-1.5">
+                  <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                  <span className="whitespace-pre-wrap">{a.comment}</span>
+                </p>
+              )}
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </Card>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
@@ -286,33 +356,29 @@ function AuditTimelineSection({ rule, auditLog }: { rule: BusinessRule; auditLog
   if (entries.length === 0) return null;
 
   return (
-    <Card className="p-4 shadow-sm sm:p-5">
-      <Accordion>
-        <AccordionItem value="audit-timeline" className="border-none">
-          <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-            <span className="flex items-center gap-1.5">
-              <ScrollText className="size-3.5" /> Audit Timeline ({entries.length})
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pt-3">
-            <div className="space-y-2">
-              {entries.map((e) => (
-                <div key={e.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{e.action}</span>
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
-                      by {e.user} · <Clock className="size-3 shrink-0" />
-                      {formatDistanceToNow(new Date(e.timestamp), { addSuffix: true })}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-muted-foreground">{e.details}</p>
-                </div>
-              ))}
+    <AccordionItem value="audit-timeline" className="rounded-xl border border-[#D0E4F5] bg-card p-4 shadow-sm sm:p-5">
+      <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+        <span className="flex items-center gap-1.5">
+          <ScrollText className="size-3.5" /> Audit Timeline ({entries.length})
+        </span>
+      </AccordionTrigger>
+      <AccordionContent className="pt-3 pb-0">
+        <div className="space-y-2">
+          {entries.map((e) => (
+            <div key={e.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{e.action}</span>
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  by {e.user} · <Clock className="size-3 shrink-0" />
+                  {formatDistanceToNow(new Date(e.timestamp), { addSuffix: true })}
+                </span>
+              </div>
+              <p className="mt-1 text-muted-foreground">{e.details}</p>
             </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </Card>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
@@ -323,7 +389,6 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
     () => allVersions.filter((v) => v.ruleId === rule.id).sort((a, b) => b.version - a.version),
     [allVersions, rule.id]
   );
-  const [expanded, setExpanded] = useState<number | null>(versions[0]?.version ?? null);
   const [restoreTarget, setRestoreTarget] = useState<RuleVersion | null>(null);
 
   if (versions.length === 0) return null;
@@ -341,45 +406,42 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
 
   return (
     <>
-      <Card className="p-4 shadow-sm sm:p-5">
-        <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          <History className="size-3.5" /> Version History
-        </p>
-        <div className="space-y-2">
-          {versions.map((v, i) => {
-            const prev = versions[i + 1];
-            const diff = diffVersions(prev, v, catalog);
-            const isOpen = expanded === v.version;
-            const isCurrent = i === 0;
-            const hasChanges =
-              diff.metaChanges.length +
-                diff.conditionsAdded.length +
-                diff.conditionsRemoved.length +
-                diff.actionsAdded.length +
-                diff.actionsRemoved.length >
-              0;
-            return (
-              <div key={v.version} className="rounded-lg border">
-                <button
-                  onClick={() => setExpanded(isOpen ? null : v.version)}
-                  className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-sm"
-                >
-                  <span className="font-mono font-semibold">v{v.version}</span>
-                  <span className="text-muted-foreground">
-                    {v.changeType === "created"
-                      ? "created"
-                      : v.changeType === "restored"
-                        ? `restored from v${v.restoredFromVersion}`
-                        : "edited"}
-                  </span>
-                  <span className="text-muted-foreground">· {v.snapshotBy}</span>
-                  <span className="ml-auto shrink-0 text-muted-foreground">
-                    {formatDistanceToNow(new Date(v.snapshotAt), { addSuffix: true })}
-                  </span>
-                  <ChevronDown className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-                </button>
-                {isOpen && (
-                  <div className="space-y-1.5 border-t px-2.5 py-2.5 text-sm">
+      <AccordionItem value="version-history" className="rounded-xl border border-[#D0E4F5] bg-card p-4 shadow-sm sm:p-5">
+        <AccordionTrigger className="py-0 text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+          <span className="flex items-center gap-1.5">
+            <History className="size-3.5" /> Version History
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="pt-3 pb-0">
+          <Accordion type="single" collapsible defaultValue={String(versions[0]?.version)} className="space-y-2">
+            {versions.map((v, i) => {
+              const prev = versions[i + 1];
+              const diff = diffVersions(prev, v, catalog);
+              const isCurrent = i === 0;
+              const hasChanges =
+                diff.metaChanges.length +
+                  diff.conditionsAdded.length +
+                  diff.conditionsRemoved.length +
+                  diff.actionsAdded.length +
+                  diff.actionsRemoved.length >
+                0;
+              return (
+                <AccordionItem key={v.version} value={String(v.version)} className="rounded-lg border px-0">
+                  <AccordionTrigger className="flex w-full items-center gap-2 px-2.5 py-2 text-left text-sm hover:no-underline hover:bg-muted/30 transition-colors [&[data-state=open]>svg]:rotate-180">
+                    <span className="font-mono font-semibold flex-shrink-0">v{v.version}</span>
+                    <span className="text-muted-foreground flex-shrink-0">
+                      {v.changeType === "created"
+                        ? "created"
+                        : v.changeType === "restored"
+                          ? `restored from v${v.restoredFromVersion}`
+                          : "edited"}
+                    </span>
+                    <span className="text-muted-foreground flex-shrink-0">· {v.snapshotBy}</span>
+                    <span className="ml-auto shrink-0 text-muted-foreground">
+                      {formatDistanceToNow(new Date(v.snapshotAt), { addSuffix: true })}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-1.5 border-t px-2.5 py-2.5 text-sm">
                     {!prev && <p className="text-muted-foreground">Initial version — nothing to compare against.</p>}
                     {prev && !hasChanges && <p className="text-muted-foreground">No content changes from v{prev.version}.</p>}
                     {diff.metaChanges.map((m) => (
@@ -406,13 +468,13 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
                         <RotateCcw className="size-3.5" /> Restore this version
                       </Button>
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
+        </AccordionContent>
+      </AccordionItem>
 
       <AlertDialog open={!!restoreTarget} onOpenChange={(v) => !v && setRestoreTarget(null)}>
         <AlertDialogContent>
@@ -451,71 +513,82 @@ export function RuleDetailView({ rule }: { rule: BusinessRule }) {
   }, [approvalRequests, rule.id]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card className="p-4 shadow-sm sm:p-5">
-        <p className="text-sm text-muted-foreground">{rule.description || "No description provided."}</p>
-        <div className="flex flex-wrap gap-2 py-4">
-          <StatusBadge status={rule.status} />
-          <PriorityBadge priority={rule.priority} />
-          <span className="rounded-full border px-2 py-0.5 text-sm">{rule.domain}</span>
-          <span className="rounded-full border px-2 py-0.5 text-sm">{rule.category}</span>
-        </div>
-        <Separator />
-        <div className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
-          <div>
-            <p className="text-muted-foreground">Version</p>
-            <p className="font-medium">v{rule.version}</p>
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 xl:gap-6">
+      {/* Left Column (Core Rule Logic) */}
+      <div className="flex flex-col gap-4 lg:col-span-2">
+        <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
+          <p className="text-sm text-muted-foreground">{rule.description || "No description provided."}</p>
+          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div className="flex flex-wrap gap-2">
+              <StatusBadge status={rule.status} />
+              <PriorityBadge priority={rule.priority} />
+              <span className="rounded-full border px-2 py-0.5 text-sm">{rule.domain}</span>
+              <span className="rounded-full border px-2 py-0.5 text-sm">{rule.category}</span>
+            </div>
+            {submission && (
+              <div className="text-right text-sm">
+                <span className="text-muted-foreground">Submission Date: </span>
+                <span className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</span>
+              </div>
+            )}
           </div>
-          <div>
-            <p className="text-muted-foreground">Created</p>
-            <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Updated</p>
-            <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
-          </div>
-          {submission && (
-            <>
+          <Separator />
+          <div className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
+            <div>
+              <p className="text-muted-foreground">Version</p>
+              <p className="font-medium">v{rule.version}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Created</p>
+              <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Updated</p>
+              <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
+            </div>
+            {submission && (
               <div>
                 <p className="text-muted-foreground">Submitted By</p>
                 <p className="font-medium">{submission.requestedBy}</p>
               </div>
+            )}
+          </div>
+        </Card>
+
+        <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
+          <div>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
+            <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
+          </div>
+          <Separator className="my-4" />
+          <div>
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
+            <ActionRowList actions={rule.actions} />
+          </div>
+          {rule.elseActions && rule.elseActions.length > 0 && (
+            <>
+              <Separator className="my-4" />
               <div>
-                <p className="text-muted-foreground">Submission Date</p>
-                <p className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</p>
+                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
+                <ActionRowList actions={rule.elseActions} />
               </div>
             </>
           )}
-        </div>
-      </Card>
+        </Card>
 
-      <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
+        <GeneratedVariablesSection rule={rule} />
+      </div>
 
-      <Card className="p-4 shadow-sm sm:p-5">
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
-          <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
-        </div>
-        <Separator className="my-4" />
-        <div>
-          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
-          <ActionRowList actions={rule.actions} />
-        </div>
-        {rule.elseActions && rule.elseActions.length > 0 && (
-          <>
-            <Separator className="my-4" />
-            <div>
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
-              <ActionRowList actions={rule.elseActions} />
-            </div>
-          </>
-        )}
-      </Card>
-
-      <GeneratedVariablesSection rule={rule} />
-      <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
-      <AuditTimelineSection rule={rule} auditLog={auditLog} />
-      <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
+      {/* Right Column (Meta & Operational) */}
+      <div className="flex flex-col gap-4">
+        <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
+        <RulePreviewSection rule={rule} catalog={fieldCatalog} />
+        <Accordion type="single" collapsible defaultValue="version-history" className="flex flex-col gap-4">
+          <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
+          <AuditTimelineSection rule={rule} auditLog={auditLog} />
+          <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
+        </Accordion>
+      </div>
     </div>
   );
 }

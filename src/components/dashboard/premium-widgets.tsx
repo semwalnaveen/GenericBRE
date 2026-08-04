@@ -18,13 +18,13 @@ interface WidgetCardProps {
 
 export function WidgetCard({ title, subtitle, children, className, action }: WidgetCardProps) {
   return (
-    <div className={cn("flex h-full flex-col rounded-xl border border-slate-200/60 bg-white shadow-sm overflow-hidden", className)}>
-      <div className="flex shrink-0 items-center justify-between px-4 py-2.5 border-b border-transparent">
+    <div className={cn("flex h-full flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden", className)}>
+      <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">{title}</h3>
-          {subtitle && <div className="mt-0.5 text-[11px] text-slate-500">{subtitle}</div>}
+          <h3 className="text-sm font-bold text-foreground">{title}</h3>
+          {subtitle && <div className="mt-0.5 text-[11px] text-muted-foreground">{subtitle}</div>}
         </div>
-        {action && <div className="text-[11px] font-medium text-slate-500">{action}</div>}
+        {action && <div className="text-[11px] font-medium text-muted-foreground">{action}</div>}
       </div>
       <div className="flex-1 flex flex-col min-h-0 p-4 overflow-y-auto">{children}</div>
     </div>
@@ -72,7 +72,7 @@ export function ProgressScoreWidget({
           <svg className="size-[100px] -rotate-90 transform" viewBox="0 0 100 100">
             {/* Track */}
             <circle
-              className="text-slate-100"
+              className="text-muted"
               strokeWidth="10"
               stroke="currentColor"
               fill="transparent"
@@ -95,8 +95,8 @@ export function ProgressScoreWidget({
             />
           </svg>
           <div className="absolute flex flex-col items-center justify-center text-center">
-            <span className="text-xl font-bold leading-none text-slate-800">{score}</span>
-            <span className="text-[10px] font-medium text-slate-400">/ {maxScore}</span>
+            <span className="text-xl font-bold leading-none text-foreground">{score}</span>
+            <span className="text-[10px] font-medium text-muted-foreground">/ {maxScore}</span>
           </div>
         </div>
 
@@ -105,10 +105,10 @@ export function ProgressScoreWidget({
           {metrics.map((m, i) => (
             <div key={i} className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600">{m.label}</span>
-                <span className="font-bold text-slate-800">{m.value}</span>
+                <span className="text-muted-foreground">{m.label}</span>
+                <span className="font-bold text-foreground">{m.value}</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className={cn("h-full rounded-full transition-all duration-1000 ease-out", m.colorClass)}
                   style={{ width: `${m.percentage}%` }}
@@ -170,8 +170,8 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
           </ResponsiveContainer>
           {/* Center Text */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{totalText}</span>
-            <span className="text-sm font-bold text-slate-800">{totalSubtext}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{totalText}</span>
+            <span className="text-sm font-bold text-foreground">{totalSubtext}</span>
           </div>
         </div>
 
@@ -184,11 +184,11 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
             >
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-medium text-slate-700">{item.name}</span>
+                <span className="text-xs font-medium text-foreground">{item.name}</span>
               </div>
-              <div className="flex items-center gap-3 text-xs font-bold text-slate-800">
+              <div className="flex items-center gap-3 text-xs font-bold text-foreground">
                 <span>{item.percentage}</span>
-                <span className="text-slate-500 font-medium">{item.absoluteText}</span>
+                <span className="text-muted-foreground font-medium">{item.absoluteText}</span>
               </div>
             </div>
           ))}
@@ -227,7 +227,7 @@ export function ProgressDonutListWidget({
   circleSubtext,
   circlePercentage,
   circleColorClass = "text-emerald-500",
-  circleTrackColorClass = "text-slate-100",
+  circleTrackColorClass = "text-muted",
   items,
 }: ProgressDonutListWidgetProps) {
   const radius = 38;
@@ -263,8 +263,8 @@ export function ProgressDonutListWidget({
             />
           </svg>
           <div className="absolute flex flex-col items-center justify-center text-center">
-            <span className="text-xl font-bold leading-none text-slate-800">{circleValue}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1">{circleSubtext}</span>
+            <span className="text-xl font-bold leading-none text-foreground">{circleValue}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">{circleSubtext}</span>
           </div>
         </div>
 
@@ -277,9 +277,9 @@ export function ProgressDonutListWidget({
             >
               <div className="flex items-center gap-2.5">
                 <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-medium text-slate-700">{item.label}</span>
+                <span className="text-xs font-medium text-foreground">{item.label}</span>
               </div>
-              <span className="text-xs font-bold text-slate-800 tabular-nums">{item.value}</span>
+              <span className="text-xs font-bold text-foreground tabular-nums">{item.value}</span>
             </div>
           ))}
         </div>
@@ -321,14 +321,14 @@ export function PerformanceListWidget({ title, subtitle, items, action }: Perfor
             key={i}
             className={cn(
               "flex flex-col gap-2 py-3",
-              i !== items.length - 1 && "border-b border-slate-100"
+              i !== items.length - 1 && "border-b border-border"
             )}
           >
             {/* Top Row */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="size-1.5 rounded-full" style={{ backgroundColor: item.dotColor }} />
-                <span className="text-sm font-semibold text-slate-800">{item.name}</span>
+                <span className="text-xs font-bold text-foreground">{item.name}</span>
               </div>
               <span className={cn("px-2 py-0.5 text-[10px] font-bold rounded-md uppercase tracking-wider", item.badgeClass)}>
                 {item.badgeText}
@@ -338,8 +338,8 @@ export function PerformanceListWidget({ title, subtitle, items, action }: Perfor
             <div className="flex items-center gap-6 pl-3.5">
               {item.stats.map((stat, idx) => (
                 <div key={idx} className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400">{stat.label}:</span>
-                  <span className="text-[10px] font-bold text-slate-700">{stat.value}</span>
+                  <span className="text-[11px] text-muted-foreground">{stat.label}:</span>
+                  <span className="text-[11px] font-bold text-foreground">{stat.value}</span>
                 </div>
               ))}
             </div>
@@ -372,43 +372,43 @@ interface CleanListWidgetProps {
 
 export function CleanListWidget({ title, action, items }: CleanListWidgetProps) {
   return (
-    <div className="flex h-full w-full min-h-0 flex-col rounded-xl border border-slate-200/60 bg-white shadow-sm overflow-hidden">
-      <div className="flex shrink-0 items-center justify-between bg-blue-50/50 px-4 py-2.5 border-b border-slate-100">
-        <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+    <div className="flex h-full w-full min-h-0 flex-col rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
+        <h3 className="text-sm font-bold text-foreground">{title}</h3>
         {action && (
-          <div className="text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors cursor-pointer">
+          <div className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
             {action}
           </div>
         )}
       </div>
-      <div className="flex flex-col flex-1 overflow-y-auto">
+      <div className="flex flex-col flex-1 overflow-y-auto pb-1">
         {items.map((item, i) => (
           <div
             key={item.id}
             className={cn(
-              "flex items-center justify-between py-1.5 px-4 hover:bg-slate-50/50 transition-colors",
-              i !== items.length - 1 && "border-b border-slate-100"
+              "flex items-center justify-between py-1.5 px-4 hover:bg-accent/50 transition-colors",
+              i !== items.length - 1 && "border-b border-border"
             )}
           >
             <div className="flex items-center gap-3">
               {item.indexNumber && (
-                <span className={cn("text-[11px] font-bold w-4 text-center", item.indexColorClass || "text-slate-400")}>
+                <span className={cn("text-[11px] font-bold w-4 text-center", item.indexColorClass || "text-muted-foreground")}>
                   {item.indexNumber}
                 </span>
               )}
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-800">{item.title}</span>
-                <span className="text-[11px] text-slate-500 mt-0.5">{item.subtitle}</span>
+                <span className="text-xs font-bold text-foreground">{item.title}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">{item.subtitle}</span>
               </div>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-xs font-bold text-slate-800">{item.primaryValue}</span>
-              <span className="text-[11px] text-slate-500 mt-0.5">{item.secondaryValue}</span>
+              <span className="text-xs font-bold text-foreground">{item.primaryValue}</span>
+              <span className="text-[11px] text-muted-foreground mt-0.5">{item.secondaryValue}</span>
             </div>
           </div>
         ))}
         {items.length === 0 && (
-          <div className="py-6 text-center text-xs text-slate-500">No data available.</div>
+          <div className="py-6 text-center text-xs text-muted-foreground">No data available.</div>
         )}
       </div>
     </div>

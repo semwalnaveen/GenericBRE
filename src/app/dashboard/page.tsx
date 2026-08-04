@@ -16,11 +16,11 @@ import {
   ExecutionLogsPanel,
   DecisionLookupPanel,
 } from "@/components/dashboard/persona-widgets";
-import { WIDGET_LABELS } from "@/components/dashboard/manage-widgets-sheet";
+import { WIDGET_LABELS, WIDGET_REQUIRED_CAPABILITY } from "@/components/dashboard/manage-widgets-sheet";
 import { DashboardControls } from "@/components/dashboard/dashboard-controls";
 import { Button } from "@/components/ui/button";
 import { ProgressScoreWidget, DistributionDonutWidget, PerformanceListWidget } from "@/components/dashboard/premium-widgets";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { useDashboardLayout, WIDGET_SIZE_SPAN } from "@/lib/dashboard-layout";
 import { WidgetDef, WidgetSize } from "@/lib/types";
 import { downloadCsv } from "@/lib/csv";
@@ -67,7 +67,15 @@ export default function DashboardPage() {
   // admin-configured defaults (Configuration Studio → Dashboard Management,
   // BRD §5.3) — a Business Analyst can reorder/hide/resize the widgets
   // curated for them, not reveal a different persona's widgets entirely.
-  const roleWidgets = dashboardConfigs[userId]?.widgets ?? [];
+  // That admin list is a ceiling, not a guarantee: it's further filtered
+  // against the signed-in user's own User Access Mapping grants below, so a
+  // widget never renders content (e.g. Approval Queue) the user's actual
+  // capabilities don't back up.
+  const capabilities = useEffectiveCapabilities();
+  const roleWidgets = (dashboardConfigs[userId]?.widgets ?? []).filter((w) => {
+    const req = WIDGET_REQUIRED_CAPABILITY[w.id];
+    return !req || capabilities.has(req);
+  });
   const widgetDefs: WidgetDef[] = roleWidgets
     .filter((w) => w.visible && w.id !== "kpis")
     .map((w) => ({
@@ -118,8 +126,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b bg-card/40 px-4 py-2.5 sm:px-5">
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-5">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">{t("dashboard.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>

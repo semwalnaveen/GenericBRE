@@ -153,7 +153,7 @@ export default function ConfigurationStudioPage() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex flex-col min-h-0 flex-1">
         <ConfigStudioNav groups={NAV_GROUPS} roadmap={[]} activeSection={section} onSelect={setSection} />
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">

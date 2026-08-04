@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, ShieldCheck, User } from "lucide-react";
+import { LogOut, ShieldCheck, User, ChevronDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { RoleSwitcherDialog } from "./role-switcher-dialog";
@@ -27,14 +27,17 @@ export function UserMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<button className="flex items-center rounded-full transition-opacity hover:opacity-80" />}
+          render={<button className="flex items-center gap-1.5 rounded-full outline-none transition-opacity hover:opacity-80" />}
           aria-label="Account menu"
         >
-          <Avatar className="size-8">
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-              {user.initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex items-center justify-center rounded-full border-2 border-white ring-2 ring-[#D0E4F5]">
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                {user.initials}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+          <ChevronDown className="size-3.5 text-muted-foreground mr-1" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>

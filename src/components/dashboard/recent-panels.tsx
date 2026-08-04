@@ -14,7 +14,7 @@ export function PanelHeader({ title, action, onAction, icon: Icon }: { title: st
     <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-3 rounded-t-xl dark:bg-muted/30">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="size-4 text-muted-foreground/70" />}
-        <h3 className="text-sm font-bold text-[#0f2942] dark:text-foreground">{title}</h3>
+        <h3 className="text-sm font-bold text-foreground">{title}</h3>
       </div>
       {action && (
         <button onClick={onAction} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
@@ -34,20 +34,25 @@ export function RecentRulesPanel() {
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Recently Modified Rules" icon={FileEdit} action="View all" onAction={() => router.push("/repository")} />
       <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
+        <div className="divide-y divide-border pb-1">
           {recent.map((r) => (
             <button
               key={r.id}
               onClick={() => router.push(`/rule-builder?id=${r.id}`)}
               className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
             >
-              <div className="min-w-0" title={r.name}>
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground truncate" title={`${r.id} · ${r.domain}`}>
-                  {r.id} · {r.domain} · updated {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
+              <div className="min-w-0 flex-1" title={r.name}>
+                <p className="truncate text-xs font-bold text-foreground">{r.name}</p>
+                <p className="truncate text-[11px] text-muted-foreground mt-0.5" title={`${r.id} · ${r.domain}`}>
+                  {r.id} · {r.domain}
                 </p>
               </div>
-              <StatusBadge status={r.status} className="shrink-0" />
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+                  {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
+                </span>
+                <StatusBadge status={r.status} className="text-[11px]" />
+              </div>
             </button>
           ))}
         </div>
@@ -96,7 +101,7 @@ export function RecentActivityPanel() {
   const items = logs.map((a, i) => ({
     id: a.id,
     indexNumber: i + 1,
-    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-slate-400",
+    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-muted-foreground",
     title: a.action,
     subtitle: a.entityId,
     primaryValue: formatDistanceToNow(new Date(a.timestamp), { addSuffix: true }),
@@ -125,13 +130,13 @@ export function RecentDeploymentsPanel() {
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-0.5 p-2">
           {recent.map((r) => (
-            <div key={r.id} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1">
+            <div key={r.id} className="flex items-center gap-2.5 rounded-lg px-1.5 py-2">
               <span className={cn("size-1.5 shrink-0 rounded-full", "bg-emerald-500")} />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground">{r.domain}</p>
+                <p className="truncate text-xs font-bold text-foreground">{r.name}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{r.domain}</p>
               </div>
-              <span className="shrink-0 text-sm text-muted-foreground">
+              <span className="shrink-0 text-[11px] text-muted-foreground">
                 {formatDistanceToNow(new Date(r.updatedAt), { addSuffix: true })}
               </span>
             </div>

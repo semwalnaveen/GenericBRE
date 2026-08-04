@@ -121,7 +121,7 @@ export function RuleStatusChart() {
       circleSubtext="PUBLISHED"
       circlePercentage={activePercentage}
       circleColorClass="text-emerald-500"
-      circleTrackColorClass="text-slate-100"
+      circleTrackColorClass="text-muted"
       items={items}
     />
   );

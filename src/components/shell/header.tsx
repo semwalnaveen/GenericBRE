@@ -39,7 +39,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/60 px-3 backdrop-blur-xl shadow-sm border-b-primary/10 sm:px-4">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur-sm sm:px-4" style={{ background: 'linear-gradient(180deg, rgba(234, 242, 250, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)' }}>
         <Button variant="ghost" size="icon" className="size-9 md:hidden" onClick={onOpenMobileNav} aria-label="Open menu">
           <Menu className="size-[18px]" />
         </Button>
@@ -66,7 +66,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
               <GlobalFilterBar />
             </>
           )}
-          <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary" onClick={() => setSwitcherOpen(true)}>
+          <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary bg-white shadow-sm border border-[#D0E4F5]" onClick={() => setSwitcherOpen(true)}>
             <ShieldCheck className="size-3.5" />
             <span className="hidden lg:inline">Switch User</span>
           </Button>

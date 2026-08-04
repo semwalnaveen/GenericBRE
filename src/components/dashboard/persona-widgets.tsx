@@ -13,7 +13,7 @@ import { PanelHeader, ACTION_DOT, initials } from "./recent-panels";
 import { cn } from "@/lib/utils";
 
 function EmptyRow({ children }: { children: React.ReactNode }) {
-  return <p className="px-3.5 py-4 text-center text-sm text-muted-foreground">{children}</p>;
+  return <p className="px-3.5 py-4 text-center text-xs text-muted-foreground">{children}</p>;
 }
 
 // `owner` on a rule is a team ("Credit Risk Division"), not an individual —
@@ -31,16 +31,16 @@ export function DraftRulesPanel() {
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Draft Rules (org-wide)" icon={FileText} action="View all" onAction={() => router.push("/repository?status=Draft")} />
       <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
+        <div className="divide-y divide-border">
           {drafts.slice(0, 8).map((r) => (
             <button
               key={r.id}
               onClick={() => router.push(`/rule-builder?id=${r.id}`)}
-              className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+              className="flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left hover:bg-accent/50 transition-colors"
             >
               <div className="min-w-0" title={r.name}>
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground truncate" title={`${r.id} · ${r.category}`}>{r.id} · {r.category}</p>
+                <p className="truncate text-xs font-bold text-foreground">{r.name}</p>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={`${r.id} · ${r.category}`}>{r.id} · {r.category}</p>
               </div>
             </button>
           ))}
@@ -60,18 +60,18 @@ export function RulesAwaitingReviewPanel() {
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Rules Awaiting Review" icon={CheckSquare} action="View all" onAction={() => router.push("/repository?status=Testing")} />
       <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
+        <div className="divide-y divide-border">
           {testing.slice(0, 8).map((r) => (
             <button
               key={r.id}
               onClick={() => router.push(`/repository?search=${r.id}`)}
-              className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+              className="flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left hover:bg-accent/50 transition-colors"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="text-sm text-muted-foreground">{r.id} · {r.domain}</p>
+                <p className="truncate text-xs font-bold text-foreground">{r.name}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{r.id} · {r.domain}</p>
               </div>
-              <StatusBadge status={r.status} className="shrink-0" />
+              <StatusBadge status={r.status} className="shrink-0 text-[11px]" />
             </button>
           ))}
           {testing.length === 0 && <EmptyRow>Nothing waiting on review right now.</EmptyRow>}
@@ -98,18 +98,18 @@ export function ApprovalQueuePanel() {
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Approval Queue" icon={ClipboardList} action="View all" onAction={() => router.push("/repository?status=Testing")} />
       <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y">
+        <div className="divide-y divide-border">
           {pending.slice(0, 8).map((a) => {
             const rule = rules.find((r) => r.id === a.ruleId);
             return (
               <button
                 key={a.id}
                 onClick={() => router.push(`/repository?search=${a.ruleId}`)}
-                className="flex w-full items-center justify-between gap-3 px-3.5 py-1.5 text-left hover:bg-accent/50 transition-colors"
+                className="flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left hover:bg-accent/50 transition-colors"
               >
                 <div className="min-w-0" title={rule?.name ?? a.ruleId}>
-                  <p className="truncate text-sm font-medium">{rule?.name ?? a.ruleId}</p>
-                  <p className="text-sm text-muted-foreground truncate" title={`Requested by ${a.requestedBy} · ${formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}`}>
+                  <p className="truncate text-xs font-bold text-foreground">{rule?.name ?? a.ruleId}</p>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={`Requested by ${a.requestedBy} · ${formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}`}>
                     Requested by {a.requestedBy} · {formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}
                   </p>
                 </div>
@@ -143,7 +143,7 @@ export function RuleConflictsPanel() {
     name: `${c.ruleAId} vs ${c.ruleBId}`,
     dotColor: "#f59e0b",
     badgeText: "Conflict",
-    badgeClass: "bg-amber-100 text-amber-700",
+    badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     stats: [
       { label: "Reason", value: c.reason },
       { label: "Field", value: c.field }
@@ -183,7 +183,7 @@ export function ExecutionLogsPanel() {
   const items = logs.map((a, i) => ({
     id: a.id,
     indexNumber: i + 1,
-    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-slate-400",
+    indexColorClass: i === 0 ? "text-amber-500" : i === 1 ? "text-blue-500" : "text-muted-foreground",
     title: a.action,
     subtitle: a.entityId,
     primaryValue: formatDistanceToNow(new Date(a.timestamp), { addSuffix: true }),

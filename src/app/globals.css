@@ -56,7 +56,7 @@
 }
 
 :root {
-  --background: #F8FAFC;
+  --background: #F0F5F9;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -70,8 +70,8 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.54 0.22 18.0); /* Rose 600 */
-  --border: #E2E8F0;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #D0E4F5;
   --input: #E2E8F0;
   --ring: #2563EB;
   /* Blue/Cyan/Green/Orange/Red — matches DEFAULT_INDUSTRIES' order (Lending,

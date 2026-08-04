@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, type LucideIcon } from "lucide-react";
+import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, ChevronRight, type LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
+import { Capability } from "@/lib/types";
 import { PanelHeader } from "./recent-panels";
 
 interface Action {
@@ -25,6 +26,18 @@ export const ACTION_LABELS: Record<string, string> = {
   "configuration-studio": "Configuration Studio",
 };
 
+// User Access Mapping gate per action — mirrors the requiredCapability each
+// destination's nav.ts entry already enforces, so a Quick Action never
+// offers a shortcut the sidebar itself would hide. "decision-matrix" stays
+// ungated, matching its nav.ts entry (no requiredCapability there either).
+const ACTION_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
+  "create-rule": "rule.create",
+  "open-repository": "rule.view",
+  "run-simulator": "rule.simulate",
+  "view-approvals": "rule.publish",
+  "configuration-studio": "config.manage",
+};
+
 const ACTION_REGISTRY: Record<string, Action> = {
   "create-rule": { label: ACTION_LABELS["create-rule"], desc: "Start a new no-code rule", icon: Plus, href: "/rule-builder", accent: "bg-primary text-primary-foreground" },
   "open-repository": { label: ACTION_LABELS["open-repository"], desc: "Browse the full catalogue", icon: Library, href: "/repository", accent: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
@@ -38,32 +51,39 @@ export function QuickActions() {
   const router = useRouter();
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const userId = useAppStore((s) => s.currentUser.userId);
+  const capabilities = useEffectiveCapabilities();
 
   const ids = dashboardConfigs[userId]?.quickActions?.length ? dashboardConfigs[userId].quickActions! : DEFAULT_ACTION_IDS;
-  const actions = ids.map((id) => ACTION_REGISTRY[id]).filter((a): a is Action => !!a);
+  const actions = ids
+    .filter((id) => {
+      const req = ACTION_REQUIRED_CAPABILITY[id];
+      return !req || capabilities.has(req);
+    })
+    .map((id) => ACTION_REGISTRY[id])
+    .filter((a): a is Action => !!a);
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Quick Actions" />
-      <div className="grid flex-1 grid-cols-2 gap-2 overflow-y-auto p-2.5">
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2.5">
         {actions.map((a, i) => (
           <motion.button
             key={a.label}
             onClick={() => router.push(a.href)}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
-            whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.98 }}
-            className="flex flex-col items-start gap-1.5 rounded-xl border bg-card p-3 text-left transition-shadow hover:shadow-md"
+            className="group flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60"
           >
-            <span className={`flex size-7 items-center justify-center rounded-lg ${a.accent}`}>
-              <a.icon className="size-3.5" />
+            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${a.accent}`}>
+              <a.icon className="size-4" />
             </span>
-            <div className="min-w-0 w-full">
-              <p className="text-sm font-semibold leading-tight truncate" title={a.label}>{a.label}</p>
-              <p className="text-sm text-muted-foreground leading-tight mt-0.5 truncate" title={a.desc}>{a.desc}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold leading-tight truncate" title={a.label}>{a.label}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate" title={a.desc}>{a.desc}</p>
             </div>
+            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
           </motion.button>
         ))}
       </div>

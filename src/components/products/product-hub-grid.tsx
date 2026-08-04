@@ -96,7 +96,7 @@ export function ProductHubGrid({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or code..."
-                className="h-9 pl-8 text-sm bg-background"
+                className="h-9 pl-8 text-sm bg-white"
               />
             </div>
             <MultiSelect
@@ -188,7 +188,7 @@ export function ProductHubGrid({
               onClick={() => onConfigure(p)}
               onKeyDown={(e) => e.key === "Enter" && onConfigure(p)}
               className={cn(
-                "group relative flex cursor-pointer flex-col justify-between rounded-xl border bg-card text-left transition-all duration-150 hover:border-primary/40 hover:shadow-xs",
+                "group relative flex cursor-pointer flex-col justify-between rounded-xl border border-[#D0E4F5] shadow-sm bg-card text-left transition-all duration-150 hover:border-primary/40 hover:shadow-md",
                 compact ? "gap-2 p-3" : "gap-3 p-3.5",
                 p.status === "Inactive" && "opacity-60"
               )}

@@ -149,13 +149,15 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="relative flex flex-1 items-center justify-center py-8">
-          <ProductMockup totalRules={totalRules} activeRules={activeRules} simulationsRun={simulationsRun} sampleRules={sampleRules} />
-          <FeatureBadge label={CAPABILITIES[0]} className="absolute top-10 -left-6 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.8s ease-in-out infinite' }} />
-          <FeatureBadge label={CAPABILITIES[1]} className="absolute top-1/4 -right-4 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 6.2s ease-in-out infinite 0.5s' }} />
-          <FeatureBadge label={CAPABILITIES[2]} className="absolute bottom-[18px] -right-6 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.5s ease-in-out infinite 1s' }} />
-          <FeatureBadge label={CAPABILITIES[3]} className="absolute bottom-20 -left-14 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 6.0s ease-in-out infinite 1.5s' }} />
-          <FeatureBadge label={CAPABILITIES[4]} className="absolute -bottom-4 left-10 hidden lg:flex" style={{ animation: 'ucrmLoginBadgeBob 5.7s ease-in-out infinite 0.2s' }} />
+        <div className="flex flex-1 items-center justify-center py-8">
+          <div className="relative">
+            <ProductMockup totalRules={totalRules} activeRules={activeRules} simulationsRun={simulationsRun} sampleRules={sampleRules} />
+            <FeatureBadge label={CAPABILITIES[0]} className="absolute right-[100%] top-10 mr-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.8s ease-in-out infinite' }} />
+            <FeatureBadge label={CAPABILITIES[1]} className="absolute left-[100%] top-1/4 ml-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 6.2s ease-in-out infinite 0.5s' }} />
+            <FeatureBadge label={CAPABILITIES[2]} className="absolute left-[100%] bottom-[18px] ml-5 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.5s ease-in-out infinite 1s' }} />
+            <FeatureBadge label={CAPABILITIES[3]} className="absolute right-[100%] bottom-20 mr-10 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 6.0s ease-in-out infinite 1.5s' }} />
+            <FeatureBadge label={CAPABILITIES[4]} className="absolute top-[100%] left-10 mt-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.7s ease-in-out infinite 0.2s' }} />
+          </div>
         </div>
       </div>
 
