@@ -10,8 +10,8 @@
   --font-sans: var(--font-geist-sans), Inter, ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
-  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 4px 12px oklch(0 0 0 / 0.05);
-  --shadow-card-hover: 0 2px 4px oklch(0 0 0 / 0.06), 0 8px 20px oklch(0 0 0 / 0.08);
+  --shadow-card: 0 4px 20px -2px oklch(0 0 0 / 0.06), 0 0 3px oklch(0 0 0 / 0.03);
+  --shadow-card-hover: 0 10px 30px -5px oklch(0 0 0 / 0.1), 0 0 4px oklch(0 0 0 / 0.04);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -347,4 +347,20 @@ html[data-large-targets="true"] [role="menuitem"] {
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight font-semibold text-foreground;
   }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 2px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
 }
