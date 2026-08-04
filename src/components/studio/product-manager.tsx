@@ -130,7 +130,7 @@ export function ProductManager() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1.5">
       {/* Top Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
@@ -232,7 +232,7 @@ export function ProductManager() {
                 </p>
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t pt-3">
+              <div className="mt-2 flex items-center justify-between border-t pt-3">
                 <span className="text-xs font-medium text-muted-foreground">
                   <span className="text-foreground font-semibold">{count}</span> rule{count === 1 ? "" : "s"} mapped
                 </span>
@@ -257,7 +257,7 @@ export function ProductManager() {
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Product" : "Add Product"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="space-y-1.5">
               <Label>Name *</Label>
               <Input

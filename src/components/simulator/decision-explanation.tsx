@@ -32,12 +32,12 @@ export function DecisionExplanation({ result, onDownloadReport }: DecisionExplan
   return (
     <div
       className={cn(
-        "rounded-lg border p-4 space-y-3.5 text-xs transition-all",
+        "rounded-lg border p-4 space-y-3.5 text-xs transition-all shadow-xl",
         isApproved
           ? "bg-emerald-500/5 border-emerald-500/30"
           : isRejected
           ? "bg-destructive/5 border-destructive/30"
-          : "bg-amber-500/5 border-amber-500/30"
+          : "bg-amber-500/5 border-amber-500/50 shadow-[0_8px_30px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/20"
       )}
     >
       <div className="flex items-center justify-between">
@@ -74,7 +74,7 @@ export function DecisionExplanation({ result, onDownloadReport }: DecisionExplan
         <p className="font-semibold text-foreground text-xs">Decision Explanation Breakdown:</p>
         <ul className="space-y-1.5 pl-1">
           {passedSteps.map((step, idx) => (
-            <li key={`pass-${idx}`} className="flex items-start gap-1.5 text-emerald-700 dark:text-emerald-400">
+            <li key={`pass-${idx}`} className="flex items-start gap-1.5 text-emerald-700 dark:text-emerald-400 p-2 rounded-md transition-all duration-200 hover:scale-[1.01] hover:shadow-sm hover:bg-emerald-500/10">
               <CheckCircle2 className="size-3.5 shrink-0 mt-0.5" />
               <span>
                 <strong className="text-foreground font-semibold">{step.ruleName} ({step.ruleId}): </strong>
@@ -86,7 +86,7 @@ export function DecisionExplanation({ result, onDownloadReport }: DecisionExplan
           {failedSteps.map((step, idx) => {
             const rejectedByAction = step.actionsApplied.some(a => a.type === "Reject");
             return (
-              <li key={`fail-${idx}`} className="flex items-start gap-1.5 text-destructive font-medium">
+              <li key={`fail-${idx}`} className="flex items-start gap-1.5 text-destructive font-medium p-2 rounded-md transition-all duration-200 hover:scale-[1.01] hover:shadow-sm hover:bg-destructive/10">
                 <XCircle className="size-3.5 shrink-0 mt-0.5" />
                 <span>
                   <strong className="font-semibold">{step.ruleName} ({step.ruleId}): </strong>

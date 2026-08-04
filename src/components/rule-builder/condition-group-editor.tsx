@@ -195,7 +195,7 @@ export function ConditionGroupEditor({ group, domain, handlers, selection, clipb
     <div
       className={cn(
         "rounded-xl border transition-all",
-        isRoot ? "border-border bg-muted/20" : "ml-4 border-l-4 border-l-primary/40 border-y-primary/20 border-r-primary/20 bg-card shadow-sm",
+        isRoot ? "border-primary/20 bg-background/50 backdrop-blur-sm shadow-[0_8px_30px_rgba(0,0,0,0.12)] ring-1 ring-primary/5" : "ml-4 border-l-4 border-l-primary/40 border-y-primary/20 border-r-primary/20 bg-card shadow-lg",
         selected && "ring-2 ring-primary/40"
       )}
     >

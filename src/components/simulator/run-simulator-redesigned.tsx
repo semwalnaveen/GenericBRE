@@ -103,31 +103,13 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
           </p>
         </div>
 
-        {/* SIMULATOR MODE TOGGLE */}
-        <div className="flex items-center gap-2 bg-muted/40 p-1 rounded-lg border">
-          <Button
-            variant={simMode === "product" ? "default" : "ghost"}
-            size="sm"
-            className="h-8 text-xs font-semibold gap-1.5"
-            onClick={() => setSimMode("product")}
-          >
-            <Activity className="size-3.5" /> Run Simulator (Product Pipeline)
-          </Button>
-          <Button
-            variant={simMode === "single_rule" ? "default" : "ghost"}
-            size="sm"
-            className="h-8 text-xs font-semibold gap-1.5"
-            onClick={() => setSimMode("single_rule")}
-          >
-            <SlidersHorizontal className="size-3.5" /> Rule Simulator (Single Rule)
-          </Button>
-        </div>
+        
       </div>
 
       {/* 2-COLUMN BALANCED ENTERPRISE DESKTOP GRID */}
-      <div className="grid grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-12 gap-5 items-stretch">
         {/* LEFT COLUMN — PRODUCT SELECTOR, INPUT & VALIDATION (6 COLS) */}
-        <div className="col-span-12 lg:col-span-6 space-y-4">
+        <div className="col-span-12 lg:col-span-7 flex flex-col gap-4 min-h-0">
           <ProductSelector
             products={availableProducts}
             selectedProduct={product}
@@ -135,9 +117,14 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
             mappedRuleCount={executionPlan.length}
           />
 
+          
+
+          {/* PRE-FLIGHT VALIDATION PANEL */}
+          <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={requiredFields} />
+
           {/* DUAL INPUT MODE (FORM VIEW VS JSON VIEW) */}
-          <div className="rounded-xl border bg-card p-4 space-y-3 shadow-xs">
-            <Tabs value={inputMode} onValueChange={(v) => v && setInputMode(v as "form" | "json")}>
+          <div className="rounded-xl border bg-card p-4 flex flex-col flex-1 shadow-xs min-h-0">
+            <Tabs value={inputMode} onValueChange={(v) => v && setInputMode(v as "form" | "json")} className="flex-1 flex flex-col">
               <div className="flex items-center justify-between border-b pb-2.5">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Simulation Input Payload
@@ -148,7 +135,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                 </TabsList>
               </div>
 
-              <TabsContent value="form" className="mt-3 max-h-[340px] overflow-auto">
+              <TabsContent value="form" className="mt-3 flex-1 overflow-auto max-h-[600px]">
                 <DynamicFormView
                   jsonText={sim.jsonText || "{}"}
                   onUpdateJsonText={sim.setJsonText}
@@ -157,7 +144,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                 />
               </TabsContent>
 
-              <TabsContent value="json" className="mt-3 space-y-2">
+              <TabsContent value="json" className="mt-3 flex-1 flex flex-col space-y-2 overflow-auto max-h-[600px]">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground font-mono text-[11px]">JSON Payload Editor</span>
                   <div className="flex items-center gap-1">
@@ -176,34 +163,20 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
                   value={sim.jsonText || "{}"}
                   onChange={(e) => sim.setJsonText(e.target.value)}
                   placeholder='{"key": "value"}'
-                  className="font-mono text-xs min-h-64 bg-slate-950 text-slate-100 border-slate-800 focus-visible:ring-primary max-h-[340px] overflow-auto"
+                  className="font-mono text-xs  bg-slate-950 text-slate-100 border-slate-800 focus-visible:ring-primary flex-1 overflow-auto"
                 />
               </TabsContent>
             </Tabs>
 
-            {/* ACTION BUTTONS */}
-            <div className="flex items-center gap-2 pt-2 border-t">
-              <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs font-medium" onClick={sim.resetToSampleJson}>
-                <RotateCcw className="size-3.5" /> Reset Input
-              </Button>
-              <Button
-                size="sm"
-                className="h-9 flex-1 gap-1.5 text-xs font-bold shadow-sm"
-                onClick={sim.runScenario}
-                disabled={sim.running}
-              >
-                <PlayCircle className="size-4" /> {sim.running ? "Executing BRE Pipeline..." : "Run Simulation"}
-              </Button>
-            </div>
+            
           </div>
 
-          {/* PRE-FLIGHT VALIDATION PANEL */}
-          <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={requiredFields} />
-        </div>
+          
+          
+          </div>
 
         {/* RIGHT COLUMN — CALCULATED VARIABLES, DECISION, VARIABLE INSPECTOR & CONTEXT (6 COLS) */}
-        <div className="col-span-12 lg:col-span-6 space-y-4">
-          {/* CALCULATED VARIABLES — shown right after the Input payload (left column),
+        <div className="col-span-12 lg:col-span-5 space-y-4">                    {/* CALCULATED VARIABLES — shown right after the Input payload (left column),
               before the Decision, matching Input -> Calculated Variables -> Decision. */}
           {result && <CalculatedVariablesCard calculatedValues={result.calculatedValues} rules={sim.rules} />}
 
@@ -212,8 +185,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
 
           {/* VARIABLE INSPECTOR (FULL 6-COLUMN WIDTH) */}
           {result && <VariableViewer traceSteps={result.flatTrace} jsonText={sim.jsonText || "{}"} fieldCatalog={sim.fieldCatalog} rules={sim.rules} />}
-
-          {/* STICKY SUMMARY PANEL */}
+{/* STICKY SUMMARY PANEL */}
           <div className="rounded-xl border bg-card p-4 space-y-3 shadow-xs">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground border-b pb-2">
               Execution Context
@@ -244,7 +216,22 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
               </div>
             </div>
           </div>
+        
         </div>
+      </div>
+      {/* FLOATING ACTION BAR */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full border bg-background/80 backdrop-blur-xl p-1.5 shadow-2xl">
+        <Button variant="outline" size="sm" className="h-10 rounded-full px-5 font-medium transition-all hover:bg-muted" onClick={sim.resetToSampleJson}>
+          <RotateCcw className="size-4 mr-2" /> Reset Input
+        </Button>
+        <Button
+          size="sm"
+          className="h-10 rounded-full px-8 font-bold shadow-[0_0_15px_rgba(var(--primary),0.25)] transition-all hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(var(--primary),0.4)]"
+          onClick={sim.runScenario}
+          disabled={sim.running}
+        >
+          <PlayCircle className="size-5 mr-2" /> {sim.running ? "Executing..." : "Run Simulation"}
+        </Button>
       </div>
     </div>
   );

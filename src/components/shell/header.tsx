@@ -39,7 +39,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-card/70 px-3 backdrop-blur-sm sm:px-4">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/60 px-3 backdrop-blur-xl shadow-sm border-b-primary/10 sm:px-4">
         <Button variant="ghost" size="icon" className="size-9 md:hidden" onClick={onOpenMobileNav} aria-label="Open menu">
           <Menu className="size-[18px]" />
         </Button>

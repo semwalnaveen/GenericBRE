@@ -151,7 +151,7 @@ export function RuleTemplatesManager() {
   };
 
   return (
-    <div className="flex h-full min-h-100 gap-4">
+    <div className="flex h-full min-h-80 gap-2">
       <div className="w-64 shrink-0 space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-muted-foreground">Templates</p>
@@ -159,7 +159,7 @@ export function RuleTemplatesManager() {
             <Plus className="size-4" />
           </Button>
         </div>
-        <div className="max-h-125 space-y-1 overflow-y-auto">
+        <div className="max-h-95 space-y-1 overflow-y-auto">
           {templates.map((t) => {
             const conditionCount = countConditions(t.rootGroup);
             return (
@@ -202,7 +202,7 @@ export function RuleTemplatesManager() {
             Select a template or create a new one.
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5 rounded-xl border bg-card p-3.5">
                 <Label>Name *</Label>

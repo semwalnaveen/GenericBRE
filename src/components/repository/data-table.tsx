@@ -89,7 +89,7 @@ export function DataTable<TData, TValue>({
       <div className={cn("flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
         <div className="min-h-0 flex-1 overflow-auto">
         <Table className="table-fixed">
-          <TableHeader className="sticky top-0 z-10 bg-card">
+          <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50">
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id} className="hover:bg-transparent">
                 {hg.headers.map((header) => (
@@ -102,8 +102,8 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="text-[13px]">
+              table.getRowModel().rows.map((row, idx) => (
+                <TableRow key={row.id} className="text-[13px] transition-all duration-200 hover:scale-[1.01] hover:shadow-md hover:bg-muted/50 hover:z-10 relative animate-in fade-in slide-in-from-bottom-2" style={{ animationDuration: '400ms', animationDelay: `${idx * 30}ms`, animationFillMode: 'backwards' }}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}

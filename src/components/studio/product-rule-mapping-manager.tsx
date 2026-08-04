@@ -248,7 +248,7 @@ export function MappedRulesChecklist({
                 </label>
               ))}
               {filteredRules.length === 0 && (
-                <p className="p-6 text-center text-sm text-muted-foreground">No rules match this filter.</p>
+                <p className="p-4 text-center text-sm text-muted-foreground">No rules match this filter.</p>
               )}
             </div>
           </ScrollArea>
@@ -310,7 +310,7 @@ function ProductSelector({
 
   if (products.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center">
+      <div className="rounded-lg border border-dashed p-4 text-center">
         <Package className="mx-auto mb-2 size-6 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">No products yet — add one in Product Master first.</p>
       </div>
@@ -321,7 +321,7 @@ function ProductSelector({
     const q = search.trim().toLowerCase();
     const filtered = q ? products.filter((p) => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q)) : products;
     return (
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
           <div className="flex items-center gap-2">
             <p className="text-sm font-bold tracking-tight text-foreground">Select Product</p>
@@ -340,7 +340,7 @@ function ProductSelector({
           </div>
         </div>
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-6 text-center">
+          <div className="rounded-xl border border-dashed p-4 text-center">
             <Search className="mx-auto mb-1.5 size-5 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">No products match this search.</p>
           </div>
@@ -513,7 +513,7 @@ export function ProductRuleMappingManager() {
   };
 
   return (
-    <div className="flex h-full min-h-100 flex-col gap-4">
+    <div className="flex h-full min-h-80 flex-col gap-2">
       <ProductSelector
         products={products}
         rules={rules}
@@ -525,12 +525,19 @@ export function ProductRuleMappingManager() {
 
       {/* Main Content */}
       {!selectedProduct ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed text-center">
-          <Package className="size-8 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">Select a product to configure its rules.</p>
-        </div>
+        <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/10 p-6 text-center">
+            <div className="relative mb-3 flex size-24 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-indigo-500/5 animate-pulse" />
+              <div className="absolute inset-4 rounded-full bg-indigo-500/10" />
+              <svg className="relative size-8 text-indigo-500/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+              </svg>
+            </div>
+            <p className="text-lg font-semibold tracking-tight text-foreground">Select a Product</p>
+            <p className="text-sm text-muted-foreground/80 mt-1 max-w-sm mx-auto">Select a product from the master list to configure its rule execution pipeline.</p>
+          </div>
       ) : (
-        <div className="flex flex-1 flex-col gap-4 min-h-0">
+        <div className="flex flex-1 flex-col gap-2 min-h-0">
           {/* Header */}
           <div className="flex items-center gap-2.5 border-b pb-3">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -549,10 +556,10 @@ export function ProductRuleMappingManager() {
               visible area instead of shrinking. Stacking avoids that
               entirely: each column takes the full width on its own row, so
               nothing can be squeezed off-screen. Side by side, both stretch
-              to the same height (the root's xl:h-125 provides a real bound)
+              to the same height (the root's xl:h-95 provides a real bound)
               and scroll their own content internally; stacked, they size to
               content and the page's own scroll takes over instead. */}
-          <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 xl:flex-row">
             {/* Left: Available Rules */}
             <div className="flex min-h-0 flex-1 flex-col min-w-0">
               <MappedRulesChecklist

@@ -111,7 +111,7 @@ function RepositoryContent() {
       ...r,
       actions: JSON.stringify(r.actions),
       elseActions: r.elseActions ? JSON.stringify(r.elseActions) : "",
-      conditionSummaries: JSON.stringify(r.conditionSummaries),
+      rootGroup: JSON.stringify(r.rootGroup),
     }));
     downloadCsv("genericbre_rules", exportData as Record<string, unknown>[]);
     toast.success(`Exported ${exportData.length} rules`);
@@ -130,14 +130,14 @@ function RepositoryContent() {
       data.forEach((row: any) => {
         const taken = new Set(useAppStore.getState().rules.map((r) => r.id));
         const id = nextRuleId(useAppStore.getState().rules, taken);
-        
+
         let actions = [];
         let elseActions = undefined;
-        let conditionSummaries = [];
-        try { actions = row.actions ? JSON.parse(row.actions) : []; } catch {}
-        try { elseActions = row.elseActions ? JSON.parse(row.elseActions) : undefined; } catch {}
-        try { conditionSummaries = row.conditionSummaries ? JSON.parse(row.conditionSummaries) : []; } catch {}
-        
+        let rootGroup: any = { operator: "AND", conditions: [] };
+        try { actions = row.actions ? JSON.parse(row.actions) : []; } catch { }
+        try { elseActions = row.elseActions ? JSON.parse(row.elseActions) : undefined; } catch { }
+        try { rootGroup = row.rootGroup ? JSON.parse(row.rootGroup) : { operator: "AND", conditions: [] }; } catch { }
+
         const newRule: BusinessRule = {
           ...row,
           id,
@@ -145,7 +145,7 @@ function RepositoryContent() {
           status: "Draft",
           actions,
           elseActions,
-          conditionSummaries,
+          rootGroup,
         };
         addRule(newRule);
         importedCount++;
@@ -208,7 +208,7 @@ function RepositoryContent() {
               toast.error("Action blocked", { description: result.reason });
             }
           },
-          onPromote: (_r) => {},
+          onPromote: (_r) => { },
           onTestInSimulator: (r) => {
             router.push(`/simulator?domain=${r.domain}&sandboxRule=${r.id}`);
           },
@@ -329,10 +329,8 @@ function RepositoryContent() {
               />
 
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 text-xs">
-                    <Columns3 className="size-3.5" /> Columns
-                  </Button>
+                <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="h-8 gap-1.5 px-2 text-xs" />}>
+                  <Columns3 className="size-3.5" /> Columns
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   {table

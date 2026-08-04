@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, AlertCircle, CheckCircle2, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -201,11 +202,26 @@ export function DynamicFormView({
                       const fieldLabel = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
                       return (
-                        <div key={key} className="space-y-1 rounded-md border bg-muted/20 p-2 text-xs">
+                        <div key={key} className="space-y-1.5 rounded-lg border-0 bg-muted/10 p-2.5 text-xs transition-colors hover:bg-muted/20">
                           <div className="flex items-center justify-between gap-1">
-                            <label htmlFor={`field-${key}`} className="font-medium text-foreground truncate" title={fieldLabel}>
-                              {fieldLabel} {isRequired && <span className="text-destructive">*</span>}
-                            </label>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <label htmlFor={`field-${key}`} className="font-medium text-foreground truncate" title={fieldLabel}>
+                                {fieldLabel}
+                              </label>
+                              {isRequired && (String(val ?? "").trim() === "") && <span className="text-destructive leading-none">*</span>}
+                              <AnimatePresence>
+                                {isRequired && (String(val ?? "").trim() !== "") && (
+                                  <motion.div
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    className="flex size-3.5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600"
+                                  >
+                                    <CheckCircle2 className="size-2.5" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
                             <span className="font-mono text-[10px] text-muted-foreground truncate max-w-28" title={key}>
                               {key}
                             </span>
@@ -213,7 +229,7 @@ export function DynamicFormView({
 
                           {typeof val === "boolean" ? (
                             <Select value={String(val)} onValueChange={(v) => v && updateFieldValue(key, v)}>
-                              <SelectTrigger id={`field-${key}`} size="sm" className="h-8 text-xs bg-background">
+                              <SelectTrigger id={`field-${key}`} size="sm" className="h-8 text-xs border-0 bg-muted/30 transition-all focus:bg-background focus:ring-1 focus:ring-primary/30">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -227,7 +243,7 @@ export function DynamicFormView({
                               type={typeof val === "number" ? "number" : "text"}
                               value={String(val ?? "")}
                               onChange={(e) => updateFieldValue(key, e.target.value)}
-                              className="h-8 text-xs bg-background font-mono"
+                              className="h-8 text-xs font-mono border-0 bg-muted/30 transition-all focus-visible:bg-background focus-visible:ring-1 focus-visible:ring-primary/30"
                             />
                           )}
                         </div>

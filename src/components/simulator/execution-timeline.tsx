@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { CheckCircle2, XCircle, MinusCircle, Clock, ChevronRight } from "lucide-react";
 import { TraceStep } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -53,14 +54,20 @@ export function ExecutionTimeline({ traceSteps, trace }: ExecutionTimelineProps)
             : step.actionsApplied.map((a) => a.type).join(", ");
 
           return (
-            <div key={step.ruleId || idx} className="relative flex items-start gap-3 pl-8">
+            <motion.div
+              key={step.ruleId || idx}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: idx * 0.15, ease: "easeOut" }}
+              className="relative flex items-start gap-3 pl-8"
+            >
               {/* Timeline Node Badge Icon */}
-              <div className="absolute left-1.5 top-2 size-5 -translate-x-1/2 rounded-full bg-background border flex items-center justify-center z-10">
+              <div className={cn("absolute left-1.5 top-2 size-5 -translate-x-1/2 rounded-full bg-background flex items-center justify-center z-10 transition-all duration-300 border-2", step.status === "Passed" ? "border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" : step.status === "Failed" ? "border-destructive shadow-[0_0_12px_rgba(239,68,68,0.5)]" : "border-border")}>
                 <Icon className={cn("size-3.5", step.status === "Passed" && "text-emerald-500", step.status === "Failed" && "text-destructive", step.status === "Skipped" && "text-muted-foreground")} />
               </div>
 
               {/* Node Card */}
-              <div className={cn("flex-1 rounded-lg border p-3 text-xs space-y-1.5 transition-shadow hover:shadow-2xs", statusClass)}>
+              <div className={cn("flex-1 rounded-lg border p-3 text-xs space-y-1.5 transition-all duration-200 hover:scale-[1.02] hover:shadow-md cursor-default relative z-10", statusClass)}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-bold text-foreground">
@@ -92,7 +99,7 @@ export function ExecutionTimeline({ traceSteps, trace }: ExecutionTimelineProps)
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

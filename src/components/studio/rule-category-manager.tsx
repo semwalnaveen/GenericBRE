@@ -116,7 +116,7 @@ export function RuleCategoryManager() {
   const ruleCount = (name: string) => rules.filter((r) => r.category === name).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Top Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export function RuleCategoryManager() {
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Category" : "Add Category"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-1">
+          <div className="space-y-1.5 py-1">
             <div className="space-y-1.5">
               <Label className="text-sm">Category Name *</Label>
               <Input

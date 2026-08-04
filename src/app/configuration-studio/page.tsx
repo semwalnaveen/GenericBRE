@@ -140,7 +140,7 @@ export default function ConfigurationStudioPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center gap-3 border-b bg-card/40 px-5 py-3.5 sm:px-6">
+      <div className="flex shrink-0 items-center gap-3 border-b bg-card/40 px-5 py-2 sm:px-6">
         <span className="flex size-9 items-center justify-center rounded-xl border bg-muted/40">
           <Settings2 className="size-4.5 text-muted-foreground" />
         </span>
@@ -153,11 +153,11 @@ export default function ConfigurationStudioPage() {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col">
         <ConfigStudioNav groups={NAV_GROUPS} roadmap={[]} activeSection={section} onSelect={setSection} />
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">
-          <div className="mx-auto max-w-350 space-y-3 px-5 py-5 sm:px-6">
+          <div className="mx-auto max-w-6xl space-y-3 px-5 py-3 sm:px-6 w-full">
             {section !== "users" && (
               <div>
                 <h2 className="text-sm font-semibold">{[...NAV_GROUPS.flatMap((g) => g.items)].find((i) => i.id === section)?.label}</h2>

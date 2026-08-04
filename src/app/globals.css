@@ -48,6 +48,11 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --color-emerald-400: #2dd4bf;
+  --color-emerald-500: #0d9488;
+  --color-emerald-600: #0f766e;
+  --color-emerald-700: #115e59;
 }
 
 :root {
@@ -65,7 +70,7 @@
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.54 0.22 18.0); /* Rose 600 */
   --border: #E2E8F0;
   --input: #E2E8F0;
   --ring: #2563EB;
@@ -78,13 +83,13 @@
   --chart-4: #F59E0B;
   --chart-5: #EF4444;
   --radius: 0.625rem;
-  --sidebar: #0F172A;
-  --sidebar-foreground: #E2E8F0;
-  --sidebar-primary: #2563EB;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #0056b3;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F1F5F9;
-  --sidebar-border: #1E293B;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #3B82F6;
 }
 
@@ -114,13 +119,13 @@
   --chart-3: #10B981;
   --chart-4: #F59E0B;
   --chart-5: #EF4444;
-  --sidebar: #0F172A;
-  --sidebar-foreground: #E2E8F0;
-  --sidebar-primary: #2563EB;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #0056b3;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F1F5F9;
-  --sidebar-border: #1E293B;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #3B82F6;
 }
 
@@ -335,4 +340,11 @@ html[data-large-targets="true"] [role="menuitem"] {
 
 .bg-bre-custom {
   background: radial-gradient(ellipse 90% 55% at 100% -10%, rgba(4, 102, 200, 0.06), transparent 50%), radial-gradient(ellipse 70% 45% at 0% 0%, rgba(148, 163, 184, 0.14), transparent 48%), linear-gradient(180deg, #E8EDF3 0%, #EEF2F6 45%, #F1F5F9 100%);
+}
+
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold text-foreground;
+  }
 }
