@@ -26,7 +26,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-rohan-mehta": {
     userId: "usr-rohan-mehta",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "domain-distribution", "rule-status", "approval-queue", "recent-deployments", "recent-activity"]),
+    widgets: widgets(["kpis", "domain-distribution", "rule-status", "approval-queue"]),
     kpis: ["active-rules", "pending-approvals", "deployments", "rule-executions", "total-rules", "business-categories"],
     quickActions: ["decision-matrix", "view-approvals", "open-repository"],
   },

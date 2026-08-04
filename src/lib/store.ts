@@ -1466,9 +1466,16 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 54,
+      version: 55,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        if (version < 55) {
+          const s = persistedState as Partial<AppState>;
+          if (s) {
+            s.dashboardConfigs = DEFAULT_DASHBOARD_CONFIGS;
+          }
+        }
+
         // v53 -> v54: every role now lands on /dashboard by default (some
         // seeded users previously landed on /simulator or
         // /configuration-studio instead) — still per-user configurable via

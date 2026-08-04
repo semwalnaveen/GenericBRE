@@ -73,6 +73,10 @@ export default function DashboardPage() {
   // capabilities don't back up.
   const capabilities = useEffectiveCapabilities();
   const roleWidgets = (dashboardConfigs[userId]?.widgets ?? []).filter((w) => {
+    // Explicitly hide these widgets for Product Manager to bypass local storage persistence
+    if (userId === "usr-rohan-mehta" && (w.id === "recent-deployments" || w.id === "recent-activity")) {
+      return false;
+    }
     const req = WIDGET_REQUIRED_CAPABILITY[w.id];
     return !req || capabilities.has(req);
   });
