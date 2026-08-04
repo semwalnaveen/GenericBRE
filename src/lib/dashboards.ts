@@ -33,7 +33,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-kavita-rao": {
     userId: "usr-kavita-rao",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "domain-distribution", "recent-activity", "approval-queue", "rules-awaiting-review", "rule-conflicts"]),
+    widgets: widgets(["kpis", "domain-distribution", "approval-queue", "rules-awaiting-review"]),
     kpis: ["rule-conflicts", "pending-approvals", "pending-review", "active-rules", "total-rules", "deployments"],
     quickActions: ["view-approvals", "open-repository", "run-simulator"],
   },
@@ -42,7 +42,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     landingRoute: "/dashboard",
     // "demo-scenarios" removed — same reasoning as Ananya Verma above:
     // demo/sales content, redundant with the "Run Simulator" quick action.
-    widgets: widgets(["kpis", "simulation-results", "execution-timeline", "recent-rules", "recent-activity"]),
+    widgets: widgets(["kpis", "simulation-results", "execution-timeline", "recent-rules"]),
     kpis: ["rule-executions", "failed-simulations", "active-rules", "pending-review", "total-rules", "deployments"],
     quickActions: ["run-simulator", "open-repository"],
   },
@@ -56,7 +56,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-vikram-chawla": {
     userId: "usr-vikram-chawla",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "execution-logs", "domain-distribution", "rule-status", "recent-activity"]),
+    widgets: widgets(["kpis", "execution-logs", "domain-distribution", "rule-status"]),
     kpis: ["total-rules", "active-rules", "business-categories", "deployments", "rule-executions", "pending-approvals"],
     quickActions: ["configuration-studio", "open-repository", "decision-matrix"],
   },

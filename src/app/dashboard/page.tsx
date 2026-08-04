@@ -51,7 +51,7 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "execution-timeline": () => <ExecutionTimelineChart />,
 };
 
-const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "MD" };
+const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };
 
 export default function DashboardPage() {
   const router = useRouter();

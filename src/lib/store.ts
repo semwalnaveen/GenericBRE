@@ -1466,10 +1466,18 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 55,
+      version: 58,
       skipHydration: true,
       migrate: (persistedState, version) => {
-        if (version < 55) {
+        if (version < 58) {
+          const s = persistedState as Partial<AppState>;
+          if (s) {
+            s.dashboardConfigs = DEFAULT_DASHBOARD_CONFIGS;
+            s.dashboardLayouts = {}; // Reset sizes so execution-timeline picks up SM
+          }
+        }
+
+        if (version < 57) {
           const s = persistedState as Partial<AppState>;
           if (s) {
             s.dashboardConfigs = DEFAULT_DASHBOARD_CONFIGS;
