@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import { NAV_ITEMS, NAV_ITEMS_SECONDARY, visibleNavItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,13 +30,18 @@ function NavLink({
   const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
   const linkClassName = cn(
-    "group relative flex h-9.5 items-center gap-3 rounded-lg px-2.5 text-sm font-medium transition-all duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+    // transition only color/background/shadow — NOT border-radius. Radius
+    // switches instantly between the pill (inactive) and rounded-rect
+    // (active) shapes; letting it animate via transition-all made the item
+    // visibly morph shape on click, which combined with the focus ring's
+    // offset (removed below) read as a "jerk" until the route settled.
+    "group relative flex h-9.5 items-center gap-3 px-2.5 text-sm transition-[background-color,color,box-shadow] duration-200 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
     collapsed && "justify-center px-0",
     disabled
-      ? "cursor-not-allowed text-sidebar-foreground/35"
+      ? "cursor-not-allowed text-sidebar-foreground/35 rounded-full"
       : active
-      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      ? "bg-[linear-gradient(90deg,#0462c8,#135aa2)] text-white font-[600] shadow-[0_8px_18px_-10px_#0462c880] rounded-[10px]"
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-medium rounded-full"
   );
 
   const handleClick = (e: React.MouseEvent) => {
@@ -47,12 +51,6 @@ function NavLink({
 
   const linkContent = (
     <>
-      {active && !collapsed && (
-        <motion.span
-          layoutId="sidebar-active-indicator"
-          className="absolute left-0 top-1/2 h-4.5 w-[3px] -translate-y-1/2 rounded-r-full bg-sidebar-primary-foreground"
-        />
-      )}
       <Icon className={cn("size-4 shrink-0 transition-transform duration-200 group-hover:scale-110", active && "text-sidebar-primary-foreground")} strokeWidth={2.2} />
       {!collapsed && <span className="truncate" title={label}>{label}</span>}
       {!collapsed && badge ? (

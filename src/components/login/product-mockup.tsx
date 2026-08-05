@@ -1,30 +1,41 @@
-import { CheckCircle2 } from "lucide-react";
+"use client";
 
-const STATUS_DOT: Record<string, string> = {
-  Published: "bg-emerald-400",
-  "Pending Approval": "bg-amber-400",
-  Draft: "bg-blue-400",
-};
+import { useCountUp } from "./use-count-up";
+import { useReducedMotion } from "./use-reduced-motion";
+import { RulePipeline } from "./rule-pipeline";
+import { TerminalPrompt } from "./terminal-prompt";
 
-export interface MockupRule {
-  id: string;
-  name: string;
-  status: string;
+function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const shown = useCountUp(value, 900, reduceMotion);
+  return (
+    <div
+      className={
+        accent
+          ? "rounded-lg border border-sidebar-primary/40 bg-sidebar-primary/10 p-2 text-center"
+          : "rounded-lg border border-sidebar-border bg-sidebar/40 p-2 text-center"
+      }
+    >
+      <p className={`text-lg font-bold tabular-nums ${accent ? "text-sidebar-primary" : "text-sidebar-foreground"}`}>{shown}</p>
+      <p className="text-sm text-sidebar-foreground/60">{label}</p>
+    </div>
+  );
 }
 
-// A stylized "screenshot" of the product itself — real live counts and real
-// rule names/statuses from the store, not placeholder content — used as the
-// login hero's centerpiece in place of a literal illustration.
+// A stylized "screenshot" of the product itself — real live counts from the
+// store (animated in once on mount), not placeholder content — used as the
+// login hero's centerpiece in place of a literal illustration. The rule list
+// that used to sit below the KPI row is now a live evaluation pipeline (see
+// RulePipeline) so the hero visually communicates "decision engine
+// evaluating rules" rather than reading as a static screenshot.
 export function ProductMockup({
   totalRules,
   activeRules,
   simulationsRun,
-  sampleRules,
 }: {
   totalRules: number;
   activeRules: number;
   simulationsRun: number;
-  sampleRules: MockupRule[];
 }) {
   return (
     <div className="relative w-full max-w-md">
@@ -39,33 +50,14 @@ export function ProductMockup({
 
         {/* KPI row */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-lg border border-sidebar-border bg-sidebar/40 p-2 text-center">
-            <p className="text-lg font-bold text-sidebar-foreground">{totalRules}</p>
-            <p className="text-sm text-sidebar-foreground/60">Total Rules</p>
-          </div>
-          <div className="rounded-lg border border-sidebar-primary/40 bg-sidebar-primary/10 p-2 text-center">
-            <p className="text-lg font-bold text-sidebar-primary">{activeRules}</p>
-            <p className="text-sm text-sidebar-foreground/60">Active</p>
-          </div>
-          <div className="rounded-lg border border-sidebar-border bg-sidebar/40 p-2 text-center">
-            <p className="text-lg font-bold text-sidebar-foreground">{simulationsRun}</p>
-            <p className="text-sm text-sidebar-foreground/60">Simulations</p>
-          </div>
+          <Stat label="Total Rules" value={totalRules} />
+          <Stat label="Active" value={activeRules} accent />
+          <Stat label="Simulations" value={simulationsRun} />
         </div>
 
-        {/* Mini rule list */}
-        <div className="mt-3 space-y-1.5">
-          {sampleRules.map((r) => (
-            <div key={r.id} className="flex items-center gap-2 rounded-md bg-sidebar/30 px-2.5 py-1.5">
-              <span className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[r.status] ?? "bg-white/40"}`} />
-              <span className="truncate text-sm text-sidebar-foreground/80">{r.name}</span>
-              <span className="ml-auto shrink-0 font-mono text-sm text-sidebar-foreground/45">{r.id}</span>
-            </div>
-          ))}
-        </div>
+        <RulePipeline />
+        <TerminalPrompt />
       </div>
-
-
     </div>
   );
 }

@@ -796,8 +796,8 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                           </div>
                         </div>
 
-                        <p className="mt-4 text-sm font-semibold leading-snug text-balance">
-                          One decision platform for every industry.
+                        <p className="mt-4 text-sm font-semibold leading-snug">
+                          One business rules engine for every industry.
                         </p>
                       </div>
 

@@ -18,6 +18,7 @@ import {
 } from "@/components/dashboard/persona-widgets";
 import { WIDGET_LABELS, WIDGET_REQUIRED_CAPABILITY } from "@/components/dashboard/manage-widgets-sheet";
 import { DashboardControls } from "@/components/dashboard/dashboard-controls";
+import { HeroBanner } from "@/components/dashboard/hero-banner";
 import { Button } from "@/components/ui/button";
 import { ProgressScoreWidget, DistributionDonutWidget, PerformanceListWidget } from "@/components/dashboard/premium-widgets";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
@@ -58,7 +59,8 @@ export default function DashboardPage() {
   const t = useTranslate();
   const rules = useAppStore((s) => s.rules);
   const showInsights = useAppStore((s) => s.appearance.showInsights);
-  const userId = useAppStore((s) => s.currentUser.userId);
+  const currentUser = useAppStore((s) => s.currentUser);
+  const userId = currentUser.userId;
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
   const [editMode, setEditMode] = useState(false);
@@ -131,29 +133,35 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      <div className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-5">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">{t("dashboard.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={exportSummary}>
-            <Download className="size-3.5" /> {t("dashboard.export")}
-          </Button>
-          <DashboardControls
-            dashboardKey={dashboardKey}
-            widgetDefs={widgetDefs}
-            editMode={editMode}
-            onEditModeChange={setEditMode}
-          />
-        </div>
-      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <HeroBanner
+          name={currentUser.name.split(" ")[0]}
+          summary={`${rules.length} rules · ${pendingReview} pending review · ${criticalDrafts} critical drafts`}
+          actions={
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-white/90 hover:bg-white/10 hover:text-white"
+                onClick={exportSummary}
+              >
+                <Download className="size-3.5" /> {t("dashboard.export")}
+              </Button>
+              <DashboardControls
+                dashboardKey={dashboardKey}
+                widgetDefs={widgetDefs}
+                editMode={editMode}
+                onEditModeChange={setEditMode}
+                triggerClassName="border-white/20 bg-transparent text-white/90 hover:bg-white/10 hover:text-white"
+              />
+            </>
+          }
+        >
+          <KpiCards />
+        </HeroBanner>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2.5 sm:px-5">
-        <div className="mx-auto max-w-350">
-          <div className="mb-4">
-            <KpiCards />
-          </div>
+        <div className="px-4 py-4 sm:px-5">
+          <div className="mx-auto max-w-[1400px]">
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-6">
             {visibleWidgets.map((w) => {
               const render = WIDGET_RENDERERS[w.id];
@@ -186,6 +194,7 @@ export default function DashboardPage() {
                 All widgets are hidden. Open Dashboard Controls → Manage Widgets to bring some back.
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

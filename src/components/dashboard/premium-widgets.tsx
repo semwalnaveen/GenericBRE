@@ -289,6 +289,50 @@ export function ProgressDonutListWidget({
 }
 
 /* -------------------------------------------------------------------------- */
+/*                            FUNNEL LIST WIDGET                              */
+/* -------------------------------------------------------------------------- */
+
+export interface FunnelListItem {
+  label: string;
+  value: string | number;
+  percentage: number; // 0 to 100 — bar fill width
+  colorClass: string; // solid bar fill, e.g. 'bg-emerald-500'
+}
+
+interface FunnelListWidgetProps {
+  title: string;
+  action?: React.ReactNode;
+  items: FunnelListItem[];
+}
+
+// A stage-by-stage breakdown — label, value, and a full-width horizontal
+// progress bar per row — for any real ordered pipeline (e.g. rule lifecycle
+// stage counts). Generic like the other primitives above; callers own the
+// data and the row order.
+export function FunnelListWidget({ title, action, items }: FunnelListWidgetProps) {
+  return (
+    <WidgetCard title={title} action={action}>
+      <div className="flex flex-col justify-center gap-3">
+        {items.map((item, i) => (
+          <div key={i} className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-foreground">{item.label}</span>
+              <span className="font-bold text-foreground tabular-nums">{item.value}</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn("h-full rounded-full transition-all duration-700 ease-out", item.colorClass)}
+                style={{ width: `${item.percentage}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </WidgetCard>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*                          PERFORMANCE LIST WIDGET                           */
 /* -------------------------------------------------------------------------- */
 
@@ -372,7 +416,7 @@ interface CleanListWidgetProps {
 
 export function CleanListWidget({ title, action, items }: CleanListWidgetProps) {
   return (
-    <div className="flex h-full w-full min-h-0 flex-col rounded-xl border bg-card shadow-sm overflow-hidden">
+    <div className="flex h-full w-full min-h-0 flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden">
       <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
         <h3 className="text-sm font-bold text-foreground">{title}</h3>
         {action && (
