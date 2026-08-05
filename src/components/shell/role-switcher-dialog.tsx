@@ -66,8 +66,11 @@ export function RoleSwitcherDialog({
                   <p className="truncate text-sm font-semibold">{user.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{user.role}</p>
                 </div>
-                {user.isAdmin && !active && (
-                  <span title="Administrator" className="shrink-0 text-amber-500">
+                {user.adminScope && !active && (
+                  <span
+                    title={user.adminScope === "system" ? "System Administrator" : "Product Administrator"}
+                    className={cn("shrink-0", user.adminScope === "system" ? "text-amber-500" : "text-blue-500")}
+                  >
                     <ShieldCheck className="size-4" />
                   </span>
                 )}

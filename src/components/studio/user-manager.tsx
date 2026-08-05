@@ -16,9 +16,9 @@ import {
   KeyRound,
   Download,
 } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useHasCapability } from "@/lib/store";
 import { AppUser, Capability, UserProductAccess } from "@/lib/types";
-import { CATEGORY_SCOPABLE_CAPABILITIES, capabilityLabel } from "@/lib/capabilities";
+import { CATEGORY_SCOPABLE_CAPABILITIES, PERMISSION_PRESETS, capabilityLabel } from "@/lib/capabilities";
 import { downloadCsv } from "@/lib/csv";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Button } from "@/components/ui/button";
@@ -62,12 +62,23 @@ function blankUser(): AppUser {
     role: "",
     department: "",
     status: "Active",
-    isAdmin: false,
     approvalCategories: [],
     createdAt: now,
     updatedAt: now,
   };
 }
+
+const ADMIN_SCOPE_ITEMS: Record<string, string> = {
+  none: "Standard user (no admin)",
+  product: "Product Administrator",
+  system: "System Administrator",
+};
+
+const ADMIN_SCOPE_HINT: Record<string, string> = {
+  none: "Access comes only from the User Access Mapping rows below.",
+  product: "Can configure products, metadata and rules — cannot manage users or permissions.",
+  system: "Full platform administration, including users, access and permissions.",
+};
 
 export function UserManager() {
   const users = useAppStore((s) => s.users);
@@ -81,6 +92,15 @@ export function UserManager() {
   const addUserAccessMapping = useAppStore((s) => s.addUserAccessMapping);
   const updateUserAccessMapping = useAppStore((s) => s.updateUserAccessMapping);
   const deleteUserAccessMapping = useAppStore((s) => s.deleteUserAccessMapping);
+
+  // Segregation of duties: only a System Administrator may mutate anything on
+  // this screen. Everyone else who can reach Configuration Studio (a Product
+  // Administrator holding config.manage) never gets here — the section is
+  // filtered out of the nav — but the controls stay defensively gated so the
+  // UI can never offer an action the store would refuse.
+  const canManageUsers = useHasCapability("system.manage");
+  const currentUserId = useAppStore((s) => s.currentUser.userId);
+  const readOnlyTitle = canManageUsers ? undefined : "Only a System Administrator can manage users and access.";
 
   const [editing, setEditing] = useState<AppUser | null>(null);
   const [draft, setDraft] = useState<AppUser>(blankUser());
@@ -103,6 +123,12 @@ export function UserManager() {
   const [mappingCategoryFilters, setMappingCategoryFilters] = useState<string[]>([]);
   const [mappingSort, setMappingSort] = useState<{ key: MappingSortKey; dir: "asc" | "desc" }>({ key: "createdAt", dir: "desc" });
   const [mappingPage, setMappingPage] = useState(1);
+
+  // Nobody edits their own administration scope, in either direction — a
+  // privilege change needs a second pair of eyes, same principle as
+  // Maker-Checker. The store enforces this too; this just stops the UI
+  // offering a control that would be refused.
+  const isEditingSelf = !!editing && editing.id === currentUserId;
 
   const selectedUser = users.find((u) => u.id === selectedUserId) ?? null;
   const productName = (id: string) => products.find((p) => p.id === id)?.name ?? id;
@@ -142,7 +168,11 @@ export function UserManager() {
       return;
     }
     if (editingMappingId) {
-      updateUserAccessMapping(editingMappingId, { productId: formProductId, categoryId: formCategoryId, capabilities: formCapabilities });
+      const updated = updateUserAccessMapping(editingMappingId, { productId: formProductId, categoryId: formCategoryId, capabilities: formCapabilities });
+      if (!updated.ok) {
+        toast.error(updated.reason ?? "Couldn't update this access.");
+        return;
+      }
       toast.success(`Access updated for ${selectedUser.name}.`);
       resetMappingForm();
       return;
@@ -174,8 +204,9 @@ export function UserManager() {
 
   const confirmDeleteMapping = () => {
     if (!pendingDeleteMapping) return;
-    deleteUserAccessMapping(pendingDeleteMapping.id);
-    toast.info("Access removed.");
+    const result = deleteUserAccessMapping(pendingDeleteMapping.id);
+    if (!result.ok) toast.error(result.reason ?? "Couldn't remove this access.");
+    else toast.info("Access removed.");
     setPendingDeleteMapping(null);
   };
 
@@ -301,11 +332,19 @@ export function UserManager() {
       return;
     }
     if (editing) {
-      updateUser(editing.id, draft);
+      const result = updateUser(editing.id, draft);
+      if (!result.ok) {
+        toast.error(result.reason ?? "Couldn't update this user.");
+        return;
+      }
       toast.success(`"${draft.name}" updated.`);
     } else {
       const id = `usr-${draft.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now().toString(36)}`;
-      addUser({ ...draft, id });
+      const result = addUser({ ...draft, id });
+      if (!result.ok) {
+        toast.error(result.reason ?? "Couldn't add this user.");
+        return;
+      }
       toast.success(`"${draft.name}" added.`);
     }
     setOpen(false);
@@ -313,8 +352,9 @@ export function UserManager() {
 
   const confirmDelete = () => {
     if (!pendingDelete) return;
-    deleteUser(pendingDelete.id);
-    toast.info(`"${pendingDelete.name}" removed.`);
+    const result = deleteUser(pendingDelete.id);
+    if (!result.ok) toast.error(result.reason ?? "Couldn't remove this user.");
+    else toast.info(`"${pendingDelete.name}" removed.`);
     setPendingDelete(null);
   };
 
@@ -364,9 +404,16 @@ export function UserManager() {
                       <CommandItem key={u.id} value={`${u.name} ${u.role} ${u.email}`} onSelect={() => handleSelectUser(u.id)} className="gap-2.5">
                         <Check className={cn("size-3.5 shrink-0", selectedUserId === u.id ? "opacity-100" : "opacity-0")} />
                         <span className="min-w-0 flex-1 truncate">{u.name}</span>
-                        {u.isAdmin && (
-                          <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                            Admin
+                        {u.adminScope && (
+                          <span
+                            className={cn(
+                              "shrink-0 rounded-full border px-1.5 py-0.5 text-xs font-medium",
+                              u.adminScope === "system"
+                                ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                                : "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400"
+                            )}
+                          >
+                            {u.adminScope === "system" ? "System Admin" : "Product Admin"}
                           </span>
                         )}
                         <span className="shrink-0 text-sm text-muted-foreground">{u.role}</span>
@@ -379,7 +426,13 @@ export function UserManager() {
           </Popover>
           {selectedUser && (
             <>
-              <Button variant="ghost" size="icon-sm" onClick={() => startEdit(selectedUser)} title="Edit User">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => startEdit(selectedUser)}
+                disabled={!canManageUsers}
+                title={readOnlyTitle ?? "Edit User"}
+              >
                 <Pencil className="size-3.5" />
               </Button>
               <Button
@@ -387,13 +440,24 @@ export function UserManager() {
                 size="icon-sm"
                 className="hover:text-destructive"
                 onClick={() => setPendingDelete(selectedUser)}
-                title="Delete User"
+                disabled={!canManageUsers || selectedUser.id === currentUserId}
+                title={
+                  readOnlyTitle ??
+                  (selectedUser.id === currentUserId ? "You can't delete your own account" : "Delete User")
+                }
               >
                 <Trash2 className="size-3.5" />
               </Button>
             </>
           )}
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={startCreate}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={startCreate}
+            disabled={!canManageUsers}
+            title={readOnlyTitle}
+          >
             <Plus className="size-3.5" /> Add User
           </Button>
         </div>
@@ -446,18 +510,47 @@ export function UserManager() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>System Permissions *</Label>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>System Permissions *</Label>
+                {/* Quick-set shortcuts for the usual access levels. Purely a
+                    convenience over the granular checkboxes below — a mapping
+                    always stores the individual capabilities, which are more
+                    expressive than a Read/Write flag (Maker-Checker depends
+                    on rule.approve specifically). */}
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-sm text-muted-foreground">Quick set:</span>
+                  {PERMISSION_PRESETS.map((preset) => (
+                    <Button
+                      key={preset.label}
+                      size="sm"
+                      variant="outline"
+                      className="h-6 px-2 text-xs"
+                      title={preset.description}
+                      disabled={!canManageUsers}
+                      onClick={() => setFormCapabilities(preset.capabilities)}
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-2 rounded-lg border bg-background p-2.5 sm:grid-cols-3">
                 {CATEGORY_SCOPABLE_CAPABILITIES.map((cap) => (
                   <label key={cap} className="flex items-center gap-2 text-sm font-normal text-foreground cursor-pointer">
-                    <Checkbox checked={formCapabilities.includes(cap)} onCheckedChange={() => toggleFormCapability(cap)} />
+                    <Checkbox
+                      checked={formCapabilities.includes(cap)}
+                      onCheckedChange={() => toggleFormCapability(cap)}
+                      disabled={!canManageUsers}
+                    />
                     {capabilityLabel(cap)}
                   </label>
                 ))}
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleAddAccess}>{editingMappingId ? "Save Changes" : "Add Access"}</Button>
+              <Button size="sm" onClick={handleAddAccess} disabled={!canManageUsers} title={readOnlyTitle}>
+                {editingMappingId ? "Save Changes" : "Add Access"}
+              </Button>
               <Button size="sm" variant="outline" onClick={resetMappingForm}>Reset</Button>
             </div>
           </div>
@@ -580,7 +673,18 @@ export function UserManager() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-0.5">
-                        <Button variant="ghost" size="icon-sm" onClick={() => startEditMapping(m)} title="Edit access">
+                        {/* Self-assignment guard: you may review your own
+                            grants but never edit them — the core SoD rule. */}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => startEditMapping(m)}
+                          disabled={!canManageUsers || m.userId === currentUserId}
+                          title={
+                            readOnlyTitle ??
+                            (m.userId === currentUserId ? "You can't change your own permissions" : "Edit access")
+                          }
+                        >
                           <Pencil className="size-3.5" />
                         </Button>
                         <Button
@@ -588,7 +692,11 @@ export function UserManager() {
                           size="icon-sm"
                           className="hover:text-destructive"
                           onClick={() => setPendingDeleteMapping(m)}
-                          title="Delete access"
+                          disabled={!canManageUsers || m.userId === currentUserId}
+                          title={
+                            readOnlyTitle ??
+                            (m.userId === currentUserId ? "You can't revoke your own permissions" : "Delete access")
+                          }
                         >
                           <Trash2 className="size-3.5" />
                         </Button>
@@ -712,20 +820,33 @@ export function UserManager() {
                   </SelectContent>
                 </Select>
               </div>
-              <label className="col-span-2 flex cursor-pointer items-start gap-2.5 rounded-lg border bg-muted/20 p-3">
-                <Checkbox
-                  className="mt-0.5"
-                  checked={draft.isAdmin}
-                  onCheckedChange={(v) => setDraft((d) => ({ ...d, isAdmin: !!v }))}
-                />
-                <span className="space-y-0.5">
-                  <span className="block text-sm font-medium text-foreground">Administrator</span>
-                  <span className="block text-sm text-muted-foreground">
-                    Grants full Configuration Studio and system access (config, NotifyX, system settings). Day-to-day rule
-                    access is set per product/category in User Access Mapping below.
-                  </span>
-                </span>
-              </label>
+              {/* Administration tier. Deliberately a three-way choice rather
+                  than one "Administrator" checkbox: bundling platform and
+                  product administration together is what previously let a
+                  Product Manager grant themselves permissions. */}
+              <div className="col-span-2 space-y-1.5 rounded-lg border bg-muted/20 p-3">
+                <Label>Administration Scope</Label>
+                <Select
+                  items={ADMIN_SCOPE_ITEMS}
+                  value={draft.adminScope ?? "none"}
+                  onValueChange={(v) =>
+                    setDraft((d) => ({ ...d, adminScope: v === "none" ? undefined : (v as AppUser["adminScope"]) }))
+                  }
+                  disabled={isEditingSelf}
+                >
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(ADMIN_SCOPE_ITEMS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  {isEditingSelf
+                    ? "You can't change your own administration scope — another System Administrator must do it."
+                    : ADMIN_SCOPE_HINT[draft.adminScope ?? "none"]}
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>

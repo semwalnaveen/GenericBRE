@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -20,7 +20,8 @@ import {
   LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
-import { useAppStore, useHasCapability } from "@/lib/store";
+import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
+import { Capability } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { IndustriesManager } from "@/components/studio/industries-manager";
@@ -55,6 +56,9 @@ interface NavItem {
   id: SectionId;
   label: string;
   icon: LucideIcon;
+  /** Capability required to see this section. Omitted = any user who can
+   *  reach Configuration Studio at all (i.e. holds config.manage). */
+  requiredCapability?: Capability;
 }
 
 interface NavGroup {
@@ -84,7 +88,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Access",
     items: [
-      { id: "users", label: "User Management", icon: Users },
+      // Segregation of duties: user & access administration is System
+      // Administrator territory only. A Product Administrator holds
+      // config.manage and configures products freely, but must never be able
+      // to grant permissions — see SYSTEM_ADMIN_CAPABILITIES in store.ts.
+      { id: "users", label: "User Management", icon: Users, requiredCapability: "system.manage" },
       { id: "job-titles", label: "Job Titles", icon: IdCard },
     ],
   },
@@ -120,8 +128,31 @@ const SECTION_DESCRIPTIONS: Record<SectionId, string> = {
 export default function ConfigurationStudioPage() {
   const router = useRouter();
   const currentUser = useAppStore((s) => s.currentUser);
-  const canManageConfig = useHasCapability("config.manage");
+  const capabilities = useEffectiveCapabilities();
+  const canManageConfig = capabilities.has("config.manage");
   const [section, setSection] = useState<SectionId>("fields");
+
+  // Each section is gated independently — holding config.manage gets you into
+  // the Studio, but not into sections that require more (User Management
+  // needs system.manage).
+  const visibleGroups = useMemo(
+    () =>
+      NAV_GROUPS.map((g) => ({
+        ...g,
+        items: g.items.filter((i) => !i.requiredCapability || capabilities.has(i.requiredCapability)),
+      })).filter((g) => g.items.length > 0),
+    [capabilities]
+  );
+  const visibleSectionIds = useMemo(
+    () => new Set(visibleGroups.flatMap((g) => g.items.map((i) => i.id))),
+    [visibleGroups]
+  );
+  // Guard against a section id the current user can't see — e.g. a persisted
+  // selection made before their access changed. Without this the pane renders
+  // blank rather than falling back to something they can actually open.
+  const activeSection = visibleSectionIds.has(section)
+    ? section
+    : visibleGroups[0]?.items[0]?.id ?? "fields";
 
   if (!canManageConfig) {
     return (
@@ -154,31 +185,31 @@ export default function ConfigurationStudioPage() {
       </div>
 
       <div className="flex flex-col min-h-0 flex-1">
-        <ConfigStudioNav groups={NAV_GROUPS} roadmap={[]} activeSection={section} onSelect={setSection} />
+        <ConfigStudioNav groups={visibleGroups} roadmap={[]} activeSection={activeSection} onSelect={setSection} />
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">
           <div className="mx-auto max-w-6xl space-y-3 px-5 py-3 sm:px-6 w-full">
-            {section !== "users" && section !== "notifyx" && (
+            {activeSection !== "users" && activeSection !== "notifyx" && (
               <div>
-                <h2 className="text-sm font-semibold">{[...NAV_GROUPS.flatMap((g) => g.items)].find((i) => i.id === section)?.label}</h2>
-                <p className="text-sm text-muted-foreground">{SECTION_DESCRIPTIONS[section]}</p>
+                <h2 className="text-sm font-semibold">{[...NAV_GROUPS.flatMap((g) => g.items)].find((i) => i.id === activeSection)?.label}</h2>
+                <p className="text-sm text-muted-foreground">{SECTION_DESCRIPTIONS[activeSection]}</p>
               </div>
             )}
 
-            {section === "fields" && <FieldCatalogManager />}
-            {section === "entities" && <EntityCatalogManager />}
-            {section === "json-mapping" && <JsonMappingManager />}
-            {section === "categories" && <RuleCategoryManager />}
-            {section === "rule-templates" && <RuleTemplatesManager />}
-            {section === "products" && <ProductManager />}
-            {section === "product-rule-mapping" && <ProductRuleMappingManager />}
-            {section === "dashboard-management" && <DashboardManagementManager />}
-            {section === "industries" && <IndustriesManager />}
-            {section === "users" && <UserManager />}
-            {section === "job-titles" && <JobTitleManager />}
-            {section === "notifyx" && <NotifyXManager />}
+            {activeSection === "fields" && <FieldCatalogManager />}
+            {activeSection === "entities" && <EntityCatalogManager />}
+            {activeSection === "json-mapping" && <JsonMappingManager />}
+            {activeSection === "categories" && <RuleCategoryManager />}
+            {activeSection === "rule-templates" && <RuleTemplatesManager />}
+            {activeSection === "products" && <ProductManager />}
+            {activeSection === "product-rule-mapping" && <ProductRuleMappingManager />}
+            {activeSection === "dashboard-management" && <DashboardManagementManager />}
+            {activeSection === "industries" && <IndustriesManager />}
+            {activeSection === "users" && <UserManager />}
+            {activeSection === "job-titles" && <JobTitleManager />}
+            {activeSection === "notifyx" && <NotifyXManager />}
 
-            {section === "fields" && (
+            {activeSection === "fields" && (
               <p className="pt-2 text-sm text-muted-foreground">
                 Looking for the full metadata overview across every module? See the{" "}
                 <Link href="/metadata-explorer" className="text-primary hover:underline">Metadata Explorer</Link>.

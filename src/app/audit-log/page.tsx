@@ -218,13 +218,13 @@ export default function AuditLogPage() {
                       <tr
                         className={cn(
                           "hover:bg-accent/30",
-                          a.decisionContext && "cursor-pointer",
+                          (a.decisionContext || a.changes?.length) && "cursor-pointer",
                           integrity && !integrity.intact && a.id === integrity.brokenAtId && "bg-destructive/10"
                         )}
-                        onClick={() => a.decisionContext && toggleExpanded(a.id)}
+                        onClick={() => (a.decisionContext || a.changes?.length) && toggleExpanded(a.id)}
                       >
                         <td className="px-2 py-2">
-                          {a.decisionContext && (
+                          {(a.decisionContext || a.changes?.length) && (
                             <ChevronRight className={cn("size-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
                           )}
                         </td>
@@ -235,6 +235,40 @@ export default function AuditLogPage() {
                         <td className="px-3 py-2 text-sm font-mono text-muted-foreground">{a.entityId}</td>
                         <td className="px-3 py-2 text-sm text-muted-foreground">{a.details}</td>
                       </tr>
+                      {/* Access-control before/after values. Unlike the hashed
+                          `details` summary these are display detail only (see
+                          AuditEntry.changes in types.ts). */}
+                      {isOpen && a.changes?.length ? (
+                        <tr key={`${a.id}-changes`} className="bg-muted/20">
+                          <td colSpan={7} className="px-5 py-3">
+                            <p className="mb-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                              What changed
+                            </p>
+                            <div className="overflow-x-auto">
+                              <table className="w-full min-w-md text-sm">
+                                <thead>
+                                  <tr className="text-left text-muted-foreground">
+                                    <th className="py-1 pr-4 font-medium">Field</th>
+                                    <th className="py-1 pr-4 font-medium">Before</th>
+                                    <th className="py-1 font-medium">After</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {a.changes.map((c, i) => (
+                                    <tr key={`${c.field}-${i}`} className="border-t border-border/60">
+                                      <td className="py-1.5 pr-4 font-medium">{c.field}</td>
+                                      <td className="py-1.5 pr-4 text-muted-foreground line-through decoration-destructive/40">
+                                        {c.oldValue}
+                                      </td>
+                                      <td className="py-1.5 font-medium text-emerald-600 dark:text-emerald-400">{c.newValue}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
                       {isOpen && a.decisionContext && (
                         <tr key={`${a.id}-detail`} className="bg-muted/20">
                           <td colSpan={7} className="px-5 py-3">

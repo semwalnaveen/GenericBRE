@@ -695,6 +695,18 @@ export interface AuditEntry {
     requestPayload: Record<string, unknown>;
     responsePayload: Record<string, unknown>;
   };
+  /** Structured before/after values for access-control changes (user created/updated,
+   *  permissions granted/revoked). Like decisionContext above, deliberately NOT part of
+   *  hashAuditEntry's payload, so existing chains keep verifying — which also means it is
+   *  display detail, not tamper-evident. The authoritative, hashed summary stays in `details`. */
+  changes?: AuditChange[];
+}
+
+/** One field-level before/after pair on an access-control audit entry. */
+export interface AuditChange {
+  field: string;
+  oldValue: string;
+  newValue: string;
 }
 
 // The fixed, universal capability vocabulary (mirrors BRD §5.4's RBAC matrix
@@ -727,9 +739,21 @@ export interface JobTitle {
   updatedAt: string;
 }
 
+// The administration tier a user holds, if any. Deliberately NOT a single
+// boolean: platform administration (users, access, permissions) and product
+// administration (products, metadata, rule config) are separate duties, and
+// bundling them let a Product Manager grant themselves any permission —
+// see SYSTEM_ADMIN_CAPABILITIES/PRODUCT_ADMIN_CAPABILITIES in store.ts.
+//   "system"  — System Administrator: the ONLY tier that may manage users,
+//               access mappings and permissions (holds system.manage).
+//   "product" — Product Administrator: product/metadata/rule configuration
+//               only (config.manage + notifyx.*), never user or access admin.
+// undefined = not an administrator at all.
+export type AdminScope = "system" | "product";
+
 // A named individual on the team's user roster. This is the single source of
-// truth for access: `isAdmin` grants the config/admin capabilities, and the
-// user's UserProductAccess rows grant the rule.* capabilities. Enforced
+// truth for access: `adminScope` grants the platform/config capabilities, and
+// the user's UserProductAccess rows grant the rule.* capabilities. Enforced
 // client-side only (no backend), same as the rest of this prototype.
 export interface AppUser {
   id: string;
@@ -740,12 +764,10 @@ export interface AppUser {
   role: string;
   department: string;
   status: "Active" | "Inactive";
-  /** Administrator grant. When true, the user holds all config/admin
-   *  capabilities (system.manage, config.manage, notifyx.*) — the six
-   *  non-rule Capabilities that aren't product/category-scoped. Non-admins
-   *  never hold them. rule.* capabilities come separately from the user's
-   *  UserProductAccess rows, never from this flag. */
-  isAdmin: boolean;
+  /** Administration tier — see AdminScope above. Only "system" unlocks user
+   *  and access management. rule.* capabilities come separately from the
+   *  user's UserProductAccess rows, never from this field. */
+  adminScope?: AdminScope;
   /** RuleCategory.name values this user is authorized to approve as part of
    *  Maker-Checker approval. Zero, one, or many — a single approver can cover
    *  multiple categories. Enforced in store.ts's approveRule/rejectRule: an
@@ -883,7 +905,7 @@ export interface AppearanceSettings {
 
 export interface CurrentUser {
   /** References an AppUser.id — the signed-in person, from which access
-   *  (isAdmin + UserProductAccess rows) is resolved. */
+   *  (adminScope + UserProductAccess rows) is resolved. */
   userId: string;
   name: string;
   /** The signed-in user's Job Title label (display only). */

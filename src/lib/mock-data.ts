@@ -2123,9 +2123,10 @@ export const DEFAULT_JSON_MAPPINGS: JsonMapping[] = [
 // nothing below is enforced in code.
 //
 // The 6 demo people. User Management is the single source of access: each
-// carries an isAdmin flag (config/admin caps), a Job Title label (display
-// only), approval categories (Maker-Checker), and — via DEFAULT_USER_ACCESS_
-// MAPPINGS — per-product/category rule.* grants. There is no Role entity.
+// carries an adminScope (platform vs product administration, or none), a Job
+// Title label (display only), approval categories (Maker-Checker), and — via
+// DEFAULT_USER_ACCESS_MAPPINGS — per-product/category rule.* grants. There is
+// no Role entity.
 // ============================================================
 const USER_SEED_TIMESTAMP = "2026-02-01T09:00:00.000Z";
 
@@ -2137,7 +2138,6 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Credit/Risk Manager",
     department: "Credit Risk",
     status: "Active",
-    isAdmin: false,
     approvalCategories: ["Eligibility", "Risk & Fraud"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2149,7 +2149,6 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Underwriter/Claims",
     department: "Underwriting & Claims",
     status: "Active",
-    isAdmin: false,
     approvalCategories: ["Underwriting", "Claims", "Collateral"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2161,7 +2160,11 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Product Manager",
     department: "Product Strategy",
     status: "Active",
-    isAdmin: true,
+    // Product administration only — products, metadata and rule config. NOT
+    // user/access administration: a Product Manager granting permissions
+    // (including to themselves) is the segregation-of-duties break this
+    // scope split exists to close.
+    adminScope: "product",
     approvalCategories: ["Pricing"],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2173,7 +2176,6 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Business Analyst",
     department: "Business Analysis",
     status: "Active",
-    isAdmin: false,
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2185,7 +2187,6 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Operations",
     department: "Operations",
     status: "Active",
-    isAdmin: false,
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2197,7 +2198,8 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "System Administrator",
     department: "IT / System Administration",
     status: "Active",
-    isAdmin: true,
+    // The only tier that may manage users, access mappings and permissions.
+    adminScope: "system",
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,

@@ -155,7 +155,11 @@ export default function MetadataExplorerPage() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium">{u.name}</span>
                       <span className="text-sm text-muted-foreground">· {u.role}</span>
-                      {u.isAdmin && <Badge variant="outline" className="text-sm">Admin</Badge>}
+                      {u.adminScope && (
+                        <Badge variant="outline" className="text-sm">
+                          {u.adminScope === "system" ? "System Admin" : "Product Admin"}
+                        </Badge>
+                      )}
                     </div>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {caps.map((c) => (
