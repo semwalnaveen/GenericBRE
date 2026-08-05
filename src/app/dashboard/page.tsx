@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Sparkles, GripVertical } from "lucide-react";
+import { Sparkles, GripVertical } from "lucide-react";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentRulesPanel, RecentActivityPanel, RecentDeploymentsPanel } from "@/components/dashboard/recent-panels";
@@ -119,25 +119,6 @@ export default function DashboardPage() {
   const pendingReview = rules.filter((r) => r.status === "Pending Approval").length;
   const criticalDrafts = rules.filter((r) => r.status === "Draft" && r.priority === 1).length;
 
-  const exportSummary = () => {
-    // Mirrors the same domain-scoped set the widgets above actually display
-    // (audit finding B17) rather than the full, unfiltered rule catalog.
-    const scopedRules = domainFilter.length ? rules.filter((r) => domainFilter.includes(r.domain)) : rules;
-    downloadCsv(
-      "bre_dashboard_summary",
-      scopedRules.map((r) => ({
-        RuleID: r.id,
-        Name: r.name,
-        Domain: r.domain,
-        Category: r.category,
-        Priority: r.priority,
-        Status: r.status,
-        Owner: r.owner,
-        UpdatedAt: r.updatedAt,
-      }))
-    );
-  };
-
   return (
     <div className="flex h-full flex-col bg-background">
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -145,14 +126,6 @@ export default function DashboardPage() {
           name={currentUser.name.split(" ")[0]}
           actions={
             <>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-white/90 hover:bg-white/10 hover:text-white"
-                onClick={exportSummary}
-              >
-                <Download className="size-3.5" /> {t("dashboard.export")}
-              </Button>
               <DashboardControls
                 dashboardKey={dashboardKey}
                 widgetDefs={widgetDefs}
@@ -166,9 +139,9 @@ export default function DashboardPage() {
           <KpiCards />
         </HeroBanner>
 
-        <div className="px-4 py-4 sm:px-5">
+        <div className="px-2 py-2 sm:px-5">
           <div className="mx-auto max-w-[1400px]">
-          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="grid grid-cols-1 items-start gap-2 md:grid-cols-2 xl:grid-cols-6">
             {visibleWidgets.map((w) => {
               const render = WIDGET_RENDERERS[w.id];
               if (!render) return null;
@@ -177,7 +150,7 @@ export default function DashboardPage() {
                   key={w.id}
                   onDragOver={(e) => editMode && e.preventDefault()}
                   onDrop={() => editMode && handleGridDrop(w.id)}
-                  className={`flex h-[240px] max-h-[240px] select-none flex-col gap-1.5 ${WIDGET_SIZE_SPAN[w.size]} ${
+                  className={`flex h-[190px] max-h-[190px] select-none flex-col gap-1.5 ${WIDGET_SIZE_SPAN[w.size]} ${
                     editMode ? "rounded-xl outline-dashed outline-2 outline-primary/30" : ""
                   }`}
                 >

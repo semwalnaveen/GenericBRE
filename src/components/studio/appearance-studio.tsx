@@ -760,139 +760,87 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                   );
                 })()}
 
-                {/* Sign-in Page Preview - Split Layout, matching the real
-                    /login page's current design: diagonal sidebar-token
-                    gradient on the left (so theme/color changes actually
-                    show here), radial-gradient card panel on the right,
-                    same fixed #0a1230 ink and bordered/taller fields the
-                    real page uses regardless of the active theme. */}
+                {/* Sign-in Page Preview - Full Page Layout, matching the real
+                    /login page's current design: constellation backdrop gradient 
+                    with a floating sign-in card on the right. */}
                 {previewTab === "signin" && (
-                  <div className="flex overflow-hidden rounded-2xl border shadow-xl h-96">
-                    {/* Left Side - Dark Brand Panel */}
-                    <div
-                      className="flex-1 p-4 flex flex-col justify-between items-start relative overflow-hidden"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, color-mix(in oklch, var(--sidebar) 88%, black 12%) 0%, var(--sidebar) 45%, color-mix(in oklch, var(--sidebar) 78%, var(--sidebar-primary) 22%) 100%)",
-                        color: "var(--sidebar-foreground)",
-                      }}
-                    >
+                  <div 
+                    className="flex overflow-hidden rounded-2xl border shadow-xl h-96 relative flex-col md:flex-row"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, color-mix(in oklch, var(--sidebar) 88%, black 12%) 0%, var(--sidebar) 45%, color-mix(in oklch, var(--sidebar) 78%, var(--sidebar-primary) 22%) 100%)",
+                      color: "var(--sidebar-foreground)",
+                    }}
+                  >
+                    {/* Left Brand Panel */}
+                    <div className="relative hidden flex-1 flex-col justify-between p-6 md:flex z-10">
                       <div>
-                        <div className="relative z-10 flex items-center gap-2">
-                          <div
-                            className="flex size-10 items-center justify-center overflow-hidden rounded-lg shrink-0"
-                            style={{ background: "var(--sidebar-primary)", color: "var(--sidebar-primary-foreground)" }}
-                          >
-                            {draft.logo ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={draft.logo} alt="" className="size-full object-contain p-1" />
-                            ) : (
-                              <Workflow className="size-6" />
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2">
+                          <Workflow className="size-6 text-sidebar-primary" />
                           <div>
-                            <p className="text-xs font-bold leading-tight">{draft.appName || "Business Rules System"}</p>
-                            <p className="text-[8px]" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 60%, transparent)" }}>{draft.tagline || "Decision Platform"}</p>
+                            <p className="text-sm font-semibold tracking-tight leading-tight">{draft.appName || "Business Rules System"}</p>
+                            <p className="text-[10px] text-sidebar-foreground/80 leading-tight">{draft.tagline || "Decision Platform"}</p>
                           </div>
                         </div>
-
-                        <p className="mt-4 text-sm font-semibold leading-snug">
-                          One business rules engine for every industry.
-                        </p>
+                        <h1 className="mt-4 text-xl font-bold tracking-tight">
+                          <span className="text-sidebar-foreground">One business rules engine </span>
+                          <br/>
+                          <span className="text-sidebar-primary">for every industry.</span>
+                        </h1>
                       </div>
-
-                      <div className="grid w-full grid-cols-3 gap-1.5">
-                        {[
-                          { label: "Total Rules", value: "157" },
-                          { label: "Active Rules", value: "97" },
-                          { label: "Simulations", value: "263" },
-                        ].map((s) => (
-                          <div
-                            key={s.label}
-                            className="rounded-md border p-1.5 text-center"
-                            style={{ borderColor: "var(--sidebar-border)", background: "color-mix(in oklch, var(--sidebar-accent) 40%, transparent)" }}
-                          >
-                            <p className="text-[10px] font-bold" style={{ color: "var(--sidebar-primary)" }}>{s.value}</p>
-                            <p className="text-[7px]" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 75%, transparent)" }}>{s.label}</p>
-                          </div>
-                        ))}
+                      
+                      {/* Abstract Mockup Placeholder */}
+                      <div className="flex flex-1 items-center justify-center p-4">
+                        <div className="w-full max-w-[200px] aspect-video rounded-xl border border-sidebar-border bg-sidebar/50 shadow-2xl overflow-hidden flex flex-col">
+                           <div className="h-4 bg-sidebar-accent/50 border-b border-sidebar-border w-full" />
+                           <div className="p-2 gap-2 flex flex-col flex-1">
+                             <div className="h-2 w-1/3 bg-sidebar-primary/50 rounded-full" />
+                             <div className="h-2 w-1/2 bg-sidebar-foreground/20 rounded-full" />
+                           </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Right Side - Sign-in Form */}
-                    <div
-                      className="flex-1 p-6 flex flex-col items-center justify-center"
-                      style={{
-                        background:
-                          "radial-gradient(400px 300px at 100% 0%, #eef3ff 0%, transparent 60%), radial-gradient(300px 250px at 0% 100%, #fff4e0 0%, transparent 60%), #fbfcff",
-                      }}
-                    >
-                      <div className="w-full max-w-sm space-y-5">
-                        <div>
-                          <p className="text-lg font-bold" style={{ color: "#0a1230" }}>Welcome Back</p>
-                          <p className="text-xs" style={{ color: "color-mix(in srgb, #0a1230 70%, transparent)" }}>
-                            Sign in to your {draft.appName || "Business Rules System"} account
-                          </p>
+                    {/* Right Floating Card */}
+                    <div className="relative flex flex-1 flex-col items-center justify-center p-4 z-10">
+                      <div className="w-full max-w-[240px] rounded-xl border border-white/10 bg-card p-4 shadow-2xl">
+                        <div className="flex flex-col items-center text-center">
+                          <div className="relative mb-3 flex h-8 w-full items-center justify-center mix-blend-multiply">
+                            {draft.logo ? (
+                               // eslint-disable-next-line @next/next/no-img-element
+                               <img src={draft.logo} alt="" className="h-full object-contain" />
+                            ) : (
+                               <Workflow className="size-6 text-[#0a1230]" />
+                            )}
+                          </div>
+                          <h2 className="text-sm font-bold text-[#0a1230]">Welcome Back</h2>
+                          <p className="mt-0.5 text-[10px] text-[#0a1230]/70">Sign in to your account</p>
                         </div>
-
-                        <div className="space-y-3">
-                          {/* Employee ID Input */}
+                        
+                        <div className="mt-4 space-y-3">
                           <div className="space-y-1">
-                            <p className="text-xs font-bold" style={{ color: "#0a1230" }}>Employee ID</p>
-                            <div
-                              className="h-9 rounded-lg border px-2.5 flex items-center text-xs"
-                              style={{ borderColor: "#c7cfe3", background: "transparent" }}
-                            >
-                              <p style={{ color: "color-mix(in srgb, #0a1230 55%, transparent)" }}>EMP-0001</p>
+                            <p className="text-[10px] font-bold text-[#0a1230]">Employee ID</p>
+                            <div className="h-7 rounded border border-[#c7cfe3] px-2 flex items-center text-[10px] text-[#0a1230]/50 bg-white/50">
+                              EMP-0001
                             </div>
                           </div>
-
-                          {/* Password Input */}
                           <div className="space-y-1">
-                            <p className="text-xs font-bold" style={{ color: "#0a1230" }}>Password</p>
-                            <div
-                              className="h-9 rounded-lg border px-2.5 flex items-center justify-between text-xs"
-                              style={{ borderColor: "#c7cfe3", background: "transparent" }}
-                            >
-                              <p style={{ color: "color-mix(in srgb, #0a1230 55%, transparent)" }}>••••••••</p>
+                            <p className="text-[10px] font-bold text-[#0a1230]">Password</p>
+                            <div className="h-7 rounded border border-[#c7cfe3] px-2 flex items-center text-[10px] text-[#0a1230]/50 bg-white/50">
+                              ••••••••
                             </div>
                           </div>
-
-                          {/* Remember Me & Forgot Password */}
-                          <div className="flex items-center justify-between text-xs">
-                            <label className="flex items-center gap-1.5" style={{ color: "#0a1230" }}>
-                              <input type="checkbox" className="size-3.5" />
+                          <div className="flex items-center justify-between text-[9px]">
+                            <label className="flex items-center gap-1 text-[#0a1230]">
+                              <input type="checkbox" className="size-2.5" />
                               Remember me
                             </label>
-                            <a href="#" style={{ color: "var(--primary)" }} className="font-medium">
-                              Forgot password?
-                            </a>
                           </div>
-
-                          {/* Sign-in Button */}
                           <div
-                            className="h-9 rounded-lg flex items-center justify-center font-semibold text-xs cursor-pointer shadow-sm"
+                            className="h-7 rounded-md flex items-center justify-center font-semibold text-[10px] shadow-sm"
                             style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
                           >
                             Sign In
-                          </div>
-
-                          {/* Demo Mode */}
-                          <p className="text-center text-xs" style={{ color: "color-mix(in srgb, #0a1230 70%, transparent)" }}>
-                            Need Demo Access?{" "}
-                            <span style={{ color: "#0a1230" }} className="font-medium">
-                              Enter Demo Mode
-                            </span>
-                          </p>
-                        </div>
-
-                        {/* Features */}
-                        <div className="grid grid-cols-2 gap-2 border-t pt-3">
-                          <div className="text-[9px]" style={{ color: "color-mix(in srgb, #0a1230 80%, transparent)" }}>
-                            <p className="flex items-center gap-1 font-medium"><ShieldCheck className="size-2.5" style={{ color: "var(--primary)" }} /> Secure Access</p>
-                          </div>
-                          <div className="text-[9px]" style={{ color: "color-mix(in srgb, #0a1230 80%, transparent)" }}>
-                            <p className="flex items-center gap-1 font-medium"><ShieldCheck className="size-2.5" style={{ color: "var(--primary)" }} /> Role-Based Permissions</p>
                           </div>
                         </div>
                       </div>

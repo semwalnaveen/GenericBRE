@@ -154,7 +154,6 @@ export function RuleConflictsPanel() {
     <div className="h-full overflow-y-auto">
       <PerformanceListWidget
         title="Rule Conflicts"
-        subtitle="Active conflicts detected"
         items={items}
       />
     </div>
@@ -249,7 +248,7 @@ export function BatchRunsPanel() {
 }
 
 export function DecisionLookupPanel() {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("RL-101");
   const router = useRouter();
 
   const go = () => {

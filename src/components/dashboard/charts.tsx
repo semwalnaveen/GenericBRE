@@ -124,14 +124,33 @@ export function RuleStatusChart() {
     );
   }
 
-  const items = data.map((d) => ({
-    label: d.name,
+  const STATUS_COLORS_HEX: Record<RuleStatus, string> = {
+    Published: "#10b981", // emerald-500
+    Approved: "#8b5cf6", // violet-500
+    Draft: "#3b82f6", // blue-500
+    "Pending Approval": "#f59e0b", // amber-500
+    Rejected: "#ef4444", // red-500
+    Inactive: "#94a3b8", // slate-400
+    Archived: "#64748b", // slate-500
+  };
+
+  const donutData = data.map((d) => ({
+    name: d.name,
     value: d.value,
-    percentage: Math.round((d.value / rules.length) * 100),
-    colorClass: STATUS_BAR_COLORS[d.name as RuleStatus] || "bg-slate-400",
+    color: STATUS_COLORS_HEX[d.name as RuleStatus] || "#94a3b8",
+    bgSoftColor: "bg-slate-50",
+    percentage: `${Math.round((d.value / rules.length) * 100)}%`,
+    absoluteText: d.value.toString()
   }));
 
-  return <FunnelListWidget title="Rule Status Breakdown" items={items} />;
+  return (
+    <DistributionDonutWidget
+      title="Rule Status Breakdown"
+      totalText="RULES"
+      totalSubtext={rules.length.toString()}
+      data={donutData}
+    />
+  );
 }
 
 export function SimulationResultsChart() {

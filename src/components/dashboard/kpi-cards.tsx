@@ -204,17 +204,17 @@ export function KpiCards() {
           transition={{ delay: i * 0.03, duration: 0.2 }}
           whileTap={{ scale: 0.98 }}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
-          className="group flex flex-col justify-center gap-2 rounded-xl border border-[#ffffff8c] bg-white p-3 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
+          className="group flex flex-col justify-center gap-0.5 rounded-xl border border-[#ffffff8c] bg-white px-3 py-1.5 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
         >
           <div className="flex w-full min-w-0 items-center justify-between gap-1.5" title={k.label}>
-            <span className="truncate text-xs font-semibold text-muted-foreground">
+            <span className="truncate text-[11px] font-semibold text-muted-foreground">
               {k.label}
             </span>
-            <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", k.accent)}>
-              <k.icon className="size-3.5" />
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-lg", k.accent)}>
+              <k.icon className="size-3" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 w-full mt-1">
+          <div className="flex items-baseline gap-2 w-full">
             <span className="text-2xl font-bold tracking-tight leading-none text-slate-900">
               {k.value > 1000 ? (k.value / 1000).toFixed(1) + "K" : k.value}
             </span>
