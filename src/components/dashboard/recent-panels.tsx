@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export function PanelHeader({ title, action, onAction, icon: Icon }: { title: string; action?: string; onAction?: () => void; icon?: React.ElementType }) {
   return (
-    <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-3 rounded-t-xl dark:bg-muted/30">
+    <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-1 rounded-t-xl dark:bg-muted/30">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="size-4 text-muted-foreground/70" />}
         <h3 className="text-sm font-bold text-foreground">{title}</h3>

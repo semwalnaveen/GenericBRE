@@ -41,6 +41,7 @@ export default function LoginPage() {
   const simulations = useAppStore((s) => s.simulations);
   const appName = useAppStore((s) => s.appearance.appName);
   const tagline = useAppStore((s) => s.appearance.tagline);
+  const customLogo = useAppStore((s) => s.appearance.logo);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const currentUserId = useAppStore((s) => s.currentUser.userId);
 
@@ -176,7 +177,8 @@ export default function LoginPage() {
           <div className="rounded-2xl border border-white/10 bg-card p-6 shadow-2xl shadow-black/50 sm:p-8">
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-4 flex h-14 w-full items-center justify-center overflow-hidden mix-blend-multiply">
-                <img src="/custom-logo.png" alt="Logo" className="h-32 max-w-[220px] object-contain" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={customLogo || "/custom-logo.png"} alt="Logo" className="h-32 max-w-[220px] object-contain" />
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-[#0a1230]">Welcome Back</h2>
               <p className="mt-1 text-sm text-[#0a1230]/70">Sign in to your {appName} account</p>

@@ -26,7 +26,7 @@ export function WidgetCard({ title, subtitle, children, className, action }: Wid
         </div>
         {action && <div className="text-[11px] font-medium text-muted-foreground">{action}</div>}
       </div>
-      <div className="flex-1 flex flex-col min-h-0 p-4 overflow-y-auto">{children}</div>
+      <div className="flex-1 flex flex-col min-h-0 p-2 overflow-y-auto">{children}</div>
     </div>
   );
 }

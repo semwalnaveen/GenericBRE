@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
-              className="absolute inset-0 flex flex-col pb-[40px]"
+              className="absolute inset-0 flex flex-col pb-[4px]"
             >
               {children}
             </motion.div>

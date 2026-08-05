@@ -1,8 +1,8 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Download, Search, ScrollText, ShieldCheck, ShieldAlert, ShieldQuestion, ChevronRight } from "lucide-react";
+import { Download, Search, ScrollText, ShieldCheck, ShieldAlert, ShieldQuestion, ChevronRight, ChevronLeft } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { AuditEntry, BusinessRule, Product, SimulationResult } from "@/lib/types";
 import { verifyAuditChain, AuditIntegrityResult } from "@/lib/audit-chain";
@@ -101,6 +101,16 @@ export default function AuditLogPage() {
     setUsers([]);
   };
 
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, actions, entityTypes, domains, users]);
+
+  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
   return (
     <RouteGuard requiredCapability="config.manage" moduleLabel="the Audit Log">
     <div className="flex h-full flex-col">
@@ -187,9 +197,9 @@ export default function AuditLogPage() {
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-5 py-4 sm:px-6">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-y-auto h-[320px] rounded-xl border bg-white shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-sm text-muted-foreground">
+              <thead className="sticky top-0 z-10 bg-slate-50/80 text-sm text-muted-foreground border-b backdrop-blur-sm">
                 <tr>
                   <th className="w-7 px-2 py-2" />
                   <th className="px-3 py-2 text-left font-medium">Timestamp</th>
@@ -211,7 +221,7 @@ export default function AuditLogPage() {
                     </td>
                   </tr>
                 )}
-                {filtered.map((a) => {
+                {paginatedData.map((a) => {
                   const isOpen = expanded.has(a.id);
                   return (
                     <Fragment key={a.id}>
@@ -304,6 +314,35 @@ export default function AuditLogPage() {
               </tbody>
             </table>
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4">
+              <span className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} entries
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="mr-1 size-3.5" /> Previous
+                </Button>
+                <div className="text-sm font-medium px-2">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next <ChevronRight className="ml-1 size-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>
