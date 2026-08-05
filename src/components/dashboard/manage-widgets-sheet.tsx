@@ -22,6 +22,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   "decision-lookup": "Decision Lookup",
   "simulation-results": "Simulation Outcomes",
   "execution-timeline": "Execution Timeline",
+  "batch-runs": "Batch Runs",
 };
 
 // User Access Mapping gate per widget — an admin can curate which widgets a
@@ -48,4 +49,5 @@ export const WIDGET_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "decision-lookup": "rule.view",
   "simulation-results": "rule.simulate",
   "execution-timeline": "rule.simulate",
+  "batch-runs": "rule.simulate",
 };

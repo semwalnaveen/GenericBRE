@@ -129,6 +129,10 @@ export const TRANSLATIONS = {
     en: "Business Categories", hi: "व्यावसायिक श्रेणियाँ", ta: "வணிக வகைகள்", te: "వ్యాపార వర్గాలు", ml: "ബിസിനസ് വിഭാഗങ്ങൾ",
     fr: "Catégories métier", es: "Categorías de negocio", de: "Geschäftskategorien", ja: "ビジネスカテゴリ", zh: "业务类别", ar: "فئات الأعمال",
   },
+  "kpi.systemUsers": {
+    en: "System Users", hi: "सिस्टम उपयोगकर्ता", ta: "கணினி பயனர்கள்", te: "సిస్టమ్ వినియోగదారులు", ml: "സിസ്റ്റം ഉപയോക്താക്കൾ",
+    fr: "Utilisateurs système", es: "Usuarios del sistema", de: "Systembenutzer", ja: "システムユーザー", zh: "系统用户", ar: "مستخدمو النظام",
+  },
 
   // Appearance Studio chrome
   "appearance.title": {

@@ -102,7 +102,7 @@ export function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNa
     <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-2.5 py-4">
       <div className="flex flex-col gap-0.5">
         {!collapsed && (
-          <p className="px-2.5 pb-1 text-sm font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+          <p className="px-2.5 pb-1 text-sm font-bold uppercase tracking-wider text-sidebar-foreground/60">
             {t("nav.workspace")}
           </p>
         )}
@@ -120,7 +120,7 @@ export function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNa
       </div>
       <div className="flex flex-col gap-0.5">
         {!collapsed && (
-          <p className="px-2.5 pb-1 text-sm font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+          <p className="px-2.5 pb-1 text-sm font-bold uppercase tracking-wider text-sidebar-foreground/60">
             {t("nav.platform")}
           </p>
         )}

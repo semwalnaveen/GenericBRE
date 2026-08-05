@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Rocket,
   XCircle,
+  Users,
 } from "lucide-react";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
@@ -38,12 +39,11 @@ export const KPI_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "active-rules": "rule.view",
   "draft-rules": "rule.view",
   "pending-review": "rule.view",
-  "pending-approvals": "rule.publish",
-  "rule-conflicts": "rule.view",
+  "pending-approvals": "rule.view",
   deployments: "rule.view",
   "rule-executions": "rule.simulate",
-  "failed-simulations": "rule.simulate",
   "business-categories": "rule.view",
+  "system-users": "system.manage",
 };
 
 // Exactly 6 — matches every role's dashboardConfigs.kpis length, so the grid
@@ -54,13 +54,11 @@ export const KPI_LABELS: Record<string, string> = {
   "total-rules": "Total Rules",
   "active-rules": "Published Rules",
   "draft-rules": "Draft Rules",
-  "pending-review": "Pending Approval",
   "pending-approvals": "Pending Approvals",
-  "rule-conflicts": "Rule Conflicts",
   deployments: "Deployments",
   "rule-executions": "Rule Executions",
-  "failed-simulations": "Failed Simulations",
   "business-categories": "Business Categories",
+  "system-users": "System Users",
 };
 
 // Same ids as KPI_LABELS above (kept as the English source for the admin
@@ -70,13 +68,11 @@ const KPI_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   "total-rules": "kpi.totalRules",
   "active-rules": "kpi.activeRules",
   "draft-rules": "kpi.draftRules",
-  "pending-review": "kpi.pendingReview",
   "pending-approvals": "kpi.pendingApprovals",
-  "rule-conflicts": "kpi.ruleConflicts",
   deployments: "kpi.deployments",
   "rule-executions": "kpi.ruleExecutions",
-  "failed-simulations": "kpi.failedSimulations",
   "business-categories": "kpi.businessCategories",
+  "system-users": "kpi.systemUsers",
 };
 
 // Generates a deterministic sparkline array (values 20-100) based on a seed (e.g. the KPI value)
@@ -97,6 +93,7 @@ export function KpiCards() {
   const allSimulations = useAppStore((s) => s.simulations);
   const allApprovalRequests = useAppStore((s) => s.approvalRequests);
   const auditLog = useAppStore((s) => s.auditLog);
+  const allUsers = useAppStore((s) => s.users);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const userId = useAppStore((s) => s.currentUser.userId);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
@@ -140,26 +137,12 @@ export function KpiCards() {
       accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
       href: "/repository?status=Draft",
     },
-    "pending-review": {
-      label: t(KPI_TRANSLATION_KEYS["pending-review"]),
-      value: rules.filter((r) => r.status === "Pending Approval").length,
-      icon: Clock,
-      accent: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
-      href: "/repository?status=Pending Approval",
-    },
     "pending-approvals": {
       label: t(KPI_TRANSLATION_KEYS["pending-approvals"]),
       value: approvalRequests.filter((a) => a.stage === "Pending Review").length,
       icon: UserCheck,
       accent: "text-orange-600 bg-orange-500/10 dark:text-orange-400",
       href: "/repository?status=Pending Approval",
-    },
-    "rule-conflicts": {
-      label: t(KPI_TRANSLATION_KEYS["rule-conflicts"]),
-      value: detectRuleConflicts(rules).length,
-      icon: AlertTriangle,
-      accent: "text-red-600 bg-red-500/10 dark:text-red-400",
-      href: "/repository?status=Active",
     },
     deployments: {
       label: t(KPI_TRANSLATION_KEYS.deployments),
@@ -177,20 +160,21 @@ export function KpiCards() {
       accent: "text-cyan-600 bg-cyan-500/10 dark:text-cyan-400",
       href: "/simulator",
     },
-    "failed-simulations": {
-      label: t(KPI_TRANSLATION_KEYS["failed-simulations"]),
-      value: simulations.filter((s) => s.outcome === "Rejected").length,
-      icon: XCircle,
-      accent: "text-red-600 bg-red-500/10 dark:text-red-400",
-      href: "/simulator",
-      suffix: "this session",
-    },
     "business-categories": {
       label: t(KPI_TRANSLATION_KEYS["business-categories"]),
       value: new Set(rules.map((r) => r.category)).size,
       icon: Layers,
       accent: "text-indigo-600 bg-indigo-500/10 dark:text-indigo-400",
       href: "/repository",
+    },
+    "system-users": {
+      // Not scoped to the Industry filter — user accounts aren't tied to a
+      // domain the way rules/simulations are.
+      label: t(KPI_TRANSLATION_KEYS["system-users"]),
+      value: allUsers.filter((u) => u.status === "Active").length,
+      icon: Users,
+      accent: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+      href: "/configuration-studio",
     },
   };
 

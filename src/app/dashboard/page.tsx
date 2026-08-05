@@ -15,6 +15,7 @@ import {
   RuleConflictsPanel,
   ExecutionLogsPanel,
   DecisionLookupPanel,
+  BatchRunsPanel,
 } from "@/components/dashboard/persona-widgets";
 import { WIDGET_LABELS, WIDGET_REQUIRED_CAPABILITY } from "@/components/dashboard/manage-widgets-sheet";
 import { DashboardControls } from "@/components/dashboard/dashboard-controls";
@@ -50,6 +51,7 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "decision-lookup": () => <DecisionLookupPanel />,
   "simulation-results": () => <SimulationResultsChart />,
   "execution-timeline": () => <ExecutionTimelineChart />,
+  "batch-runs": () => <BatchRunsPanel />,
 };
 
 const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };
@@ -75,10 +77,6 @@ export default function DashboardPage() {
   // capabilities don't back up.
   const capabilities = useEffectiveCapabilities();
   const roleWidgets = (dashboardConfigs[userId]?.widgets ?? []).filter((w) => {
-    // Explicitly hide these widgets for Product Manager to bypass local storage persistence
-    if (userId === "usr-rohan-mehta" && (w.id === "recent-deployments" || w.id === "recent-activity")) {
-      return false;
-    }
     const req = WIDGET_REQUIRED_CAPABILITY[w.id];
     return !req || capabilities.has(req);
   });
@@ -90,7 +88,7 @@ export default function DashboardPage() {
       defaultSize: WIDGET_DEFAULT_SIZE[w.id] ?? "SM",
       defaultOrder: w.order,
     }));
-  const dashboardKey = `bre-overview:${userId}`;
+  const dashboardKey = `bre-overview-v3:${userId}`;
   const { visibleWidgets, reorder } = useDashboardLayout(dashboardKey, widgetDefs);
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -136,7 +134,6 @@ export default function DashboardPage() {
       <div className="min-h-0 flex-1 overflow-y-auto">
         <HeroBanner
           name={currentUser.name.split(" ")[0]}
-          summary={`${rules.length} rules · ${pendingReview} pending review · ${criticalDrafts} critical drafts`}
           actions={
             <>
               <Button
@@ -171,7 +168,7 @@ export default function DashboardPage() {
                   key={w.id}
                   onDragOver={(e) => editMode && e.preventDefault()}
                   onDrop={() => editMode && handleGridDrop(w.id)}
-                  className={`flex h-70 select-none flex-col gap-1.5 ${WIDGET_SIZE_SPAN[w.size]} ${
+                  className={`flex h-[240px] max-h-[240px] select-none flex-col gap-1.5 ${WIDGET_SIZE_SPAN[w.size]} ${
                     editMode ? "rounded-xl outline-dashed outline-2 outline-primary/30" : ""
                   }`}
                 >

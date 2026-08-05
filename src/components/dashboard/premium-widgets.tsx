@@ -146,9 +146,9 @@ interface DistributionDonutWidgetProps {
 export function DistributionDonutWidget({ title, totalText, totalSubtext, data, action }: DistributionDonutWidgetProps) {
   return (
     <WidgetCard title={title} action={action}>
-      <div className="flex items-center gap-6 h-[140px]">
+      <div className="flex h-full min-h-[140px] items-center gap-6">
         {/* Donut Chart */}
-        <div className="relative h-full w-[120px] shrink-0">
+        <div className="relative h-[140px] w-[120px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -176,11 +176,11 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
         </div>
 
         {/* Custom Legend */}
-        <div className="flex flex-1 flex-col justify-center gap-2">
+        <div className="flex flex-1 flex-col justify-center gap-1.5">
           {data.map((item, i) => (
             <div
               key={i}
-              className={cn("flex items-center justify-between rounded-lg border border-transparent px-2.5 py-1.5", item.bgSoftColor)}
+              className={cn("flex items-center justify-between rounded-lg border border-transparent px-2.5 py-1", item.bgSoftColor)}
             >
               <div className="flex items-center gap-2">
                 <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -412,9 +412,10 @@ interface CleanListWidgetProps {
   title: string;
   action?: React.ReactNode;
   items: CleanListItem[];
+  emptyMessage?: string;
 }
 
-export function CleanListWidget({ title, action, items }: CleanListWidgetProps) {
+export function CleanListWidget({ title, action, items, emptyMessage = "No data available." }: CleanListWidgetProps) {
   return (
     <div className="flex h-full w-full min-h-0 flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden">
       <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
@@ -452,7 +453,7 @@ export function CleanListWidget({ title, action, items }: CleanListWidgetProps) 
           </div>
         ))}
         {items.length === 0 && (
-          <div className="py-6 text-center text-xs text-muted-foreground">No data available.</div>
+          <div className="py-6 text-center text-xs text-muted-foreground">{emptyMessage}</div>
         )}
       </div>
     </div>

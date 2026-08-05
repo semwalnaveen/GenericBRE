@@ -23,9 +23,11 @@ import {
   MATRICES,
 } from "./mock-data";
 import {
+  AdminScope,
   AppUser,
   AppearanceSettings,
   ApprovalRequest,
+  AuditChange,
   AuditEntry,
   BatchRunSummary,
   BusinessField,
@@ -71,11 +73,25 @@ import { effectiveConnector, collectRuleDependencies } from "./condition-tree";
 import { hashAuditEntry, buildHashChain } from "./audit-chain";
 import { ALL_CAPABILITIES, CATEGORY_SCOPABLE_CAPABILITIES } from "./capabilities";
 
-// The config/admin capabilities — everything that isn't a category-scopable
-// rule.* action. Granted only to Administrators (AppUser.isAdmin); never
-// assignable per product/category.
-const ADMIN_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
+// The non-rule capabilities — everything that isn't a category-scopable
+// rule.* action. Never assignable per product/category; granted only by a
+// user's AppUser.adminScope, split into two tiers below.
+const NON_RULE_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
   (c) => !CATEGORY_SCOPABLE_CAPABILITIES.includes(c)
+);
+
+// Segregation of duties: platform administration and product administration
+// are separate grants. `system.manage` is the ONLY key to user/access/
+// permission management (see the guards on addUser/updateUser/deleteUser and
+// the three *UserAccessMapping actions) — a Product Administrator must never
+// be able to grant permissions, least of all to themselves.
+const SYSTEM_ADMIN_CAPABILITIES: Capability[] = NON_RULE_CAPABILITIES;
+
+// Product Administrator: product/metadata/rule configuration and NotifyX —
+// i.e. everything a System Administrator has EXCEPT system.manage. NotifyX is
+// notification configuration, not access control, so it stays with this tier.
+const PRODUCT_ADMIN_CAPABILITIES: Capability[] = NON_RULE_CAPABILITIES.filter(
+  (c) => c !== "system.manage"
 );
 
 export type {
@@ -156,6 +172,15 @@ export interface GlobalFilters {
 }
 
 const DEFAULT_GLOBAL_FILTERS: GlobalFilters = { domains: [] };
+
+/** Result of an access-control mutation. Refusals carry a human-readable
+ *  `reason` so the UI can explain *why* — a silently ignored permission
+ *  change is worse than a blocked one. Mirrors the convention already used by
+ *  submitForReview/approveRule. */
+export interface AccessResult {
+  ok: boolean;
+  reason?: string;
+}
 
 interface AppState {
   rules: BusinessRule[];
@@ -251,17 +276,22 @@ interface AppState {
   deleteJobTitle: (id: string) => void;
 
   // user roster — named individuals. The single source of truth for access:
-  // isAdmin grants config/admin caps, UserProductAccess rows grant rule.*
-  // caps, and approvalCategories drive Maker-Checker.
+  // adminScope grants the platform/config caps, UserProductAccess rows grant
+  // rule.* caps, and approvalCategories drive Maker-Checker.
+  //
+  // Every mutation below requires `system.manage` (System Administrator only)
+  // and returns a result object rather than failing silently, so the UI can
+  // surface *why* an action was refused — segregation of duties depends on
+  // these refusals being visible, not invisible.
   users: AppUser[];
-  addUser: (user: AppUser) => void;
-  updateUser: (id: string, patch: Partial<AppUser>) => void;
-  deleteUser: (id: string) => void;
+  addUser: (user: AppUser) => AccessResult;
+  updateUser: (id: string, patch: Partial<AppUser>) => AccessResult;
+  deleteUser: (id: string) => AccessResult;
 
   // User Access Mapping — per-user, per-Product, per-Category System
-  // Permissions (see UserProductAccess in types.ts). addUserAccessMapping
-  // returns ok:false with a message on a duplicate (userId+productId+categoryId)
-  // instead of throwing, matching submitForReview/approveRule's result-object
+  // Permissions (see UserProductAccess in types.ts). All three return
+  // ok:false with a message on a duplicate, a self-assignment attempt, or a
+  // missing capability, matching submitForReview/approveRule's result-object
   // convention elsewhere in this store.
   userAccessMappings: UserProductAccess[];
   addUserAccessMapping: (mapping: {
@@ -269,9 +299,9 @@ interface AppState {
     productId: string;
     categoryId: string;
     capabilities: Capability[];
-  }) => { ok: boolean; reason?: string };
-  updateUserAccessMapping: (id: string, patch: Partial<UserProductAccess>) => void;
-  deleteUserAccessMapping: (id: string) => void;
+  }) => AccessResult;
+  updateUserAccessMapping: (id: string, patch: Partial<UserProductAccess>) => AccessResult;
+  deleteUserAccessMapping: (id: string) => AccessResult;
 
   // rule groups (organizational collections, independent of Category)
   ruleGroups: RuleGroup[];
@@ -429,7 +459,7 @@ export const useAppStore = create<AppState>()(
       },
       // "Logs in" as a specific person from the User roster — Demo Mode picks
       // a named user (not a role/persona), and access resolves from that
-      // user's isAdmin flag + their UserProductAccess rows.
+      // user's adminScope + their UserProductAccess rows.
       loginAsUser: (userId) => {
         const user = get().users.find((u) => u.id === userId);
         if (!user) return;
@@ -631,19 +661,107 @@ export const useAppStore = create<AppState>()(
 
       users: DEFAULT_USERS,
       addUser: (userToAdd) => {
-        if (!can(get(), "config.manage")) return;
+        const denied = requireUserAdmin(get(), "create a user", userToAdd.id);
+        if (denied) return denied;
+        const { users, currentUser } = get();
+        const email = userToAdd.email.trim().toLowerCase();
+        if (email && users.some((u) => u.email.trim().toLowerCase() === email)) {
+          return { ok: false, reason: `A user with the email "${userToAdd.email}" already exists.` };
+        }
         set((s) => ({ users: [...s.users, userToAdd] }));
-        get().logAudit({ user: get().currentUser.name, action: "Created User", entity: "User", entityId: userToAdd.id, details: `Added user "${userToAdd.name}".` });
+        get().logAudit({
+          user: currentUser.name,
+          action: "Created User",
+          entity: "User",
+          entityId: userToAdd.id,
+          details: `Added user "${userToAdd.name}"${userToAdd.adminScope ? ` as ${ADMIN_SCOPE_LABEL[userToAdd.adminScope]}` : ""}.`,
+          changes: [
+            { field: "name", oldValue: "—", newValue: userToAdd.name },
+            { field: "email", oldValue: "—", newValue: userToAdd.email },
+            { field: "status", oldValue: "—", newValue: userToAdd.status },
+            { field: "adminScope", oldValue: "—", newValue: describeScope(userToAdd.adminScope) },
+          ],
+        });
+        return { ok: true };
       },
       updateUser: (id, patch) => {
-        if (!can(get(), "config.manage")) return;
+        const denied = requireUserAdmin(get(), "update a user", id);
+        if (denied) return denied;
+        const { users, currentUser } = get();
+        const existing = users.find((u) => u.id === id);
+        if (!existing) return { ok: false, reason: "That user no longer exists." };
+
+        // Self-escalation guard: nobody changes their OWN administration
+        // tier, in either direction. Mirrors the Maker-Checker principle in
+        // approveRule — a privilege change needs a second pair of eyes.
+        const changingScope = "adminScope" in patch && patch.adminScope !== existing.adminScope;
+        if (changingScope && id === currentUser.userId) {
+          return denyAccess(get(), "change your own administration scope", "change their own administration scope", id);
+        }
+        // Lockout guard: never demote the last remaining System Administrator.
+        if (
+          changingScope &&
+          existing.adminScope === "system" &&
+          patch.adminScope !== "system" &&
+          systemAdminCount(users) <= 1
+        ) {
+          return { ok: false, reason: "This is the last active System Administrator — promote another user first." };
+        }
+        if (patch.status === "Inactive" && existing.adminScope === "system" && systemAdminCount(users) <= 1) {
+          return { ok: false, reason: "This is the last active System Administrator — they can't be deactivated." };
+        }
+
         set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, ...patch, updatedAt: new Date().toISOString() } : u)) }));
-        get().logAudit({ user: get().currentUser.name, action: "Updated User", entity: "User", entityId: id, details: `User "${id}" updated.` });
+        // Only report fields that actually moved — an audit line claiming a
+        // change that didn't happen is worse than no line at all.
+        const changes: AuditChange[] = [];
+        const track = <K extends keyof AppUser>(field: K, format: (v: AppUser[K]) => string = String) => {
+          if (field in patch && patch[field] !== existing[field]) {
+            changes.push({ field: String(field), oldValue: format(existing[field]), newValue: format(patch[field] as AppUser[K]) });
+          }
+        };
+        track("name");
+        track("email");
+        track("role");
+        track("department");
+        track("status");
+        if (changingScope) {
+          changes.push({ field: "adminScope", oldValue: describeScope(existing.adminScope), newValue: describeScope(patch.adminScope) });
+        }
+        if (patch.approvalCategories && patch.approvalCategories.join("|") !== existing.approvalCategories.join("|")) {
+          changes.push({
+            field: "approvalCategories",
+            oldValue: existing.approvalCategories.join(", ") || "none",
+            newValue: patch.approvalCategories.join(", ") || "none",
+          });
+        }
+        get().logAudit({
+          user: currentUser.name,
+          action: changingScope ? "Access Changed" : "Updated User",
+          entity: "User",
+          entityId: id,
+          details: changingScope
+            ? `Changed ${existing.name}'s administration scope from ${describeScope(existing.adminScope)} to ${describeScope(patch.adminScope)}.`
+            : `User "${existing.name}" updated${changes.length ? ` — ${changes.map((c) => c.field).join(", ")}` : ""}.`,
+          changes: changes.length ? changes : undefined,
+        });
+        return { ok: true };
       },
       deleteUser: (id) => {
-        if (!can(get(), "config.manage")) return;
+        const denied = requireUserAdmin(get(), "delete a user", id);
+        if (denied) return denied;
+        const { users, currentUser } = get();
+        const existing = users.find((u) => u.id === id);
+        if (!existing) return { ok: false, reason: "That user no longer exists." };
+        if (id === currentUser.userId) {
+          return denyAccess(get(), "delete your own account", "delete their own account", id);
+        }
+        if (existing.adminScope === "system" && systemAdminCount(users) <= 1) {
+          return { ok: false, reason: "This is the last active System Administrator — promote another user before deleting them." };
+        }
         // Cascade — a deleted user's access mappings and dashboard config
         // would otherwise linger pointing at a userId nothing resolves to.
+        const revoked = get().userAccessMappings.filter((m) => m.userId === id).length;
         set((s) => {
           const dashboardConfigs = { ...s.dashboardConfigs };
           delete dashboardConfigs[id];
@@ -653,14 +771,33 @@ export const useAppStore = create<AppState>()(
             dashboardConfigs,
           };
         });
-        get().logAudit({ user: get().currentUser.name, action: "Deleted User", entity: "User", entityId: id, details: `User "${id}" removed.` });
+        get().logAudit({
+          user: currentUser.name,
+          action: "Deleted User",
+          entity: "User",
+          entityId: id,
+          details: `User "${existing.name}" removed, revoking ${revoked} access mapping(s).`,
+          changes: [
+            { field: "name", oldValue: existing.name, newValue: "—" },
+            { field: "adminScope", oldValue: describeScope(existing.adminScope), newValue: "—" },
+            { field: "accessMappings", oldValue: String(revoked), newValue: "0" },
+          ],
+        });
+        return { ok: true };
       },
 
       userAccessMappings: DEFAULT_USER_ACCESS_MAPPINGS,
       addUserAccessMapping: (mapping) => {
+        const denied = requireUserAdmin(get(), "grant product access", mapping.userId);
+        if (denied) return denied;
         const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
-        if (!can(get(), "config.manage")) {
-          return { ok: false, reason: `${currentUser.name} doesn't have permission to manage user access.` };
+        // Self-assignment guard — the core segregation-of-duties rule. Nobody
+        // grants themselves a permission, System Administrator included.
+        if (mapping.userId === currentUser.userId) {
+          return denyAccess(get(), "grant permissions to yourself", "grant permissions to their own account", mapping.userId);
+        }
+        if (mapping.capabilities.length === 0) {
+          return { ok: false, reason: "Select at least one permission — an access row that grants nothing has no effect." };
         }
         const duplicate = userAccessMappings.some(
           (m) => m.userId === mapping.userId && m.productId === mapping.productId && m.categoryId === mapping.categoryId
@@ -680,47 +817,84 @@ export const useAppStore = create<AppState>()(
           action: "Access Added",
           entity: "UserProductAccess",
           entityId: id,
-          details: `Granted ${userName} ${mapping.capabilities.length} permission(s) on "${productName}" / "${categoryName}".`,
+          details: `Granted ${userName} ${mapping.capabilities.length} permission(s) on "${productName}" / "${categoryName}": ${mapping.capabilities.join(", ")}.`,
+          changes: [
+            { field: "user", oldValue: "—", newValue: userName },
+            { field: "product / category", oldValue: "—", newValue: `${productName} / ${categoryName}` },
+            { field: "permissions", oldValue: "none", newValue: mapping.capabilities.join(", ") },
+          ],
         });
         return { ok: true };
       },
       updateUserAccessMapping: (id, patch) => {
-        const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
-        if (!can(get(), "config.manage")) return;
-        const existing = userAccessMappings.find((m) => m.id === id);
-        if (!existing) return;
+        const existingRow = get().userAccessMappings.find((m) => m.id === id);
+        const denied = requireUserAdmin(get(), "change product access", existingRow?.userId ?? id);
+        if (denied) return denied;
+        const { currentUser, users, products, ruleCategories } = get();
+        if (!existingRow) return { ok: false, reason: "That access mapping no longer exists." };
+        if (existingRow.userId === currentUser.userId) {
+          return denyAccess(get(), "change your own permissions", "change their own permissions", existingRow.userId);
+        }
+        if (patch.capabilities && patch.capabilities.length === 0) {
+          return { ok: false, reason: "Select at least one permission, or remove the access row entirely." };
+        }
         set((s) => ({
           userAccessMappings: s.userAccessMappings.map((m) =>
             m.id === id ? { ...m, ...patch, updatedAt: new Date().toISOString() } : m
           ),
         }));
-        const userName = users.find((u) => u.id === existing.userId)?.name ?? existing.userId;
-        const productName = products.find((p) => p.id === existing.productId)?.name ?? existing.productId;
-        const categoryName = ruleCategories.find((c) => c.id === existing.categoryId)?.name ?? existing.categoryId;
+        const userName = users.find((u) => u.id === existingRow.userId)?.name ?? existingRow.userId;
+        const productName = products.find((p) => p.id === existingRow.productId)?.name ?? existingRow.productId;
+        const categoryName = ruleCategories.find((c) => c.id === existingRow.categoryId)?.name ?? existingRow.categoryId;
+        const changes: AuditChange[] = [];
+        if (patch.capabilities && patch.capabilities.join("|") !== existingRow.capabilities.join("|")) {
+          changes.push({
+            field: "permissions",
+            oldValue: existingRow.capabilities.join(", ") || "none",
+            newValue: patch.capabilities.join(", ") || "none",
+          });
+        }
+        if (patch.status && patch.status !== existingRow.status) {
+          changes.push({ field: "status", oldValue: existingRow.status, newValue: patch.status });
+        }
         get().logAudit({
           user: currentUser.name,
           action: "Access Updated",
           entity: "UserProductAccess",
           entityId: id,
-          details: `Updated ${userName}'s access to "${productName}" / "${categoryName}"${patch.capabilities ? ` — now ${patch.capabilities.length} permission(s)` : ""}.`,
+          details: `Updated ${userName}'s access to "${productName}" / "${categoryName}"${
+            patch.capabilities ? ` — now: ${patch.capabilities.join(", ") || "none"}` : ""
+          }.`,
+          changes: changes.length ? changes : undefined,
         });
+        return { ok: true };
       },
       deleteUserAccessMapping: (id) => {
-        const { currentUser, users, products, ruleCategories, userAccessMappings } = get();
-        if (!can(get(), "config.manage")) return;
-        const existing = userAccessMappings.find((m) => m.id === id);
-        if (!existing) return;
+        const existingRow = get().userAccessMappings.find((m) => m.id === id);
+        const denied = requireUserAdmin(get(), "revoke product access", existingRow?.userId ?? id);
+        if (denied) return denied;
+        const { currentUser, users, products, ruleCategories } = get();
+        if (!existingRow) return { ok: false, reason: "That access mapping no longer exists." };
+        if (existingRow.userId === currentUser.userId) {
+          return denyAccess(get(), "revoke your own permissions", "revoke their own permissions", existingRow.userId);
+        }
         set((s) => ({ userAccessMappings: s.userAccessMappings.filter((m) => m.id !== id) }));
-        const userName = users.find((u) => u.id === existing.userId)?.name ?? existing.userId;
-        const productName = products.find((p) => p.id === existing.productId)?.name ?? existing.productId;
-        const categoryName = ruleCategories.find((c) => c.id === existing.categoryId)?.name ?? existing.categoryId;
+        const userName = users.find((u) => u.id === existingRow.userId)?.name ?? existingRow.userId;
+        const productName = products.find((p) => p.id === existingRow.productId)?.name ?? existingRow.productId;
+        const categoryName = ruleCategories.find((c) => c.id === existingRow.categoryId)?.name ?? existingRow.categoryId;
         get().logAudit({
           user: currentUser.name,
           action: "Access Deleted",
           entity: "UserProductAccess",
           entityId: id,
-          details: `Removed ${userName}'s access (${existing.capabilities.length} permission(s)) to "${productName}" / "${categoryName}".`,
+          details: `Revoked ${userName}'s access to "${productName}" / "${categoryName}" (was: ${existingRow.capabilities.join(", ")}).`,
+          changes: [
+            { field: "user", oldValue: userName, newValue: userName },
+            { field: "product / category", oldValue: `${productName} / ${categoryName}`, newValue: "—" },
+            { field: "permissions", oldValue: existingRow.capabilities.join(", ") || "none", newValue: "none" },
+          ],
         });
+        return { ok: true };
       },
 
       products: DEFAULT_PRODUCTS,
@@ -1466,9 +1640,65 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 55,
+      version: 57,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v56 -> v57: segregation of duties. The single `isAdmin` boolean
+        // granted system.manage AND config.manage as one indivisible bundle,
+        // so a Product Manager could grant permissions — including to
+        // themselves. It's replaced by AppUser.adminScope ("system" |
+        // "product"), and only "system" unlocks user/access administration.
+        //
+        // The seeded System Administrator maps to "system"; every OTHER
+        // previously-admin user maps to "product" (least privilege — safe
+        // because the seeded system admin guarantees the platform always has
+        // at least one, so no one can be locked out).
+        //
+        // `isAdmin` is deliberately left on the persisted object rather than
+        // deleted: the v47 -> v48 block further down unconditionally re-adds
+        // it whenever it isn't a boolean, so deleting it here would simply
+        // resurrect it. Now that it's off the AppUser interface it's an inert
+        // remnant that nothing reads.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.users) {
+            for (const u of s.users) {
+              const legacy = u as AppUser & { isAdmin?: boolean };
+              if (legacy.adminScope) continue; // already migrated
+              if (legacy.isAdmin) {
+                legacy.adminScope = legacy.id === "usr-vikram-chawla" ? "system" : "product";
+              }
+            }
+            // Failsafe: if this session somehow has no system admin at all
+            // (e.g. the seeded one was deleted before migrating), promote the
+            // first remaining admin so user management stays reachable.
+            if (!s.users.some((u) => u.adminScope === "system")) {
+              const candidate = s.users.find((u) => u.adminScope === "product" && u.status === "Active");
+              if (candidate) candidate.adminScope = "system";
+            }
+          }
+        }
+
+        // v55 -> v56: role-based dashboard redesign — every seed user's
+        // widget/KPI set changed substantially (capped at 6 real, role-
+        // relevant widgets each; "quick-actions" added for every role, not
+        // just Ananya's; new "batch-runs" widget for Operations; Vikram's
+        // KPI row swaps "draft-rules" for "system-users"). A surgical patch
+        // isn't practical here — reset each known seed user's dashboardConfig
+        // to the fresh default wholesale, same as the v51 special case below.
+        // Any user NOT in DEFAULT_DASHBOARD_CONFIGS (i.e. not one of the 6
+        // seed personas) keeps whatever was already persisted for them.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs) {
+            for (const userId of Object.keys(DEFAULT_DASHBOARD_CONFIGS)) {
+              if (s.dashboardConfigs[userId]) {
+                s.dashboardConfigs[userId] = DEFAULT_DASHBOARD_CONFIGS[userId];
+              }
+            }
+          }
+        }
+
         // v54 -> v55: "Deployments" and "Rule Executions" retired from every
         // default KPI set (see dashboards.ts) — still selectable per-user via
         // Configuration Studio -> Dashboard Management for anyone who wants
@@ -1571,9 +1801,16 @@ export const useAppStore = create<AppState>()(
 
           if (s.users) {
             for (const u of s.users) {
-              const uu = u as AppUser & { permissions?: unknown };
+              const uu = u as AppUser & { permissions?: unknown; isAdmin?: boolean };
               const oldRole = roleById.get(uu.role) ?? roleByName.get(uu.role);
               // Admin flag from the old role's config caps (only if unset).
+              // NOTE: `isAdmin` was superseded by AppUser.adminScope in
+              // v56 -> v57 (see the top of this migrate function). Migration
+              // blocks all run on every migration, so this still executes and
+              // still writes isAdmin — harmless, because the v57 block runs
+              // first and nothing reads isAdmin anymore. Left as-is rather
+              // than rewritten so this historical migration keeps working for
+              // anyone upgrading from a genuinely pre-v48 state.
               if (typeof uu.isAdmin !== "boolean") {
                 uu.isAdmin =
                   !!oldRole &&
@@ -2189,9 +2426,10 @@ export const useAppStore = create<AppState>()(
   )
 );
 
-// The effective capability set for a user = the admin caps (iff isAdmin)
-// plus the union of rule.* caps across that user's Active access mappings.
-// This is the single RBAC resolver — there is no Role entity anymore.
+// The effective capability set for a user = the caps their adminScope grants
+// (none if they aren't an administrator) plus the union of rule.* caps across
+// that user's Active access mappings. This is the single RBAC resolver —
+// there is no Role entity anymore.
 export function effectiveCapabilities(
   users: AppUser[],
   mappings: UserProductAccess[],
@@ -2200,16 +2438,76 @@ export function effectiveCapabilities(
   const caps = new Set<Capability>();
   const user = users.find((u) => u.id === userId);
   if (!user) return caps;
-  if (user.isAdmin) for (const c of ADMIN_CAPABILITIES) caps.add(c);
+  if (user.adminScope === "system") for (const c of SYSTEM_ADMIN_CAPABILITIES) caps.add(c);
+  else if (user.adminScope === "product") for (const c of PRODUCT_ADMIN_CAPABILITIES) caps.add(c);
   for (const m of mappings) {
     if (m.userId === userId && m.status === "Active") for (const c of m.capabilities) caps.add(c);
   }
   return caps;
 }
 
+// Count of Active System Administrators — used by the lockout guards below so
+// the last one can never be deleted or demoted. effectiveCapabilities returns
+// an empty set for a user it can't find, so losing every system admin would
+// leave the platform permanently unmanageable.
+function systemAdminCount(users: AppUser[]): number {
+  return users.filter((u) => u.adminScope === "system" && u.status === "Active").length;
+}
+
 // Store-internal capability check — resolves the signed-in user from state.
 function can(state: AppState, capability: Capability): boolean {
   return effectiveCapabilities(state.users, state.userAccessMappings, state.currentUser.userId).has(capability);
+}
+
+// Human-readable administration tier, for audit lines and UI labels.
+const ADMIN_SCOPE_LABEL: Record<AdminScope, string> = {
+  system: "System Administrator",
+  product: "Product Administrator",
+};
+
+function describeScope(scope: AdminScope | undefined): string {
+  return scope ? ADMIN_SCOPE_LABEL[scope] : "Standard user";
+}
+
+// Records a refused privilege operation and returns the refusal. Every
+// blocked escalation attempt is logged — an attempt that leaves no trace is
+// indistinguishable from one that never happened. Mirrors the "Approval
+// Denied" precedent in approveRule.
+//
+// Takes the phrasing twice because the two outputs address different
+// readers: `youPhrase` goes to the person who just tried it ("you can't…"),
+// `theyPhrase` goes into the audit trail a third party reads later.
+function denyAccess(state: AppState, youPhrase: string, theyPhrase: string, entityId: string): AccessResult {
+  state.logAudit({
+    user: state.currentUser.name,
+    action: "Access Denied",
+    entity: "User",
+    entityId,
+    details: `${state.currentUser.name} attempted to ${theyPhrase} — refused (segregation of duties).`,
+  });
+  return {
+    ok: false,
+    reason: `Segregation of duties: you can't ${youPhrase}. Another System Administrator must do it.`,
+  };
+}
+
+// The single gate on user & access administration. `system.manage` is held
+// only by AppUser.adminScope === "system", so a Product Administrator —
+// who holds config.manage and can configure products all day — can never
+// reach any of the mutations that guard on this.
+function requireUserAdmin(state: AppState, attempted: string, entityId: string): AccessResult | null {
+  if (can(state, "system.manage")) return null;
+  state.logAudit({
+    user: state.currentUser.name,
+    action: "Access Denied",
+    entity: "User",
+    entityId,
+    details: `${state.currentUser.name} attempted to ${attempted} without System Administrator permission — refused.`,
+  });
+  return {
+    ok: false,
+    reason: `Only a System Administrator can ${attempted}.`,
+  };
 }
 
 export function useEffectiveCapabilities(): Set<Capability> {

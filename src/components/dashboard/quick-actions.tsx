@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, ChevronRight, type LucideIcon } from "lucide-react";
+import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, ChevronRight, ShieldCheck, type LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { Capability } from "@/lib/types";
@@ -86,6 +86,12 @@ export function QuickActions() {
             <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
           </motion.button>
         ))}
+        {actions.length === 0 && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
+            <ShieldCheck className="size-6 text-muted-foreground/50" />
+            <p className="text-xs text-muted-foreground">No quick actions available for your role.</p>
+          </div>
+        )}
       </div>
     </div>
   );

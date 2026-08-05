@@ -195,7 +195,56 @@ export function ExecutionLogsPanel() {
       title="Execution Logs"
       action={<span onClick={() => router.push("/audit-log")}>View all</span>}
       items={items}
+      emptyMessage="No executions recorded yet."
     />
+  );
+}
+
+export function BatchRunsPanel() {
+  const batchRuns = useAppStore((s) => s.batchRuns);
+  const products = useAppStore((s) => s.products);
+  const domainFilter = useAppStore((s) => s.globalFilters.domains);
+  const router = useRouter();
+
+  // batchRuns has no `domain` field of its own (only productId) — resolve it
+  // via Products so this widget respects the header's Industry filter the
+  // same way every other dashboard widget does.
+  const productDomain = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of products) map.set(p.id, p.domain);
+    return map;
+  }, [products]);
+
+  const recent = useMemo(() => {
+    const scoped = domainFilter.length
+      ? batchRuns.filter((b) => domainFilter.includes(productDomain.get(b.productId) ?? ""))
+      : batchRuns;
+    return scoped.slice(0, 6); // already newest-first — addBatchRunSummary unshifts
+  }, [batchRuns, domainFilter, productDomain]);
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <PanelHeader title="Batch Runs" icon={FileSearch} action="View all" onAction={() => router.push("/simulator")} />
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="divide-y divide-border">
+          {recent.map((b) => (
+            <div key={b.id} className="flex items-center gap-2.5 px-3.5 py-2">
+              <span className={cn("size-1.5 shrink-0 rounded-full", b.failed > 0 ? "bg-red-500" : "bg-emerald-500")} />
+              <div className="min-w-0 flex-1" title={b.fileName}>
+                <p className="truncate text-xs font-bold text-foreground">{b.fileName}</p>
+                <p className="truncate text-[11px] text-muted-foreground mt-0.5">
+                  {b.productName} · {b.passed}/{b.totalRows} passed
+                </p>
+              </div>
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                {formatDistanceToNow(new Date(b.startedAt), { addSuffix: true })}
+              </span>
+            </div>
+          ))}
+          {recent.length === 0 && <EmptyRow>No batch runs yet.</EmptyRow>}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
 

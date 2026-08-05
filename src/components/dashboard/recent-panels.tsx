@@ -55,6 +55,9 @@ export function RecentRulesPanel() {
               </div>
             </button>
           ))}
+          {recent.length === 0 && (
+            <p className="px-3.5 py-6 text-center text-xs text-muted-foreground">No rules modified yet.</p>
+          )}
         </div>
       </ScrollArea>
     </div>
@@ -113,6 +116,7 @@ export function RecentActivityPanel() {
       title="Recent Activity"
       action={<span onClick={() => router.push("/audit-log")}>View all</span>}
       items={items}
+      emptyMessage="No activity yet."
     />
   );
 }
@@ -141,6 +145,9 @@ export function RecentDeploymentsPanel() {
               </span>
             </div>
           ))}
+          {recent.length === 0 && (
+            <p className="px-3.5 py-6 text-center text-xs text-muted-foreground">No rules published yet.</p>
+          )}
         </div>
       </ScrollArea>
     </div>
