@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Download, RotateCcw, PlayCircle, Copy, Check, Sparkles, SlidersHorizontal, FileCode, CheckCircle2, ShieldCheck, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { Product, TraceStep } from "@/lib/types";
@@ -18,6 +18,8 @@ import { DynamicFormView } from "./dynamic-form-view";
 import { VariableViewer } from "./variable-viewer";
 import { DecisionExplanation } from "./decision-explanation";
 import { CalculatedVariablesCard } from "./calculated-variables-card";
+import { collectFieldKeys } from "@/lib/condition-tree";
+import { extractVariableKeys } from "@/lib/expression";
 
 interface RunSimulatorRedesignedProps {
   product: Product;
@@ -63,7 +65,23 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
   const apiRequestJson = JSON.stringify(sim.apiRequestEnvelope, null, 2);
   const apiResponseJson = JSON.stringify(sim.responseShape, null, 2);
 
-  const requiredFields = sim.fieldCatalog.filter((f) => f.mandatory).map((f) => f.key);
+  const requiredFields = React.useMemo(() => {
+    const keys = new Set<string>();
+    for (const rule of executionPlan) {
+      collectFieldKeys(rule.rootGroup).forEach((k) => keys.add(k));
+      const allActions = [...rule.actions, ...(rule.elseActions || [])];
+      for (const a of allActions) {
+        if (a.type === "Calculate" || a.type === "Assign Value") {
+          extractVariableKeys(a.outputValue || "").forEach((k) => keys.add(k));
+        } else if (a.type === "Bracket Lookup") {
+          extractVariableKeys((a as any).bracketInputKey || "").forEach((k) => keys.add(k));
+        }
+      }
+    }
+    return sim.fieldCatalog
+      .filter((f) => f.mandatory && keys.has(f.key))
+      .map((f) => f.key);
+  }, [executionPlan, sim.fieldCatalog]);
 
   const availableProducts = products.length > 0 ? products : [product];
 

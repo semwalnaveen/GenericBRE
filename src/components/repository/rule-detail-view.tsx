@@ -19,6 +19,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { StatusBadge, PriorityBadge } from "@/components/status-badge";
 import {
   ApprovalRequest,
@@ -130,18 +137,21 @@ function GroupView({ group, depth = 0, catalog }: { group: ConditionGroup; depth
 function ActionRowList({ actions }: { actions: RuleAction[] }) {
   return (
     <div className="space-y-1.5">
-      {actions.map((a) => (
-        <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-          <span className="font-medium">{a.type}</span>
-          {a.message && <span className="text-muted-foreground"> — {a.message}</span>}
-          {a.outputField && (
-            <span className="text-muted-foreground">
-              {" "}
-              — set <span className="font-mono">{a.outputField}</span> = <span className="font-mono">{a.outputValue}</span>
-            </span>
-          )}
-        </div>
-      ))}
+      {actions.map((a) => {
+        const outKey = a.outputTarget === "RUNTIME_VARIABLE" ? a.outputVariable : a.outputField;
+        return (
+          <div key={a.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
+            <span className="font-medium">{a.type}</span>
+            {a.message && <span className="text-muted-foreground"> — {a.message}</span>}
+            {outKey && (
+              <span className="text-muted-foreground">
+                {" "}
+                — set <span className="font-mono">{outKey}</span> = <span className="font-mono bg-muted/50 px-1 py-0.5 rounded">{a.outputValue}</span>
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -155,6 +165,7 @@ function ProductMappingSection({
   products: Product[];
   mappings: ProductRuleMapping[];
 }) {
+  const allRules = useAppStore((s) => s.rules);
   const rows = useMemo(
     () =>
       mappings
@@ -167,34 +178,65 @@ function ProductMappingSection({
   return (
     <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
       <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        <Boxes className="size-3.5" /> Product Mapping &amp; Sequence
+        <Boxes className="size-3.5" /> Product Mapping & Sequence
       </p>
       {rows.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">Not yet mapped to any product.</p>
       ) : (
         <div className="space-y-2">
-          {rows.map(({ mapping, product }) => (
-            <div key={mapping.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">{product?.name ?? mapping.productId}</span>
-                {mapping.order !== undefined && (
-                  <Badge variant="outline" className="font-mono">Sequence #{mapping.order}</Badge>
-                )}
-                {!mapping.active && <Badge variant="outline">Inactive</Badge>}
-                {mapping.effectiveDate && (
-                  <span className="text-muted-foreground">
-                    Effective {new Date(mapping.effectiveDate).toLocaleDateString()}
-                  </span>
+          {rows.map(({ mapping, product }) => {
+            const productMappings = mappings
+              .filter((m) => m.productId === mapping.productId)
+              .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
+            return (
+              <div key={mapping.id} className="rounded-md border bg-muted/30 px-2.5 py-1.5 text-sm flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{product?.name ?? mapping.productId}</span>
+                  {mapping.order !== undefined && (
+                    <Badge variant="outline" className="font-mono">Sequence #{mapping.order}</Badge>
+                  )}
+                  {!mapping.active && <Badge variant="outline">Inactive</Badge>}
+                  {mapping.effectiveDate && (
+                    <span className="text-muted-foreground">
+                      Effective {new Date(mapping.effectiveDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  <Dialog>
+                    <DialogTrigger className="text-sm font-medium text-primary hover:underline ml-auto focus:outline-none">
+                      Show Sequence
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Rule Sequence for {product?.name ?? mapping.productId}</DialogTitle>
+                      </DialogHeader>
+                      <div className="max-h-[60vh] overflow-y-auto space-y-1.5 pt-4">
+                        {productMappings.map((m) => {
+                          const r = allRules.find((r) => r.id === m.ruleId);
+                          const isCurrent = r?.id === rule.id;
+                          return (
+                            <div key={m.id} className={`flex items-center justify-between rounded-md px-3 py-2 text-sm border ${isCurrent ? 'bg-primary/10 border-primary shadow-sm' : 'bg-muted/30 border-border'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-mono text-xs w-6 h-6 flex items-center justify-center rounded-full ${isCurrent ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'}`}>{m.order ?? '-'}</span>
+                                <span className={`font-medium ${isCurrent ? 'text-primary' : ''}`}>{r?.name ?? m.ruleId}</span>
+                              </div>
+                              {isCurrent && <Badge variant="default" className="text-[10px] px-1.5 py-0">Current</Badge>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                {mapping.remarks && (
+                  <p className="flex items-start gap-1.5 text-muted-foreground">
+                    <MessageSquare className="mt-0.5 size-3.5 shrink-0" />
+                    <span className="whitespace-pre-wrap">{mapping.remarks}</span>
+                  </p>
                 )}
               </div>
-              {mapping.remarks && (
-                <p className="mt-1.5 flex items-start gap-1.5 text-muted-foreground">
-                  <MessageSquare className="mt-0.5 size-3.5 shrink-0" />
-                  <span className="whitespace-pre-wrap">{mapping.remarks}</span>
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>
@@ -413,7 +455,7 @@ function VersionHistorySection({ rule, catalog }: { rule: BusinessRule; catalog:
           </span>
         </AccordionTrigger>
         <AccordionContent className="pt-3 pb-0">
-          <Accordion type="single" collapsible defaultValue={String(versions[0]?.version)} className="space-y-2">
+          <Accordion defaultValue={[String(versions[0]?.version)]} className="space-y-2">
             {versions.map((v, i) => {
               const prev = versions[i + 1];
               const diff = diffVersions(prev, v, catalog);
@@ -512,82 +554,117 @@ export function RuleDetailView({ rule }: { rule: BusinessRule }) {
       .sort((a, b) => new Date(a.requestedAt).getTime() - new Date(b.requestedAt).getTime())[0];
   }, [approvalRequests, rule.id]);
 
+  const activeMappings = useMemo(
+    () =>
+      productRuleMappings
+        .filter((m) => m.ruleId === rule.id)
+        .map((m) => ({ mapping: m, product: products.find((p) => p.id === m.productId) }))
+        .sort((a, b) => (a.mapping.order ?? 999) - (b.mapping.order ?? 999)),
+    [productRuleMappings, products, rule.id]
+  );
+
   return (
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 xl:gap-6">
-      {/* Left Column (Core Rule Logic) */}
-      <div className="flex flex-col gap-4 lg:col-span-2">
-        <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
-          <p className="text-sm text-muted-foreground">{rule.description || "No description provided."}</p>
-          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-            <div className="flex flex-wrap gap-2">
+    <div className="space-y-4 xl:space-y-6">
+      {/* Top Header Badges for Sequence */}
+      {activeMappings.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {activeMappings.map(({ mapping, product }) => (
+            <div
+              key={mapping.id}
+              className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary shadow-sm"
+            >
+              <Boxes className="size-4" />
+              <span>{product?.name ?? "Unknown Product"}</span>
+              <span className="text-primary/60">•</span>
+              <span>Sequence #{mapping.order ?? "?"}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3 xl:gap-6">
+        {/* Left Column (Context & Meta - 1 Column) */}
+        <div className="flex flex-col gap-4 lg:col-span-1">
+          <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
+            <p className="text-sm text-muted-foreground">{rule.description || "No description provided."}</p>
+            <div className="flex flex-wrap gap-2 py-4">
               <StatusBadge status={rule.status} />
               <PriorityBadge priority={rule.priority} />
               <span className="rounded-full border px-2 py-0.5 text-sm">{rule.domain}</span>
               <span className="rounded-full border px-2 py-0.5 text-sm">{rule.category}</span>
             </div>
-            {submission && (
-              <div className="text-right text-sm">
-                <span className="text-muted-foreground">Submission Date: </span>
-                <span className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-3 lg:grid-cols-4">
-            <div>
-              <p className="text-muted-foreground">Version</p>
-              <p className="font-medium">v{rule.version}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Created</p>
-              <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Updated</p>
-              <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
-            </div>
-            {submission && (
+            
+            <Separator />
+            
+            <div className="grid grid-cols-2 gap-y-4 gap-x-2 pt-4 text-sm">
+              {submission && (
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Submission Date</p>
+                  <p className="font-medium">{new Date(submission.requestedAt).toLocaleString()}</p>
+                </div>
+              )}
               <div>
-                <p className="text-muted-foreground">Submitted By</p>
-                <p className="font-medium">{submission.requestedBy}</p>
+                <p className="text-muted-foreground">Version</p>
+                <p className="font-medium">v{rule.version}</p>
               </div>
-            )}
-          </div>
-        </Card>
-
-        <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
-            <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
-          </div>
-          <Separator className="my-4" />
-          <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
-            <ActionRowList actions={rule.actions} />
-          </div>
-          {rule.elseActions && rule.elseActions.length > 0 && (
-            <>
-              <Separator className="my-4" />
               <div>
-                <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
-                <ActionRowList actions={rule.elseActions} />
+                <p className="text-muted-foreground">Created</p>
+                <p className="font-medium">{new Date(rule.createdAt).toLocaleDateString()}</p>
               </div>
-            </>
-          )}
-        </Card>
+              <div>
+                <p className="text-muted-foreground">Updated</p>
+                <p className="font-medium">{new Date(rule.updatedAt).toLocaleDateString()}</p>
+              </div>
+              {submission && (
+                <div>
+                  <p className="text-muted-foreground">Submitted By</p>
+                  <p className="font-medium">{submission.requestedBy}</p>
+                </div>
+              )}
+            </div>
+          </Card>
 
-        <GeneratedVariablesSection rule={rule} />
-      </div>
+          <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
+          <RulePreviewSection rule={rule} catalog={fieldCatalog} />
+        </div>
 
-      {/* Right Column (Meta & Operational) */}
-      <div className="flex flex-col gap-4">
-        <ProductMappingSection rule={rule} products={products} mappings={productRuleMappings} />
-        <RulePreviewSection rule={rule} catalog={fieldCatalog} />
-        <Accordion type="single" collapsible defaultValue="version-history" className="flex flex-col gap-4">
-          <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
-          <AuditTimelineSection rule={rule} auditLog={auditLog} />
-          <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
-        </Accordion>
+        {/* Right Column (Core Logic & Timelines - 2 Columns) */}
+        <div className="flex flex-col gap-4 lg:col-span-2">
+          <Card className="rounded-xl border-[#D0E4F5] p-4 shadow-sm sm:p-5">
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">IF Conditions</p>
+              <div className="rounded-lg bg-card sm:p-2">
+                <GroupView group={rule.rootGroup} catalog={fieldCatalog} />
+              </div>
+            </div>
+            <Separator className="my-4" />
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">THEN Actions</p>
+              <div className="rounded-lg bg-card sm:p-2">
+                <ActionRowList actions={rule.actions} />
+              </div>
+            </div>
+            {rule.elseActions && rule.elseActions.length > 0 && (
+              <>
+                <Separator className="my-4" />
+                <div>
+                  <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">ELSE Actions</p>
+                  <div className="rounded-lg bg-card sm:p-2">
+                    <ActionRowList actions={rule.elseActions} />
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
+
+          <GeneratedVariablesSection rule={rule} />
+          
+          <Accordion defaultValue={["version-history"]} className="mt-4 flex flex-col gap-4">
+            <ApprovalTimelineSection rule={rule} approvalRequests={approvalRequests} />
+            <AuditTimelineSection rule={rule} auditLog={auditLog} />
+            <VersionHistorySection key={rule.id} rule={rule} catalog={fieldCatalog} />
+          </Accordion>
+        </div>
       </div>
     </div>
   );

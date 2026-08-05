@@ -89,13 +89,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Automation",
+    label: "NotifyX",
     items: [
       { id: "notifyx", label: "NotifyX", icon: Workflow },
     ],
   },
   {
-    label: "Experience",
+    label: "Dashboard Management",
     items: [
       { id: "dashboard-management", label: "Dashboard Management", icon: LayoutDashboard },
     ],
@@ -158,7 +158,7 @@ export default function ConfigurationStudioPage() {
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">
           <div className="mx-auto max-w-6xl space-y-3 px-5 py-3 sm:px-6 w-full">
-            {section !== "users" && (
+            {section !== "users" && section !== "notifyx" && (
               <div>
                 <h2 className="text-sm font-semibold">{[...NAV_GROUPS.flatMap((g) => g.items)].find((i) => i.id === section)?.label}</h2>
                 <p className="text-sm text-muted-foreground">{SECTION_DESCRIPTIONS[section]}</p>

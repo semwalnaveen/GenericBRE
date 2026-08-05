@@ -264,19 +264,7 @@ export function CalculateExpressionEditor({
           </Button>
         </div>
 
-        {tokens.length > 0 && (() => {
-          const savedPreview = previewExpression(value, defaultContext);
-          if (savedPreview.result.error) return null;
-          const outField = outputField ? getField(fieldCatalog, outputField) : undefined;
-          const outLabel = outField?.label || outputField || "Output";
-          const defaultField = DEFAULT_FIELD_CATALOG.find(f => f.key === outputField);
-          const outUnit = outField?.unit || defaultField?.unit || "";
-          return (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{outLabel}:</span> {formatResult(savedPreview.result.value)}{outUnit}
-            </div>
-          );
-        })()}
+
 
         <SheetContent className="flex w-[95vw] flex-col p-0 sm:max-w-5xl data-[side=right]:sm:max-w-5xl" side="right">
           <div className="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">

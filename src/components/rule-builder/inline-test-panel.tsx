@@ -5,6 +5,7 @@ import { PlayCircle, CheckCircle2, XCircle, FlaskConical } from "lucide-react";
 import { ConditionGroup, RuleAction } from "@/lib/types";
 import { collectFieldKeys } from "@/lib/condition-tree";
 import { evaluateGroup, resolveActionValue, resolveBracketValue, ConditionEvalDetail } from "@/lib/engine";
+import { extractVariableKeys } from "@/lib/expression";
 import { getField } from "@/lib/fields";
 import { useAppStore } from "@/lib/store";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,29 @@ export function InlineTestPanel({
     outputs: Record<string, { value: string | number; error?: string }>;
   } | null>(null);
 
-  const fieldKeys = useMemo(() => Array.from(collectFieldKeys(rootGroup)), [rootGroup]);
+  const fieldKeys = useMemo(() => {
+    const keys = new Set(collectFieldKeys(rootGroup));
+    const allActions = [...actions, ...(elseActions ?? [])];
+    const generated = new Set<string>();
+    
+    for (const action of allActions) {
+      if ((action.type === "Calculate" || action.type === "Assign Value") && action.outputValue) {
+        const extracted = extractVariableKeys(action.outputValue);
+        extracted.forEach((k) => {
+          if (!generated.has(k)) keys.add(k);
+        });
+      } else if (action.type === "Bracket Lookup" && action.bracketField) {
+        if (!generated.has(action.bracketField)) keys.add(action.bracketField);
+      }
+      
+      const outKey = action.outputTarget === "RUNTIME_VARIABLE" ? action.outputVariable : action.outputField;
+      if (outKey) {
+        generated.add(outKey);
+      }
+    }
+    
+    return Array.from(keys);
+  }, [rootGroup, actions, elseActions]);
 
   const buildInput = () => {
     const input: Record<string, string | number | boolean> = {};
@@ -48,6 +71,8 @@ export function InlineTestPanel({
     return input;
   };
 
+  const hasCalculate = actions.some((a) => a.type === "Calculate");
+
   const runTest = () => {
     const input = buildInput();
     const details: ConditionEvalDetail[] = [];
@@ -56,18 +81,19 @@ export function InlineTestPanel({
     // Resolve Calculate/Assign Value outputs for whichever branch actually
     // fires, chaining each action's result into the context for the next
     // (so a later Calculate can reference an earlier one's output by name).
-    const firingActions = passed ? actions : elseActions ?? [];
+    const firingActions = (passed || hasCalculate) ? actions : elseActions ?? [];
     const outputs: Record<string, { value: string | number; error?: string }> = {};
     const context: Record<string, string | number | boolean> = { ...input };
     for (const action of firingActions) {
-      if ((action.type === "Calculate" || action.type === "Assign Value") && action.outputField) {
+      const outKey = action.outputTarget === "RUNTIME_VARIABLE" ? action.outputVariable : action.outputField;
+      if ((action.type === "Calculate" || action.type === "Assign Value") && outKey) {
         const resolved = resolveActionValue(action, context);
-        outputs[action.outputField] = resolved;
-        context[action.outputField] = resolved.value;
-      } else if (action.type === "Bracket Lookup" && action.outputField) {
+        outputs[outKey] = resolved;
+        context[outKey] = resolved.value;
+      } else if (action.type === "Bracket Lookup" && outKey) {
         const resolved = resolveBracketValue(action, context);
-        outputs[action.outputField] = resolved;
-        if (!resolved.error) context[action.outputField] = resolved.value;
+        outputs[outKey] = resolved;
+        if (!resolved.error) context[outKey] = resolved.value;
       }
     }
 
@@ -129,23 +155,25 @@ export function InlineTestPanel({
 
           {result && (
             <div className="mt-3 space-y-2 border-t pt-3">
-              <div
-                className={cn(
-                  "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold",
-                  result.passed ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"
-                )}
-              >
-                {result.passed ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
-                {result.passed ? "IF MATCHED" : "IF DID NOT MATCH"}
-                {activeBranch && activeActions && activeActions.length > 0 && (
-                  <span className="ml-auto font-normal text-foreground/70">
-                    {activeBranch}: {activeActions.map((a) => a.type).join(", ")}
-                  </span>
-                )}
-                {!result.passed && !elseActions?.length && (
-                  <span className="ml-auto font-normal text-foreground/70">no ELSE branch — nothing fires</span>
-                )}
-              </div>
+              {!hasCalculate && (
+                <div
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold",
+                    result.passed ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-red-500/10 text-red-600 dark:text-red-400"
+                  )}
+                >
+                  {result.passed ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
+                  {result.passed ? "IF MATCHED" : "IF DID NOT MATCH"}
+                  {activeBranch && activeActions && activeActions.length > 0 && (
+                    <span className="ml-auto font-normal text-foreground/70">
+                      {activeBranch}: {activeActions.map((a) => a.type).join(", ")}
+                    </span>
+                  )}
+                  {!result.passed && !elseActions?.length && (
+                    <span className="ml-auto font-normal text-foreground/70">no ELSE branch — nothing fires</span>
+                  )}
+                </div>
+              )}
               <div className="space-y-1">
                 {result.details.map((d, i) => (
                   <div key={i} className="flex items-center justify-between rounded-md bg-muted/40 px-2 py-1 text-sm">

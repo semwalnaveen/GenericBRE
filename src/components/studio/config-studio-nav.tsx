@@ -65,26 +65,28 @@ export function ConfigStudioNav<T extends string>({
       </div>
 
       {/* Tier 2: Items within the active group */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-border/40 bg-muted/10 px-5 py-1.5 sm:px-6">
-        {activeGroup.items.map((item) => {
-          const isActive = activeSection === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelect(item.id)}
-              className={cn(
-                "flex items-center gap-2 rounded-full px-3 py-1 text-xs transition-all duration-200",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm hover:scale-[1.02]"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="size-3.5 shrink-0" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {activeGroup.items.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/40 bg-muted/10 px-5 py-1.5 sm:px-6">
+          {activeGroup.items.map((item) => {
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onSelect(item.id)}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-3 py-1 text-xs transition-all duration-200",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm hover:scale-[1.02]"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <item.icon className="size-3.5 shrink-0" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -794,21 +794,6 @@ function RuleBuilderContent() {
             </div>
           )}
 
-          {!existingRule && !templateHintDismissed && countConditions(rule.rootGroup) === 0 && rule.actions.length === 0 && (
-            <div className="flex items-center gap-3 rounded-lg border border-dashed bg-muted/30 px-3.5 py-2.5">
-              <LayoutTemplate className="size-4 shrink-0 text-primary" />
-              <p className="min-w-0 flex-1 text-sm text-muted-foreground">
-                Starting from scratch? A template can pre-fill the condition and action builder below — fully editable after.
-              </p>
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1.5 text-sm" onClick={() => setTemplatePickerOpen(true)}>
-                <LayoutTemplate className="size-3.5" /> Browse Templates
-              </Button>
-              <Button size="icon-sm" variant="ghost" className="shrink-0" title="Dismiss" onClick={dismissTemplateHint}>
-                <X className="size-3.5" />
-              </Button>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             <div className={cn("flex flex-col gap-4", sidebarOpen ? "lg:col-span-8" : "lg:col-span-12")}>
               {caseBuilderOpen ? (
