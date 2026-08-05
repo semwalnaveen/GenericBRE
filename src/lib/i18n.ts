@@ -113,8 +113,8 @@ export const TRANSLATIONS = {
     en: "Rule Conflicts", hi: "नियम टकराव", ta: "விதி முரண்பாடுகள்", te: "నియమ వైరుధ్యాలు", ml: "റൂൾ വൈരുദ്ധ്യങ്ങൾ",
     fr: "Conflits de règles", es: "Conflictos de reglas", de: "Regelkonflikte", ja: "ルールの競合", zh: "规则冲突", ar: "تعارضات القواعد",
   },
-  "kpi.deployments": {
-    en: "Deployments", hi: "परिनियोजन", ta: "வரிசைப்படுத்தல்கள்", te: "డిప్లాయ్‌మెంట్‌లు", ml: "ഡിപ്ലോയ്‌മെന്റുകൾ",
+  "kpi.activeProducts": {
+    en: "Active Products", hi: "परिनियोजन", ta: "வரிசைப்படுத்தல்கள்", te: "డిప్లాయ్‌మెంట్‌లు", ml: "ഡിപ്ലോയ്‌മെന്റുകൾ",
     fr: "Déploiements", es: "Implementaciones", de: "Bereitstellungen", ja: "デプロイ", zh: "部署", ar: "عمليات النشر",
   },
   "kpi.ruleExecutions": {

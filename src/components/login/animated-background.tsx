@@ -1,10 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useReducedMotion } from "./use-reduced-motion";
 
 export function AnimatedBackground() {
   const reduceMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Pre-calculate random positions and delays so they remain stable across renders
   const stars = useMemo(() => {
@@ -37,7 +42,7 @@ export function AnimatedBackground() {
     }));
   }, []);
 
-  if (reduceMotion) {
+  if (reduceMotion || !mounted) {
     return null; // Or return a completely static grid, but the login page already has a static gradient.
   }
 

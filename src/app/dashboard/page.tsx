@@ -23,6 +23,7 @@ import { HeroBanner } from "@/components/dashboard/hero-banner";
 import { Button } from "@/components/ui/button";
 import { ProgressScoreWidget, DistributionDonutWidget, PerformanceListWidget } from "@/components/dashboard/premium-widgets";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
+import { DEFAULT_DASHBOARD_CONFIGS } from "@/lib/dashboards";
 import { useDashboardLayout, WIDGET_SIZE_SPAN } from "@/lib/dashboard-layout";
 import { WidgetDef, WidgetSize } from "@/lib/types";
 import { downloadCsv } from "@/lib/csv";
@@ -76,7 +77,15 @@ export default function DashboardPage() {
   // widget never renders content (e.g. Approval Queue) the user's actual
   // capabilities don't back up.
   const capabilities = useEffectiveCapabilities();
-  const roleWidgets = (dashboardConfigs[userId]?.widgets ?? []).filter((w) => {
+  
+  let userConfig = dashboardConfigs[userId];
+  if (!userConfig || !userConfig.widgets?.length) {
+    userConfig = currentUser.role === "System Administrator" 
+      ? DEFAULT_DASHBOARD_CONFIGS["usr-ved-prakash"] 
+      : DEFAULT_DASHBOARD_CONFIGS["usr-ananya-verma"];
+  }
+
+  const roleWidgets = (userConfig?.widgets ?? []).filter((w) => {
     const req = WIDGET_REQUIRED_CAPABILITY[w.id];
     return !req || capabilities.has(req);
   });

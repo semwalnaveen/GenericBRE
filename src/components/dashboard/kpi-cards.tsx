@@ -14,6 +14,7 @@ import {
   Rocket,
   XCircle,
   Users,
+  Package,
 } from "lucide-react";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
@@ -40,7 +41,7 @@ export const KPI_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "draft-rules": "rule.view",
   "pending-review": "rule.view",
   "pending-approvals": "rule.view",
-  deployments: "rule.view",
+  "active-products": "rule.view",
   "rule-executions": "rule.simulate",
   "business-categories": "rule.view",
   "system-users": "system.manage",
@@ -48,14 +49,14 @@ export const KPI_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
 
 // Exactly 6 — matches every role's dashboardConfigs.kpis length, so the grid
 // below always fills completely at every breakpoint with no trailing gap.
-export const DEFAULT_KPI_IDS = ["total-rules", "active-rules", "draft-rules", "rule-executions", "business-categories", "deployments"];
+export const DEFAULT_KPI_IDS = ["total-rules", "active-rules", "draft-rules", "rule-executions", "business-categories", "active-products"];
 
 export const KPI_LABELS: Record<string, string> = {
   "total-rules": "Total Rules",
   "active-rules": "Published Rules",
   "draft-rules": "Draft Rules",
   "pending-approvals": "Pending Approvals",
-  deployments: "Deployments",
+  "active-products": "Active Products",
   "rule-executions": "Rule Executions",
   "business-categories": "Business Categories",
   "system-users": "System Users",
@@ -69,7 +70,7 @@ const KPI_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   "active-rules": "kpi.activeRules",
   "draft-rules": "kpi.draftRules",
   "pending-approvals": "kpi.pendingApprovals",
-  deployments: "kpi.deployments",
+  "active-products": "kpi.activeProducts",
   "rule-executions": "kpi.ruleExecutions",
   "business-categories": "kpi.businessCategories",
   "system-users": "kpi.systemUsers",
@@ -94,6 +95,7 @@ export function KpiCards() {
   const allApprovalRequests = useAppStore((s) => s.approvalRequests);
   const auditLog = useAppStore((s) => s.auditLog);
   const allUsers = useAppStore((s) => s.users);
+  const allProducts = useAppStore((s) => s.products);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const userId = useAppStore((s) => s.currentUser.userId);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
@@ -144,12 +146,12 @@ export function KpiCards() {
       accent: "text-orange-600 bg-orange-500/10 dark:text-orange-400",
       href: "/repository?status=Pending Approval",
     },
-    deployments: {
-      label: t(KPI_TRANSLATION_KEYS.deployments),
-      value: deploymentEvents.length,
-      icon: Rocket,
+    "active-products": {
+      label: t(KPI_TRANSLATION_KEYS["active-products"]),
+      value: allProducts.filter((p) => p.status === "Active" && (!domainFilter.length || domainFilter.includes(p.id))).length,
+      icon: Package,
       accent: "text-purple-600 bg-purple-500/10 dark:text-purple-400",
-      href: "/repository?status=Active", // FUTURE: restore "/repository?environment=Prod" when environment is reintroduced
+      href: "/products",
     },
     "rule-executions": {
       // The +256 is a fixed demo-history baseline with no per-industry
@@ -165,7 +167,7 @@ export function KpiCards() {
       value: new Set(rules.map((r) => r.category)).size,
       icon: Layers,
       accent: "text-indigo-600 bg-indigo-500/10 dark:text-indigo-400",
-      href: "/repository",
+      href: "/metadata-explorer",
     },
     "system-users": {
       // Not scoped to the Industry filter — user accounts aren't tied to a
@@ -192,7 +194,7 @@ export function KpiCards() {
     .filter((k): k is Kpi => !!k);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       {kpis.map((k, i) => (
         <motion.button
           key={k.label}

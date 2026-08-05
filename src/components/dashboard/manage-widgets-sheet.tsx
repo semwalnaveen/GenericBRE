@@ -10,7 +10,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   "quick-actions": "Quick Actions",
   "recent-rules": "Recently Modified Rules",
   "recent-activity": "Recent Activity",
-  "domain-distribution": "Domain Distribution",
+  "domain-distribution": "Product Distribution",
   "rule-status": "Rule Status Breakdown",
   "recent-deployments": "Recent Deployments",
   "demo-scenarios": "Preconfigured Demo Scenarios",

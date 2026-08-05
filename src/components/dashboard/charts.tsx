@@ -32,40 +32,70 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { name:
 }
 
 export function DomainDistributionChart() {
-  const rules = useScopedRules();
-  const industries = useAppStore((s) => s.industries);
+  const rules = useAppStore((s) => s.rules);
+  const products = useAppStore((s) => s.products);
+  const mappings = useAppStore((s) => s.productRuleMappings);
 
   const data = useMemo(() => {
+    // Only count "Published" rules as requested
+    const publishedRuleIds = new Set(rules.filter(r => r.status === "Published").map((r) => r.id));
     const counts: Record<string, number> = {};
-    for (const r of rules) counts[r.domain] = (counts[r.domain] ?? 0) + 1;
-    return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [rules]);
+    
+    for (const m of mappings) {
+      if (m.active && publishedRuleIds.has(m.ruleId)) {
+        counts[m.productId] = (counts[m.productId] ?? 0) + 1;
+      }
+    }
+    
+    const result = Object.entries(counts).map(([productId, value]) => {
+      const product = products.find((p) => p.id === productId);
+      return {
+        name: product?.name || productId,
+        value,
+      };
+    });
+    
+    return result.sort((a, b) => b.value - a.value);
+  }, [rules, products, mappings]);
 
   if (data.length === 0) {
     return (
       <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-        <PanelHeader title="Domain Distribution" />
+        <PanelHeader title="Product Distribution" />
         <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
-          No rules in the current selection.
+          No mapped rules in the current selection.
         </div>
       </div>
     );
   }
 
-  const donutData = data.map(d => ({
+  const PRODUCT_COLORS = [
+    "#3b82f6", // blue-500
+    "#10b981", // emerald-500
+    "#06b6d4", // cyan-500
+    "#f59e0b", // amber-500
+    "#ef4444", // red-500
+    "#8b5cf6", // violet-500
+    "#ec4899", // pink-500
+    "#f97316", // orange-500
+  ];
+
+  const totalMappings = data.reduce((acc, d) => acc + d.value, 0);
+
+  const donutData = data.map((d, i) => ({
     name: d.name,
     value: d.value,
-    color: colorForIndustry(industries, d.name),
+    color: PRODUCT_COLORS[i % PRODUCT_COLORS.length],
     bgSoftColor: "bg-slate-50",
-    percentage: `${Math.round((d.value / rules.length) * 100)}%`,
+    percentage: `${Math.round((d.value / totalMappings) * 100)}%`,
     absoluteText: d.value.toString()
   }));
 
   return (
     <DistributionDonutWidget
-      title="Domain Distribution"
+      title="Product Distribution"
       totalText="RULES"
-      totalSubtext={rules.length.toString()}
+      totalSubtext={totalMappings.toString()}
       data={donutData}
     />
   );

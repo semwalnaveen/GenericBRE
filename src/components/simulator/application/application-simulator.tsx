@@ -97,7 +97,7 @@ export function ApplicationSimulator() {
         if (hasPartialMatches) {
           setError(null);
         } else {
-          setError({ type: "NOT_FOUND", message: `No application found matching "${raw}".` });
+          setError({ kind: "not-found", message: `No application found matching "${raw}".` });
         }
         setApplication(null);
       } else {
@@ -209,7 +209,7 @@ export function ApplicationSimulator() {
 
             {/* RIGHT — variable inspector + mapped-rule sequence */}
             <div className="space-y-4">
-              <VariableViewer traceSteps={result?.flatTrace ?? []} jsonText={inputJson} />
+              <VariableViewer traceSteps={result?.flatTrace ?? []} jsonText={inputJson} fieldCatalog={fieldCatalog} />
               <div className="rounded-xl border bg-card p-4 shadow-xs">
                 <p className="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Mapped Rule Sequence ({executionPlan.length})

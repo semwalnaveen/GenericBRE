@@ -24,11 +24,11 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     userId: "usr-ananya-verma",
     landingRoute: "/dashboard",
     widgets: widgets(["kpis", "quick-actions", "draft-rules", "recent-rules", "simulation-results", "execution-timeline", "recent-activity"]),
-    // "deployments"/"rule-executions" retired from every default KPI set
+    // "active-products"/"rule-executions" retired from every default KPI set
     // below (still selectable per-user via Configuration Studio -> Dashboard
     // Management) — backfilled with a role-relevant alternative so the row
     // still fills all 6 slots.
-    kpis: ["draft-rules", "pending-approvals", "active-rules", "total-rules", "business-categories", "deployments"],
+    kpis: ["draft-rules", "pending-approvals", "active-rules", "total-rules", "business-categories", "active-products"],
     quickActions: ["create-rule", "open-repository", "run-simulator"],
   },
   "usr-rohan-mehta": {
@@ -38,7 +38,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     userId: "usr-rohan-mehta",
     landingRoute: "/dashboard",
     widgets: widgets(["kpis", "quick-actions", "domain-distribution", "rule-status", "rule-conflicts", "approval-queue", "recent-deployments"]),
-    kpis: ["active-rules", "pending-approvals", "total-rules", "business-categories", "draft-rules", "deployments"],
+    kpis: ["active-rules", "pending-approvals", "total-rules", "business-categories", "draft-rules", "active-products"],
     quickActions: ["decision-matrix", "view-approvals", "open-repository"],
   },
   "usr-kavita-rao": {
@@ -48,7 +48,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     userId: "usr-kavita-rao",
     landingRoute: "/dashboard",
     widgets: widgets(["kpis", "quick-actions", "approval-queue", "rules-awaiting-review", "rule-conflicts", "domain-distribution", "recent-activity"]),
-    kpis: ["deployments", "pending-approvals", "draft-rules", "active-rules", "total-rules", "business-categories"],
+    kpis: ["active-products", "pending-approvals", "draft-rules", "active-rules", "total-rules", "business-categories"],
     quickActions: ["view-approvals", "open-repository", "run-simulator"],
   },
   "usr-arjun-nair": {
@@ -59,7 +59,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     userId: "usr-arjun-nair",
     landingRoute: "/dashboard",
     widgets: widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "rules-awaiting-review", "recent-rules", "decision-lookup"]),
-    kpis: ["business-categories", "active-rules", "draft-rules", "total-rules", "pending-approvals", "deployments"],
+    kpis: ["business-categories", "active-rules", "draft-rules", "total-rules", "pending-approvals", "active-products"],
     quickActions: ["run-simulator", "open-repository"],
   },
   "usr-divya-iyer": {
@@ -69,7 +69,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     userId: "usr-divya-iyer",
     landingRoute: "/dashboard",
     widgets: widgets(["kpis", "quick-actions", "execution-logs", "simulation-results", "decision-lookup", "recent-activity", "batch-runs"]),
-    kpis: ["rule-executions", "total-rules", "active-rules", "pending-approvals", "draft-rules", "deployments"],
+    kpis: ["rule-executions", "total-rules", "active-rules", "pending-approvals", "draft-rules", "active-products"],
     quickActions: ["run-simulator", "open-repository"],
   },
   "usr-ved-prakash": {
@@ -80,7 +80,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     widgets: widgets(["kpis", "quick-actions", "execution-logs", "rule-conflicts", "rule-status", "domain-distribution", "recent-activity"]),
     // "draft-rules" swapped for "system-users" (real active-user count) —
     // a better fit for an admin's KPI row than drafts, which he doesn't own.
-    kpis: ["total-rules", "active-rules", "business-categories", "pending-approvals", "deployments", "system-users"],
+    kpis: ["total-rules", "active-rules", "business-categories", "pending-approvals", "active-products", "system-users"],
     quickActions: ["manage-users", "view-audit-log", "system-settings"],
   },
 };

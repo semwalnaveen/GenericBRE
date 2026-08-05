@@ -75,6 +75,7 @@ function RepositoryContent() {
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statuses, setStatuses] = useState<string[]>(searchParams.get("status") ? [searchParams.get("status")!] : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [productFilters, setProductFilters] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -165,9 +166,15 @@ function RepositoryContent() {
       }
       if (statuses.length > 0 && !statuses.includes(r.status)) return false;
       if (categoryFilters.length > 0 && !categoryFilters.includes(r.category)) return false;
+      if (productFilters.length > 0) {
+        const mappedToSelectedProducts = productRuleMappings.some(
+          (m) => m.ruleId === r.id && m.active && productFilters.includes(m.productId)
+        );
+        if (!mappedToSelectedProducts) return false;
+      }
       return true;
     });
-  }, [rules, search, statuses, categoryFilters]);
+  }, [rules, search, statuses, categoryFilters, productFilters, productRuleMappings]);
 
   const columns = useMemo(
     () =>
@@ -223,9 +230,10 @@ function RepositoryContent() {
     setSearch("");
     setStatuses([]);
     setCategoryFilters([]);
+    setProductFilters([]);
   };
 
-  const hasFilters = Boolean(search || statuses.length || categoryFilters.length);
+  const hasFilters = Boolean(search || statuses.length || categoryFilters.length || productFilters.length);
 
   return (
     <div className="flex h-full flex-col">
@@ -326,6 +334,13 @@ function RepositoryContent() {
                 options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
                 selected={categoryFilters}
                 onChange={setCategoryFilters}
+              />
+
+              <MultiSelect
+                label="Product"
+                options={products.map((p) => ({ value: p.id, label: p.name }))}
+                selected={productFilters}
+                onChange={setProductFilters}
               />
 
               <DropdownMenu>

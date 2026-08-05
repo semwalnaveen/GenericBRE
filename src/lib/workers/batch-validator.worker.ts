@@ -1,9 +1,10 @@
 import { parseXlsxFile } from "../xlsx-io";
-import { validateBatchWorkbook, BatchValidationResult, BatchTemplateColumn } from "../batch-validation";
+import { validateBatchWorkbook, BatchValidationResult } from "../batch-validation";
+import { BatchColumn } from "../batch-template";
 
 export interface BatchWorkerMessage {
   file: File;
-  columns: BatchTemplateColumn[];
+  columns: BatchColumn[];
   maxSizeBytes: number;
 }
 

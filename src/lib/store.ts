@@ -1710,7 +1710,7 @@ export const useAppStore = create<AppState>()(
           if (s?.dashboardConfigs) {
             for (const [userId, cfg] of Object.entries(s.dashboardConfigs)) {
               if (!cfg.kpis?.length) continue;
-              const kept = cfg.kpis.filter((id) => id !== "deployments" && id !== "rule-executions");
+              const kept = cfg.kpis.map((id) => id === "deployments" ? "active-products" : id).filter((id) => id !== "rule-executions");
               const fallback = DEFAULT_DASHBOARD_CONFIGS[userId]?.kpis ?? [];
               for (const id of fallback) {
                 if (kept.length >= 6) break;
