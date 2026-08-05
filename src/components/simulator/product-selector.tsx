@@ -72,7 +72,6 @@ export function ProductSelector({
           <div className="flex items-center gap-2 min-w-0">
             <Package className="size-4 shrink-0 text-primary" />
             <span className="truncate font-semibold text-foreground">{selectedProduct.name}</span>
-            <span className="font-mono text-xs text-muted-foreground">({selectedProduct.code})</span>
             <Badge
               variant={selectedProduct.status === "Active" ? "default" : "secondary"}
               className="h-5 text-[10px] px-1.5"
@@ -141,7 +140,6 @@ export function ProductSelector({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-foreground">{p.name}</span>
-                      <span className="font-mono text-[11px] text-muted-foreground">({p.code})</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">Domain: {p.domain}</p>
                   </div>

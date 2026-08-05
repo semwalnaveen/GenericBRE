@@ -69,8 +69,8 @@ export function MappedRulesReorder({
   if (ordered.length === 0) return null;
 
   return (
-    <div className="flex flex-col rounded-xl border bg-card shadow-sm max-h-full">
-      <div className="flex shrink-0 items-center gap-2 border-b bg-muted/30 px-3.5 py-2.5">
+    <div className="flex flex-col rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm max-h-full overflow-hidden">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border/50 bg-muted/40 px-3.5 py-2.5">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           <ListOrdered className="size-3.5" />
         </span>
@@ -188,8 +188,8 @@ export function MappedRulesChecklist({
 
   return (
     <div className="flex flex-col gap-3 max-h-full">
-      <div className="flex flex-col rounded-xl border bg-card shadow-sm">
-        <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-muted/30 px-3.5 py-2.5">
+      <div className="flex flex-col rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-border/50 bg-muted/40 px-4 py-3">
           <div className="relative flex-1 min-w-48">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -211,16 +211,16 @@ export function MappedRulesChecklist({
           </Button>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between px-3.5 py-2 text-sm text-muted-foreground">
+        <div className="flex shrink-0 items-center justify-between px-4 py-2.5 text-[13px] text-muted-foreground font-medium border-b border-border/30">
           <span>
-            <span className="font-semibold text-foreground">{activeSelection.size}</span> rule{activeSelection.size === 1 ? "" : "s"} mapped to{" "}
-            <span className="font-semibold text-foreground">{product.name}</span>
+            <span className="font-bold text-foreground">{activeSelection.size}</span> rule{activeSelection.size === 1 ? "" : "s"} mapped to{" "}
+            <span className="font-bold text-foreground">{product.name}</span>
           </span>
           <span>{filteredRules.length} shown</span>
         </div>
 
-        <div className="mx-3.5 mb-3.5 flex flex-col rounded-lg border overflow-hidden">
-          <div className="flex shrink-0 items-center gap-3 bg-muted/50 px-3 py-2 text-sm font-bold uppercase tracking-wider text-muted-foreground border-b select-none">
+        <div className="flex flex-col">
+          <div className="flex shrink-0 items-center gap-3 bg-muted/50 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 select-none">
             <div className="flex items-center">
               <Checkbox checked={allFilteredSelected} onCheckedChange={toggleSelectAllFiltered} />
             </div>
@@ -256,8 +256,8 @@ export function MappedRulesChecklist({
       </div>
 
       <div className={cn(
-        "flex items-center justify-end gap-2.5 rounded-xl border px-3.5 py-2.5 transition-colors",
-        dirty ? "border-primary/30 bg-primary/5" : "bg-card"
+        "flex items-center justify-end gap-2.5 rounded-2xl border border-border/50 px-3.5 py-2.5 transition-colors bg-card/40 backdrop-blur-xl shadow-sm",
+        dirty ? "border-primary/30 bg-primary/5" : ""
       )}>
         {dirty && <span className="text-sm font-medium text-primary">Unsaved changes</span>}
         <Button
@@ -525,7 +525,7 @@ export function ProductRuleMappingManager() {
 
       {/* Main Content */}
       {!selectedProduct ? (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/10 p-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 bg-card/20 backdrop-blur-sm p-6 text-center">
             <div className="relative mb-3 flex size-24 items-center justify-center">
               <div className="absolute inset-0 rounded-full bg-indigo-500/5 animate-pulse" />
               <div className="absolute inset-4 rounded-full bg-indigo-500/10" />
@@ -571,7 +571,7 @@ export function ProductRuleMappingManager() {
             </div>
 
             {/* Right: Execution Sequence */}
-            <div className="flex min-h-0 w-full flex-col xl:w-80 xl:shrink-0">
+            <div className="flex min-h-0 w-full flex-col xl:w-[480px] xl:shrink-0">
               <MappedRulesReorder
                 product={selectedProduct}
                 rules={rules}

@@ -166,7 +166,7 @@ export function RuleTemplatesManager() {
               <button
                 key={t.id}
                 onClick={() => select(t)}
-                className={`w-full rounded-lg border p-2.5 text-left transition-colors ${selectedId === t.id ? "border-primary bg-primary/5" : "hover:bg-muted"}`}
+                className={`w-full rounded-xl border border-border/50 p-3 text-left transition-all duration-200 ${selectedId === t.id ? "border-primary bg-primary/10 shadow-[0_0_15px_-3px_rgba(var(--primary),0.2)] ring-1 ring-primary/20 backdrop-blur-md" : "hover:bg-muted/50 hover:border-primary/40 bg-card/30 backdrop-blur-sm"}`}
               >
                 <p className="truncate text-sm font-semibold">{t.name}</p>
                 <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{t.description || "No description"}</p>
@@ -198,13 +198,13 @@ export function RuleTemplatesManager() {
 
       <div className="min-w-0 flex-1">
         {!active ? (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
+          <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border/50 bg-card/20 backdrop-blur-sm p-6 text-sm text-muted-foreground">
             Select a template or create a new one.
           </div>
         ) : (
           <div className="space-y-1.5">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5 rounded-xl border bg-card p-3.5">
+              <div className="space-y-1.5 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-4">
                 <Label>Name *</Label>
                 <Input
                   value={active.name}
@@ -212,7 +212,7 @@ export function RuleTemplatesManager() {
                   placeholder="e.g. High-Value Manual Review"
                 />
               </div>
-              <div className="space-y-1.5 rounded-xl border bg-card p-3.5">
+              <div className="space-y-1.5 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-4">
                 <Label>Domain — scopes the field picker below</Label>
                 <Select
                   value={active.domain ?? ANY_INDUSTRY}
@@ -227,7 +227,7 @@ export function RuleTemplatesManager() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5 rounded-xl border bg-card p-3.5">
+              <div className="space-y-1.5 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-4">
                 <Label>Category — groups this template in the picker</Label>
                 <Select
                   value={active.categoryId ?? NO_CATEGORY}
@@ -244,7 +244,7 @@ export function RuleTemplatesManager() {
               </div>
             </div>
 
-            <div className="space-y-1.5 rounded-xl border bg-card p-3.5">
+            <div className="space-y-1.5 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-4">
               <Label>Description</Label>
               <Textarea
                 value={active.description}

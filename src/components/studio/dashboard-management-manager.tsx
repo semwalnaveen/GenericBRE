@@ -149,7 +149,7 @@ export function DashboardManagementManager() {
               <AccordionItem
                 key={user.id}
                 value={user.id}
-                className={cn("rounded-xl border bg-card px-4 shadow-2xs transition-colors", accent.border)}
+                className={cn("rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl px-4 shadow-sm transition-all hover:bg-card/60 hover:shadow-md", accent.border)}
               >
                 <AccordionTrigger className="py-3.5 hover:no-underline">
                   <div className="flex min-w-0 flex-1 items-center gap-3 pr-2">

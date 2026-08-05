@@ -38,14 +38,14 @@ export default function MatrixPage() {
         {canEdit && <NewMatrixDialog defaultDomain={industries[0]?.id ?? ""} />}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-5 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-1 p-5 sm:p-6">
         {matrices.length === 0 ? (
           <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
             No matrices configured yet. {canEdit && "Create one to get started."}
           </p>
         ) : (
           <>
-            <div className="w-full max-w-xl shrink-0 space-y-1.5">
+            <div className="w-full max-w-xl shrink-0 space-y-3.5">
               <label className="text-sm font-semibold text-muted-foreground">Domain</label>
               <Select items={matrixItems} value={activeMatrixId} onValueChange={(v) => setMatrixId(v ?? "")}>
                 <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>

@@ -2176,6 +2176,7 @@ export const DEFAULT_USERS: AppUser[] = [
     role: "Business Analyst",
     department: "Business Analysis",
     status: "Active",
+    adminScope: "system",
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,

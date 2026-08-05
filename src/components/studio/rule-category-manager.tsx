@@ -155,11 +155,12 @@ export function RuleCategoryManager() {
             <div
               key={cat.id}
               className={cn(
-                "group relative flex flex-col justify-between rounded-xl border bg-card p-3 transition-all duration-150 hover:shadow-xs",
+                "group relative flex flex-col justify-between rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-3.5 transition-all duration-300 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.1)] overflow-hidden",
                 accent.border
               )}
             >
-              <div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className={cn("flex size-7.5 shrink-0 items-center justify-center rounded-lg shadow-2xs", accent.iconBg)}>

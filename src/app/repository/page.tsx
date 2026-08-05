@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info, Columns3 } from "lucide-react";
+import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info, Columns3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useAppStore, useHasCapability } from "@/lib/store";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -265,35 +266,67 @@ function RepositoryContent() {
 
       {/* PRODUCT-LEVEL RULE CONFLICT DETECTION BANNER */}
       {productConflicts.length > 0 && (
-        <div className={criticalConflicts.length > 0 ? "flex shrink-0 items-center justify-between gap-3 border-b bg-destructive/10 px-5 py-2 text-sm sm:px-6" : "flex shrink-0 items-center justify-between gap-3 border-b bg-amber-500/10 px-5 py-2 text-sm sm:px-6"}>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <div className={criticalConflicts.length > 0 ? "flex items-center gap-1.5 font-semibold text-destructive" : "flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400"}>
-              <ShieldAlert className="size-4 shrink-0" />
-              <span>
-                Product-Level Rule Conflicts: {criticalConflicts.length > 0 ? `${criticalConflicts.length} Critical` : ""}{criticalConflicts.length > 0 && mediumConflicts.length > 0 ? ", " : ""}{mediumConflicts.length > 0 ? `${mediumConflicts.length} Duplicate Warning${mediumConflicts.length > 1 ? "s" : ""}` : ""}
+        <div className={cn(
+          "relative z-10 flex shrink-0 items-center justify-between gap-4 border-b px-5 py-2.5 sm:px-6 overflow-hidden",
+          criticalConflicts.length > 0 ? "bg-red-500/5 border-red-500/15" : "bg-amber-500/5 border-amber-500/15"
+        )}>
+          {/* Subtle gradient glow */}
+          <div className={cn(
+            "pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r to-transparent opacity-60",
+            criticalConflicts.length > 0 ? "from-red-500/10" : "from-amber-500/10"
+          )} />
+
+          <div className="relative flex flex-wrap items-center gap-x-4 gap-y-2 w-full">
+            <div className="flex items-center gap-2.5">
+              <span className={cn(
+                "flex size-7 shrink-0 items-center justify-center rounded-lg shadow-sm border",
+                criticalConflicts.length > 0 ? "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30" : "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+              )}>
+                <ShieldAlert className="size-4" />
+              </span>
+              <span className={cn(
+                "font-bold tracking-tight",
+                criticalConflicts.length > 0 ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"
+              )}>
+                Product Conflicts
+                <Badge variant="outline" className={cn(
+                  "ml-2.5 h-5 rounded-full px-2 font-mono text-[10px] font-bold shadow-xs",
+                  criticalConflicts.length > 0 ? "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-400" : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                )}>
+                  {criticalConflicts.length > 0 ? `${criticalConflicts.length} Critical` : ""}{criticalConflicts.length > 0 && mediumConflicts.length > 0 ? ", " : ""}{mediumConflicts.length > 0 ? `${mediumConflicts.length} Warning${mediumConflicts.length > 1 ? "s" : ""}` : ""}
+                </Badge>
               </span>
             </div>
-            <div className="hidden md:flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              {productConflicts.slice(0, 2).map(({ productName, finding }, i) => (
-                <span key={i} className="inline-flex items-center gap-1">
-                  <span className="font-medium text-foreground">[{productName}]</span>
-                  <span className="text-muted-foreground font-mono">Rule {finding.ruleAId} vs {finding.ruleBId}</span>
-                  <span className="text-muted-foreground">— {finding.reason}</span>
-                </span>
+
+            <div className="hidden lg:flex flex-1 items-center gap-x-3 gap-y-1 text-xs">
+              {productConflicts.slice(0, 1).map(({ productName, finding }, i) => (
+                <div key={i} className="flex items-center gap-2 overflow-hidden rounded-md border border-border/60 bg-background/60 px-2 py-1 shadow-xs backdrop-blur-sm max-w-[600px] hover:border-border/90 transition-colors">
+                  <span className="shrink-0 rounded bg-muted/80 px-1.5 py-0.5 font-medium text-foreground text-[11px] uppercase tracking-wider">
+                    {productName}
+                  </span>
+                  <span className="shrink-0 font-mono text-muted-foreground/80 font-medium">
+                    {finding.ruleAId} <span className="text-muted-foreground/40 text-[10px] px-0.5">vs</span> {finding.ruleBId}
+                  </span>
+                  <span className="truncate text-muted-foreground font-medium pr-1">
+                    — {finding.reason}
+                  </span>
+                </div>
               ))}
-              {productConflicts.length > 2 && (
-                <span className="text-muted-foreground/70">+{productConflicts.length - 2} more</span>
+              {productConflicts.length > 1 && (
+                <span className="text-muted-foreground/60 font-medium text-[11px] uppercase tracking-wider">+{productConflicts.length - 1} more</span>
               )}
             </div>
           </div>
 
           <Button
-            variant="outline"
             size="sm"
-            className="h-7 text-xs shrink-0 font-medium"
+            className={cn(
+              "relative h-8 shrink-0 gap-1.5 text-xs font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+              criticalConflicts.length > 0 ? "bg-red-600 hover:bg-red-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white"
+            )}
             onClick={() => setReportModalOpen(true)}
           >
-            View Conflict Report
+            View Report <ArrowRight className="size-3.5" />
           </Button>
         </div>
       )}
@@ -305,7 +338,7 @@ function RepositoryContent() {
           onSelectionChange={setSelectedRows}
           resetSelectionSignal={resetSelectionSignal}
           renderTopToolbar={(table) => (
-            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card/40 px-5 py-2.5 sm:px-6 -mx-5 -mt-5 mb-5 sm:-mx-6 sm:-mt-6 sm:mb-6">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 border-b bg-card/40 px-5 py-2.5 sm:px-6 -mx-5 -mt-5 mb-2 sm:-mx-6 sm:-mt-6 sm:mb-2">
               <div className="relative min-w-48 flex-1 sm:max-w-64">
                 <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input

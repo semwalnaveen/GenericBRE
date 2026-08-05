@@ -156,7 +156,7 @@ export function WorkflowCatalog({
           const category = categoryById.get(w.categoryId);
           const trigger = triggerById.get(w.triggerId);
           return (
-            <div key={w.id} className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
+            <div key={w.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-3.5 shadow-sm transition-all hover:bg-card/60 hover:shadow-md">
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="truncate text-sm font-semibold">{w.name}</p>
                 <div className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
@@ -198,7 +198,7 @@ export function WorkflowCatalog({
           );
         })}
         {pageRows.length === 0 && (
-          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-2xl border border-dashed border-border/50 bg-card/20 backdrop-blur-sm p-8 text-center text-sm text-muted-foreground">
             {workflows.length === 0 ? "No workflows yet." : "No workflows match your filters."}
           </p>
         )}
