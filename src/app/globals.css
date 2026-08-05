@@ -85,7 +85,7 @@
   --radius: 0.625rem;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #334155;
-  --sidebar-primary: #0056b3;
+  --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F1F5F9;
   --sidebar-accent-foreground: #0F172A;
@@ -121,7 +121,7 @@
   --chart-5: #EF4444;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #334155;
-  --sidebar-primary: #0056b3;
+  --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F1F5F9;
   --sidebar-accent-foreground: #0F172A;
@@ -336,6 +336,83 @@ html[data-large-targets="true"] [role="menuitem"] {
 @keyframes ucrmLoginBadgeBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
+}
+
+/* Login hero — live rule-evaluation pipeline (ProductMockup). Kept as plain
+   CSS keyframes (not Framer Motion) to match ucrmLoginBadgeBob above and
+   stay off the main thread; JS only toggles which step is "active" via a
+   className/data-attribute, never drives per-frame style updates. */
+@keyframes ucrmNodePulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--sidebar-primary) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in oklch, var(--sidebar-primary) 0%, transparent); }
+}
+@keyframes ucrmCheckPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  65% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ucrmConnectorFlow {
+  0% { background-position: 0 -16px; }
+  100% { background-position: 0 16px; }
+}
+@keyframes ucrmApprovedReveal {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes ucrmDustPulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.75; }
+}
+@keyframes ucrmCountFade {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* NEW BACKGROUND ANIMATIONS */
+@keyframes breTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+@keyframes breFloatUp {
+  0% { transform: translateY(0px) translateX(0px); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(-150px) translateX(20px); opacity: 0; }
+}
+@keyframes breShootingStar {
+  0% { transform: translateX(0) translateY(0) rotate(45deg); opacity: 1; }
+  100% { transform: translateX(800px) translateY(800px) rotate(45deg); opacity: 0; }
+}
+@keyframes breNodePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 4px color-mix(in oklch, var(--sidebar-primary) 30%, transparent); }
+  50% { transform: scale(1.08); box-shadow: 0 0 15px color-mix(in oklch, var(--sidebar-primary) 80%, transparent); }
+}
+@keyframes breDataStream {
+  0% { left: -10%; opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { left: 110%; opacity: 0; }
+}
+@keyframes breRadialGlow {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(2%, 3%); }
+  50% { transform: translate(-2%, 5%); }
+  75% { transform: translate(-3%, -2%); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes breCardFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Belt-and-suspenders with the JS-level prefers-reduced-motion check in
+   rule-pipeline.tsx (which stops driving new steps): this freezes any
+   already-running CSS keyframe outright, in case JS hasn't hydrated yet. */
+@media (prefers-reduced-motion: reduce) {
+  .ucrm-motion-safe {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .bg-bre-custom {

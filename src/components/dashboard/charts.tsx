@@ -7,29 +7,19 @@ import { useAppStore, useScopedRules } from "@/lib/store";
 import { PanelHeader } from "./recent-panels";
 import { RuleStatus } from "@/lib/types";
 import { colorForIndustry } from "@/lib/industries";
-import { DistributionDonutWidget, ProgressScoreWidget, PerformanceListWidget, ProgressDonutListWidget } from "./premium-widgets";
+import { DistributionDonutWidget, ProgressScoreWidget, PerformanceListWidget, FunnelListWidget } from "./premium-widgets";
 
 // Mirrors status-badge.tsx's RULE_STATUS_DOT exactly — one canonical colour
 // per status, so a rule reads the same whether it's a badge, a table row, or
-// a chart segment.
-const STATUS_COLORS: Record<RuleStatus, string> = {
-  Published: "#10b981", // emerald-500
-  Approved: "#8b5cf6", // violet-500
-  Draft: "#3b82f6", // blue-500
-  "Pending Approval": "#f59e0b", // amber-500
-  Rejected: "#ef4444", // red-500
-  Inactive: "#94a3b8", // slate-400
-  Archived: "#64748b", // slate-500
-};
-
-const STATUS_BG_COLORS: Record<RuleStatus, string> = {
-  Published: "bg-emerald-50",
-  Approved: "bg-violet-50",
-  Draft: "bg-blue-50",
-  "Pending Approval": "bg-amber-50",
-  Rejected: "bg-red-50",
-  Inactive: "bg-slate-50",
-  Archived: "bg-slate-50",
+// a chart segment. Used by FunnelListWidget's bars below.
+const STATUS_BAR_COLORS: Record<RuleStatus, string> = {
+  Published: "bg-emerald-500",
+  Approved: "bg-violet-500",
+  Draft: "bg-blue-500",
+  "Pending Approval": "bg-amber-500",
+  Rejected: "bg-red-500",
+  Inactive: "bg-slate-400",
+  Archived: "bg-slate-500",
 };
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
@@ -104,27 +94,14 @@ export function RuleStatusChart() {
     );
   }
 
-  const publishedCount = data.find(d => d.name === "Published")?.value || 0;
-  const activePercentage = Math.round((publishedCount / rules.length) * 100);
-
-  const items = data.slice(0, 4).map(d => ({
+  const items = data.map((d) => ({
     label: d.name,
     value: d.value,
-    color: STATUS_COLORS[d.name as RuleStatus] || "#94a3b8",
-    bgSoftColor: STATUS_BG_COLORS[d.name as RuleStatus] || "bg-slate-50",
+    percentage: Math.round((d.value / rules.length) * 100),
+    colorClass: STATUS_BAR_COLORS[d.name as RuleStatus] || "bg-slate-400",
   }));
 
-  return (
-    <ProgressDonutListWidget
-      title="Rule Status Breakdown"
-      circleValue={`${activePercentage}%`}
-      circleSubtext="PUBLISHED"
-      circlePercentage={activePercentage}
-      circleColorClass="text-emerald-500"
-      circleTrackColorClass="text-muted"
-      items={items}
-    />
-  );
+  return <FunnelListWidget title="Rule Status Breakdown" items={items} />;
 }
 
 export function SimulationResultsChart() {

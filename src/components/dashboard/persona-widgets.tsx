@@ -58,7 +58,7 @@ export function RulesAwaitingReviewPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Rules Awaiting Review" icon={CheckSquare} action="View all" onAction={() => router.push("/repository?status=Testing")} />
+      <PanelHeader title="Rules Awaiting Review" icon={CheckSquare} action="View all" onAction={() => router.push("/repository?status=Pending Approval")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y divide-border">
           {testing.slice(0, 8).map((r) => (
@@ -96,7 +96,7 @@ export function ApprovalQueuePanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Approval Queue" icon={ClipboardList} action="View all" onAction={() => router.push("/repository?status=Testing")} />
+      <PanelHeader title="Approval Queue" icon={ClipboardList} action="View all" onAction={() => router.push("/repository?status=Pending Approval")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y divide-border">
           {pending.slice(0, 8).map((a) => {

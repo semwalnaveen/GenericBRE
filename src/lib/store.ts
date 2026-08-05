@@ -1466,9 +1466,31 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 54,
+      version: 55,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v54 -> v55: "Deployments" and "Rule Executions" retired from every
+        // default KPI set (see dashboards.ts) — still selectable per-user via
+        // Configuration Studio -> Dashboard Management for anyone who wants
+        // them back. Strip both from any already-persisted kpis list and
+        // backfill from that user's (updated) seed defaults so the KPI row
+        // keeps filling all 6 slots per the grid's fill-completely design.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs) {
+            for (const [userId, cfg] of Object.entries(s.dashboardConfigs)) {
+              if (!cfg.kpis?.length) continue;
+              const kept = cfg.kpis.filter((id) => id !== "deployments" && id !== "rule-executions");
+              const fallback = DEFAULT_DASHBOARD_CONFIGS[userId]?.kpis ?? [];
+              for (const id of fallback) {
+                if (kept.length >= 6) break;
+                if (!kept.includes(id)) kept.push(id);
+              }
+              cfg.kpis = kept;
+            }
+          }
+        }
+
         // v53 -> v54: every role now lands on /dashboard by default (some
         // seeded users previously landed on /simulator or
         // /configuration-studio instead) — still per-user configurable via

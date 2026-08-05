@@ -152,7 +152,7 @@ export function KpiCards() {
       value: approvalRequests.filter((a) => a.stage === "Pending Review").length,
       icon: UserCheck,
       accent: "text-orange-600 bg-orange-500/10 dark:text-orange-400",
-      href: "/repository?status=Testing",
+      href: "/repository?status=Pending Approval",
     },
     "rule-conflicts": {
       label: t(KPI_TRANSLATION_KEYS["rule-conflicts"]),
@@ -208,7 +208,7 @@ export function KpiCards() {
     .filter((k): k is Kpi => !!k);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:gap-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       {kpis.map((k, i) => (
         <motion.button
           key={k.label}
@@ -217,16 +217,19 @@ export function KpiCards() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.03, duration: 0.2 }}
           whileTap={{ scale: 0.98 }}
-          className="group flex flex-col justify-center gap-2 rounded-xl border border-[#D0E4F5] bg-white p-3.5 text-left shadow-sm transition-colors duration-150 ease-out hover:border-primary/40"
+          whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
+          className="group flex flex-col justify-center gap-2 rounded-xl border border-[#ffffff8c] bg-white p-3 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
         >
-          <div className="flex items-center gap-1.5 w-full min-w-0" title={k.label}>
-            <k.icon className="size-4 text-primary shrink-0" />
-            <span className="truncate text-[11px] font-bold uppercase tracking-wider text-primary">
+          <div className="flex w-full min-w-0 items-center justify-between gap-1.5" title={k.label}>
+            <span className="truncate text-xs font-semibold text-muted-foreground">
               {k.label}
+            </span>
+            <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg", k.accent)}>
+              <k.icon className="size-3.5" />
             </span>
           </div>
           <div className="flex items-baseline gap-2 w-full mt-1">
-            <span className={cn("text-3xl font-bold tracking-tight leading-none", k.accent.split(" ")[0].includes("text-primary") || k.accent.split(" ")[0].includes("blue") ? "text-slate-900" : k.accent.split(" ")[0])}>
+            <span className="text-2xl font-bold tracking-tight leading-none text-slate-900">
               {k.value > 1000 ? (k.value / 1000).toFixed(1) + "K" : k.value}
             </span>
             <span className="text-xs text-muted-foreground truncate leading-none pb-0.5">

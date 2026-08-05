@@ -28,7 +28,16 @@ export function NetworkBackground({ className }: { className?: string }) {
 
       <g style={{ fill: "var(--sidebar-foreground)" }} fillOpacity={0.35}>
         {dust.map(([x, y, r], i) => (
-          <circle key={i} cx={x} cy={y} r={r} />
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r={r}
+            // Only every 4th speck pulses ("moving data packets") — the rest
+            // stay static so the backdrop reads as ambient texture, not motion.
+            className={i % 4 === 0 ? "ucrm-motion-safe" : undefined}
+            style={i % 4 === 0 ? { animation: `ucrmDustPulse ${3 + (i % 3)}s ease-in-out infinite ${(i % 5) * 0.4}s` } : undefined}
+          />
         ))}
       </g>
     </svg>

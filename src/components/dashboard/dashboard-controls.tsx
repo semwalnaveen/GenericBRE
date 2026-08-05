@@ -34,11 +34,15 @@ export function DashboardControls({
   widgetDefs,
   editMode,
   onEditModeChange,
+  triggerClassName,
 }: {
   dashboardKey: string;
   widgetDefs: WidgetDef[];
   editMode: boolean;
   onEditModeChange: (v: boolean) => void;
+  /** Override the trigger button's variant styling — e.g. to sit legibly on
+   *  the dashboard's dark hero banner instead of the default light card. */
+  triggerClassName?: string;
 }) {
   const { layout, totalCount, visibleCount, reorder, toggleVisibility, resetLayout } = useDashboardLayout(
     dashboardKey,
@@ -52,7 +56,13 @@ export function DashboardControls({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="icon-sm" title="Dashboard controls" aria-label="Dashboard controls" />
+            <Button
+              variant="outline"
+              size="icon-sm"
+              title="Dashboard controls"
+              aria-label="Dashboard controls"
+              className={triggerClassName}
+            />
           }
         >
           <MoreVertical className="size-4" />
