@@ -285,16 +285,15 @@ export function FieldCatalogManager() {
         </div>
       </div>
 
-      {/* Polished Table Container */}
-      <div className="rounded-xl border bg-card shadow-2xs">
+      <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-card/95 border-b">
+          <TableHeader className="bg-muted/30 border-b border-border/50">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="text-sm font-semibold text-foreground">Label & Key</TableHead>
-              <TableHead className="text-sm font-semibold text-foreground">Type & Entity</TableHead>
-              <TableHead className="text-sm font-semibold text-foreground">Status</TableHead>
-              <TableHead className="text-sm font-semibold text-foreground">Used By</TableHead>
-              <TableHead className="w-20 text-right text-sm font-semibold text-foreground">Actions</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Label & Key</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Type & Entity</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Status</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Used By</TableHead>
+              <TableHead className="w-20 text-right text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -303,7 +302,7 @@ export function FieldCatalogManager() {
               const entityName = entities.find((e) => e.id === f.entity)?.name;
 
               return (
-                <TableRow key={f.key} className="hover:bg-accent/40 transition-colors">
+                <TableRow key={f.key} className="hover:bg-muted/50 transition-colors group/row border-border/50">
                   <TableCell className="py-2.5">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-sm text-foreground tracking-tight">{f.label}</span>
@@ -318,7 +317,7 @@ export function FieldCatalogManager() {
                   </TableCell>
                   <TableCell className="py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="px-1.5 py-0.5 text-sm font-mono bg-muted/30">
+                      <Badge variant="outline" className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-primary/5 text-primary border-primary/20">
                         {f.type}
                       </Badge>
                       {entityName && (
@@ -327,8 +326,8 @@ export function FieldCatalogManager() {
                     </div>
                   </TableCell>
                   <TableCell className="py-2.5">
-                    <span className={`inline-flex items-center gap-1 text-sm font-medium ${STATUS_TONE[f.status ?? "Active"]}`}>
-                      <span className="size-1.5 rounded-full bg-current" />
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${STATUS_TONE[f.status ?? "Active"]}`}>
+                      <span className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
                       {f.status ?? "Active"}
                     </span>
                   </TableCell>
@@ -369,17 +368,17 @@ export function FieldCatalogManager() {
                   </TableCell>
                   <TableCell className="py-2.5 text-right">
                     <div className="flex justify-end gap-0.5">
-                      <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(f)} title="Edit Field">
-                        <Pencil className="size-3 text-muted-foreground hover:text-foreground" />
+                      <Button variant="ghost" size="icon-sm" className="size-7 opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => startEdit(f)} title="Edit Field">
+                        <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="size-7 text-muted-foreground hover:text-destructive"
+                        className="size-7 opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         onClick={() => setPendingDelete(f)}
                         title="Delete Field"
                       >
-                        <Trash2 className="size-3" />
+                        <Trash2 className="size-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -397,7 +396,7 @@ export function FieldCatalogManager() {
         </Table>
 
         {/* Pagination Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-3.5 py-2 text-sm text-muted-foreground bg-muted/20">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 px-4 py-3 text-sm text-muted-foreground bg-muted/10">
           <div>
             Showing <span className="font-semibold text-foreground">{filtered.length > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0}</span> to{" "}
             <span className="font-semibold text-foreground">{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of{" "}

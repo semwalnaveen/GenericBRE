@@ -240,7 +240,7 @@ export function JsonMappingManager() {
   };
 
   const renderSortableHeader = (label: string, column: SortColumn, extraClass = "") => (
-    <TableHead className={`cursor-pointer hover:bg-muted/50 transition-colors select-none ${extraClass}`} onClick={() => handleSort(column)}>
+    <TableHead className={`cursor-pointer hover:bg-muted/50 transition-colors select-none text-[11px] uppercase tracking-wider font-bold text-foreground h-10 ${extraClass}`} onClick={() => handleSort(column)}>
       <div className="flex items-center gap-1.5">
         {label}
         {sortColumn === column ? (
@@ -253,10 +253,10 @@ export function JsonMappingManager() {
   );
 
   return (
-    <div className="flex flex-col h-full min-h-100 gap-6">
-      <div className="flex items-start gap-4">
-        <div className="w-64 space-y-1.5">
-          <Label className="text-sm text-muted-foreground">Domain</Label>
+    <div className="flex flex-col lg:flex-row h-full min-h-100 gap-6">
+      <div className="w-full lg:w-64 shrink-0 flex flex-col gap-5">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-foreground">Domain</Label>
           <Select
             value={domainFilter}
             onValueChange={(v) => {
@@ -265,7 +265,7 @@ export function JsonMappingManager() {
               setSelectedProductId(products.find((p) => p.domain === nextDomain)?.id ?? null);
             }}
           >
-            <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full h-9 bg-card shadow-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               {industries.map((i) => (
                 <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
@@ -274,13 +274,13 @@ export function JsonMappingManager() {
           </Select>
         </div>
         
-        <div className="w-64 space-y-1.5">
-          <Label className="text-sm text-muted-foreground">Product</Label>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium text-foreground">Product</Label>
           <Select
             value={selectedProductId ?? undefined}
             onValueChange={(v) => { setSelectedProductId(v); setActiveDirection("request"); }}
           >
-            <SelectTrigger className="w-full h-9">
+            <SelectTrigger className="w-full h-9 bg-card shadow-sm">
               <SelectValue placeholder="Select a product" />
             </SelectTrigger>
             <SelectContent>
@@ -298,9 +298,22 @@ export function JsonMappingManager() {
             </SelectContent>
           </Select>
         </div>
+
+        {active && selectedProduct && (
+          <div className="mt-2 space-y-4 rounded-xl border border-border/50 bg-card/40 p-3.5 shadow-sm backdrop-blur-xl">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mapping Name</Label>
+              <Input value={active.name} disabled className="h-8 text-xs bg-background/50" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mapped Product</Label>
+              <Input value={selectedProduct.name} disabled className="h-8 text-xs bg-background/50" />
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 flex flex-col">
         {!selectedProduct ? (
           <div className="flex h-40 items-center justify-center rounded-xl border border-dashed text-sm text-muted-foreground">
             Select a product — its Request and Response mappings auto-generate from its rules.
@@ -328,18 +341,7 @@ export function JsonMappingManager() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-3 rounded-xl border bg-card p-3.5 sm:grid-cols-3">
-                  <div className="min-w-0 space-y-1.5 sm:col-span-2">
-                    <Label>Name</Label>
-                    <Input value={active.name} disabled />
-                  </div>
-                  <div className="min-w-0 space-y-1.5">
-                    <Label>Product</Label>
-                    <Input value={selectedProduct.name} disabled />
-                  </div>
-                </div>
-
-                <div className="space-y-2 rounded-xl border bg-card p-3.5">
+                <div className="space-y-3 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-4 shadow-sm mt-1">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-1.5 text-sm">
                       <FileJson className="size-3.5" /> Sample JSON Payload
@@ -367,7 +369,7 @@ export function JsonMappingManager() {
                   <Textarea
                     value={payloadText}
                     onChange={(e) => setPayloadText(e.target.value)}
-                    className="min-h-24 max-h-[320px] resize-none overflow-y-auto font-mono text-sm"
+                    className="min-h-24 max-h-[320px] resize-none overflow-y-auto font-mono text-xs bg-background/50 border-border/50"
                   />
                 </div>
 
@@ -391,9 +393,9 @@ export function JsonMappingManager() {
                   </Select>
                 </div>
 
-                <div className="w-full max-h-[320px] overflow-x-auto overflow-y-auto rounded-xl border">
+                <div className="w-full max-h-[320px] overflow-x-auto overflow-y-auto rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm">
                   <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableHeader className="sticky top-0 z-10 bg-muted/40 backdrop-blur-xl border-b border-border/50">
                       <TableRow className="hover:bg-transparent">
                         {renderSortableHeader("External Attribute", "externalAttribute")}
                         {renderSortableHeader("JSON Path", "jsonPath")}
@@ -401,7 +403,7 @@ export function JsonMappingManager() {
                         {renderSortableHeader("Data Type", "dataType")}
                         {renderSortableHeader("Req.", "required", "w-20")}
                         {renderSortableHeader("Transformation", "transformationRule")}
-                        <TableHead className="text-sm font-semibold text-foreground">Value Map</TableHead>
+                        <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Value Map</TableHead>
                         {renderSortableHeader("Default", "defaultValue")}
                         {renderSortableHeader("Status", "status")}
                         <TableHead className="w-10" />
@@ -409,9 +411,9 @@ export function JsonMappingManager() {
                     </TableHeader>
                     <TableBody>
                       {sortedEntries.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell className="font-mono text-sm">{entry.externalAttribute}</TableCell>
-                          <TableCell className="font-mono text-sm text-muted-foreground">{entry.jsonPath}</TableCell>
+                        <TableRow key={entry.id} className="hover:bg-muted/50 transition-colors border-border/50 group/row">
+                          <TableCell className="font-mono text-xs font-semibold">{entry.externalAttribute}</TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{entry.jsonPath}</TableCell>
                           <TableCell>
                             <Select
                               items={{ "": "Unmapped", ...Object.fromEntries(industryFields.map((f) => [f.key, f.label])) }}
@@ -464,12 +466,13 @@ export function JsonMappingManager() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Badge variant={entry.status === "Mapped" ? "default" : "secondary"} className="text-sm">
+                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider ${entry.status === "Mapped" ? "text-primary" : "text-muted-foreground/80"}`}>
+                              <span className={`size-1.5 rounded-full bg-current ${entry.status === "Mapped" ? "shadow-[0_0_8px_currentColor]" : ""}`} />
                               {entry.status}
-                            </Badge>
+                            </span>
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" onClick={() => removeEntry(entry.id)}>
+                            <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => removeEntry(entry.id)}>
                               <Trash2 className="size-3.5" />
                             </Button>
                           </TableCell>

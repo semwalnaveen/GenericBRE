@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Settings2,
   ShieldAlert,
@@ -125,12 +125,16 @@ const SECTION_DESCRIPTIONS: Record<SectionId, string> = {
   notifyx: "Automate reminders, escalations, and notifications with trigger -> condition -> action workflows.",
 };
 
-export default function ConfigurationStudioPage() {
+function ConfigurationStudioContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as SectionId | null;
   const currentUser = useAppStore((s) => s.currentUser);
   const capabilities = useEffectiveCapabilities();
   const canManageConfig = capabilities.has("config.manage");
-  const [section, setSection] = useState<SectionId>("fields");
+  const [section, setSection] = useState<SectionId>((tabFromUrl as SectionId) || "fields");
+
+
 
   // Each section is gated independently — holding config.manage gets you into
   // the Studio, but not into sections that require more (User Management
@@ -219,5 +223,13 @@ export default function ConfigurationStudioPage() {
         </ScrollArea>
       </div>
     </div>
+  );
+}
+
+export default function ConfigurationStudioPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConfigurationStudioContent />
+    </Suspense>
   );
 }

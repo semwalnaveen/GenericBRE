@@ -183,45 +183,69 @@ export function ProductHubGrid({
           return (
             <div
               key={p.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => onConfigure(p)}
-              onKeyDown={(e) => e.key === "Enter" && onConfigure(p)}
               className={cn(
-                "group relative flex cursor-pointer flex-col justify-between rounded-xl border border-[#D0E4F5] shadow-sm bg-card text-left transition-all duration-150 hover:border-primary/40 hover:shadow-md",
-                compact ? "gap-2 p-3" : "gap-3 p-3.5",
-                p.status === "Inactive" && "opacity-60"
+                "group relative flex flex-col justify-between rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl text-left overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.1)]",
+                compact ? "gap-3 p-4" : "gap-4 p-5",
+                p.status === "Inactive" && "opacity-60 grayscale-[0.2]"
               )}
             >
-              <div>
-                <div className="flex items-start justify-between gap-2">
-                  <span className={cn("flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-2xs", compact ? "size-8" : "size-9")}>
-                    <Icon className={compact ? "size-4" : "size-4.5"} />
+              {/* Subtle mesh/radial gradient background */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 transition-opacity duration-300 group-hover:opacity-100" />
+              
+              <div className="relative z-10">
+                <div className="flex items-start justify-between gap-3">
+                  <span 
+                    className={cn(
+                      "flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary ring-1 ring-primary/20 shadow-[0_0_15px_-3px_rgba(var(--primary),0.2)] transition-transform duration-300 group-hover:scale-110", 
+                      compact ? "size-10" : "size-12"
+                    )}
+                  >
+                    <Icon className={compact ? "size-5" : "size-5.5"} />
                   </span>
+                  
                   <div className="flex items-center gap-1.5">
-                    <Badge variant={p.status === "Inactive" ? "outline" : published ? "default" : "secondary"} className="h-6 shrink-0 text-sm font-medium">
+                    {/* Ghost Badge */}
+                    <span 
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap shadow-xs backdrop-blur-sm transition-colors duration-300",
+                        p.status === "Inactive" ? "bg-muted text-muted-foreground border-border/50" : 
+                        published ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20" : 
+                        "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                      )}
+                    >
+                      <span 
+                        className={cn(
+                          "size-1.5 rounded-full",
+                          p.status === "Inactive" ? "bg-muted-foreground/50" : 
+                          published ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : 
+                          "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                        )} 
+                      />
                       {p.status === "Inactive" ? "Inactive" : (p.publishStatus ?? "Draft")}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
 
-                <div className="mt-2.5 min-w-0">
-                  <p className="truncate text-sm font-semibold tracking-tight text-foreground" title={p.name}>{p.name}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5" title={`${p.code} · ${industry?.name ?? p.domain}`}>
-                    <span className="truncate font-mono text-sm text-muted-foreground">{p.code}</span>
-                    <span className="text-muted-foreground/40">·</span>
-                    <span className="truncate text-sm font-medium text-muted-foreground/80">{industry?.name ?? p.domain}</span>
+                <div className="mt-4 min-w-0">
+                  <p className="truncate text-base font-bold tracking-tight text-foreground transition-colors group-hover:text-primary" title={p.name}>
+                    {p.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1" title={`${p.code} · ${industry?.name ?? p.domain}`}>
+                    <span className="truncate font-mono text-xs font-medium text-muted-foreground/90">{p.code}</span>
+                    <span className="text-muted-foreground/30">•</span>
+                    <span className="truncate text-xs font-medium text-muted-foreground/70">{industry?.name ?? p.domain}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-2.5 space-y-2 border-t pt-2.5">
+              <div className="relative z-10 mt-2 space-y-2.5 border-t border-border/50 pt-3">
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>
-                    <span className="font-semibold text-foreground">{mappedCount}</span> rule{mappedCount === 1 ? "" : "s"}
-                    {compact && <span className="text-muted-foreground/70"> · {lastUpdatedLabel}</span>}
+                  <span className="flex items-baseline gap-1">
+                    <span className="text-lg font-black tracking-tighter text-foreground">{mappedCount}</span> 
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/80">Rule{mappedCount === 1 ? "" : "s"}</span>
+                    {compact && <span className="text-xs text-muted-foreground/50 ml-1">· {lastUpdatedLabel}</span>}
                   </span>
-                  {lastSim && <OutcomeBadge outcome={lastSim.outcome} className="px-2 py-0.5 text-sm" />}
+                  {lastSim && <OutcomeBadge outcome={lastSim.outcome} className="px-2 py-0.5 text-xs shadow-xs" />}
                 </div>
 
                 {!compact && statusDots.length > 0 && (
@@ -230,25 +254,8 @@ export function ProductHubGrid({
                   </div>
                 )}
 
-                {!compact && <p className="text-sm text-muted-foreground/70">{lastUpdatedLabel}</p>}
+                {!compact && <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/50">{lastUpdatedLabel}</p>}
 
-                <div className="grid grid-cols-2 gap-1.5 pt-0.5" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1 text-sm font-medium shadow-2xs"
-                    onClick={() => onConfigure(p)}
-                  >
-                    <Settings2 className="size-3.5" /> Configure
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="h-8 gap-1 text-sm font-medium shadow-xs"
-                    onClick={() => onRunSimulation(p)}
-                  >
-                    <PlayCircle className="size-3.5" /> Simulate
-                  </Button>
-                </div>
               </div>
             </div>
           );

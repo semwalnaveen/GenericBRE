@@ -174,50 +174,53 @@ export function ProductManager() {
       </div>
 
       {/* Product Cards Grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredProducts.map((p) => {
           const industry = industries.find((i) => i.id === p.domain);
           const Icon = iconForIndustry(industry?.icon) ?? Package;
           const count = mappedCount(p.id);
 
           return (
-            <div key={p.id} className="group relative flex flex-col justify-between rounded-xl border bg-card p-4 transition-all duration-200 hover:border-primary/40 hover:shadow-md">
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-1 items-start gap-3 min-w-0">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
-                      <Icon className="size-5" />
+            <div key={p.id} className="group relative flex flex-col justify-between rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-3.5 transition-all duration-300 hover:shadow-[0_12px_40px_-12px_rgba(0,0,0,0.1)] overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50 transition-opacity duration-300 group-hover:opacity-100" />
+              
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-primary/20 shadow-[0_0_15px_-3px_currentColor] bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+                      <Icon className="size-4.5" />
                     </span>
-                    <div className="min-w-0 flex-1">
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate text-base font-semibold tracking-tight text-foreground" title={p.name}>{p.name}</h3>
-                        <Badge variant={p.status === "Active" ? "default" : "secondary"} className="h-5 shrink-0 px-1.5 text-[10px] uppercase font-bold tracking-wider">
+                        <h3 className="truncate text-[13px] font-bold tracking-tight text-foreground transition-colors group-hover:text-primary" title={p.name}>{p.name}</h3>
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider ${p.status === "Active" ? "text-primary" : "text-muted-foreground/80"}`}>
+                          <span className={`size-1.5 rounded-full bg-current ${p.status === "Active" ? "shadow-[0_0_8px_currentColor]" : ""}`} />
                           {p.status}
-                        </Badge>
+                        </span>
                       </div>
-                      <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                      <p className="mt-0.5 truncate font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
                         {p.code} <span className="opacity-50 px-0.5">•</span> {industry?.name ?? p.domain}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <div className="absolute right-2 top-2 flex shrink-0 items-center gap-0.5 opacity-0 transition-all group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 bg-card/80 backdrop-blur-md rounded-lg p-1 border border-border/50 shadow-sm z-20">
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className="size-7"
+                      className="size-7 bg-background/50"
                       title={p.status === "Active" ? "Deactivate" : "Reactivate"}
                       onClick={() => toggleStatus(p)}
                     >
                       {p.status === "Active" ? <PowerOff className="size-3.5 text-muted-foreground hover:text-foreground" /> : <Power className="size-3.5 text-emerald-600 dark:text-emerald-400" />}
                     </Button>
-                    <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(p)} title="Edit Product">
+                    <Button variant="ghost" size="icon-sm" className="size-7 bg-background/50" onClick={() => startEdit(p)} title="Edit Product">
                       <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className="size-7 text-muted-foreground hover:text-destructive disabled:pointer-events-auto disabled:opacity-40"
+                      className="size-7 bg-background/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:pointer-events-auto disabled:opacity-40"
                       disabled={hasHistory(p.id)}
                       title={hasHistory(p.id) ? "Has rule mappings or simulation history — deactivate instead" : "Delete permanently"}
                       onClick={() => setDeleteConfirm(p)}
@@ -227,16 +230,16 @@ export function ProductManager() {
                   </div>
                 </div>
 
-                <p className="mt-3.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+                <p className="mt-2.5 line-clamp-2 text-[11px] font-medium text-muted-foreground/80 leading-snug flex-1">
                   {p.description || "No description provided"}
                 </p>
-              </div>
 
-              <div className="mt-2 flex items-center justify-between border-t pt-3">
-                <span className="text-xs font-medium text-muted-foreground">
-                  <span className="text-foreground font-semibold">{count}</span> rule{count === 1 ? "" : "s"} mapped
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground shadow-sm border">{p.publishStatus ?? "Draft"}</span>
+                <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2.5 text-sm">
+                  <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase bg-primary/10 text-primary">
+                    {count} rule{count === 1 ? "" : "s"} mapped
+                  </span>
+                  <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase font-mono text-muted-foreground/60 border border-border/50">{p.publishStatus ?? "Draft"}</span>
+                </div>
               </div>
             </div>
           );

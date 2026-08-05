@@ -25,7 +25,7 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Products</h1>
           <p className="text-sm text-muted-foreground">
-            Every product&apos;s rules, sequencing, sample data, simulation and API contract in one workspace.
+            A centralized, view-only catalog of all active products, mapped rules, and execution statuses.
           </p>
         </div>
       </div>
