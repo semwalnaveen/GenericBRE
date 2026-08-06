@@ -39,7 +39,10 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function DomainDistributionChart() {
-  const rules = useAppStore((s) => s.rules);
+  // Was reading s.rules directly — the one dashboard chart that didn't go
+  // through useScopedRules(), so it kept showing every product's full count
+  // regardless of the signed-in user's own category/product access.
+  const rules = useScopedRules();
   const products = useAppStore((s) => s.products);
   const mappings = useAppStore((s) => s.productRuleMappings);
 

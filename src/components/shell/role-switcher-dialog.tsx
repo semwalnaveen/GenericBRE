@@ -13,15 +13,6 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-// Quick-recognition tag for each seed persona in the switcher grid — purely
-// a display hint (which of the Maker/Checker/Read-Only/Admin buckets this
-// person demonstrates), not a role or permission source of its own.
-const PERSONA_BADGE: Record<string, string> = {
-  "usr-ananya-verma": "Maker",
-  "usr-kavita-rao": "Checker",
-  "usr-divya-iyer": "Read Only",
-};
-
 export function RoleSwitcherDialog({
   open,
   onOpenChange,
@@ -74,11 +65,6 @@ export function RoleSwitcherDialog({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{user.name}</p>
                   <p className="truncate text-sm text-muted-foreground">{user.role}</p>
-                  {PERSONA_BADGE[user.id] && (
-                    <span className="mt-0.5 inline-block rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {PERSONA_BADGE[user.id]}
-                    </span>
-                  )}
                 </div>
                 {user.adminScope && !active && (
                   <span

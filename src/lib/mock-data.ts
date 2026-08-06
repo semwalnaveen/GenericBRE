@@ -108,6 +108,66 @@ function makeRule(partial: {
 // CORE, FULLY-WIRED RULES — these drive the live simulator demo
 // ============================================================
 export const CORE_RULES: BusinessRule[] = [
+  // --- DEMO RULES ---
+  makeRule({
+    id: "RL-DEMO-1",
+    name: "Assign Value Demo",
+    domain: "Demo",
+    category: "Examples",
+    priority: 10,
+    status: "Active",
+    description: "Demonstrates the Assign Value action by setting Risk Tier to High if debt is high.",
+    owner: "Demo User",
+    rootGroup: group("AND", [cond("debt_to_income", ">", "40")]),
+    actions: [
+      { id: cid(), type: "Assign Value", outputField: "risk_tier", outputValue: "High" },
+      { id: cid(), type: "Show Message", message: "Risk Tier assigned to High due to DTI > 40" }
+    ],
+    createdDaysAgo: 1,
+    updatedDaysAgo: 1,
+  }),
+  makeRule({
+    id: "RL-DEMO-2",
+    name: "Flag for Review Demo",
+    domain: "Demo",
+    category: "Examples",
+    priority: 11,
+    status: "Active",
+    description: "Demonstrates the Flag for Review action for borderline credit scores.",
+    owner: "Demo User",
+    rootGroup: group("AND", [cond("credit_score", "==", "650")]),
+    actions: [
+      { id: cid(), type: "Flag for Review", reasonCode: "MANUAL_CHECK", message: "Borderline credit score requires manual underwriter review." },
+    ],
+    createdDaysAgo: 1,
+    updatedDaysAgo: 1,
+  }),
+  makeRule({
+    id: "RL-DEMO-3",
+    name: "Bracket Lookup Demo",
+    domain: "Demo",
+    category: "Examples",
+    priority: 12,
+    status: "Active",
+    description: "Demonstrates Bracket Lookup by setting interest rate based on credit score.",
+    owner: "Demo User",
+    rootGroup: group("AND", []),
+    actions: [
+      {
+        id: cid(),
+        type: "Bracket Lookup",
+        bracketField: "credit_score",
+        outputField: "base_interest_rate",
+        brackets: [
+          { id: cid(), min: 300, max: 599, outputValue: "12.5" },
+          { id: cid(), min: 600, max: 699, outputValue: "9.0" },
+          { id: cid(), min: 700, max: 850, outputValue: "5.5" }
+        ]
+      },
+    ],
+    createdDaysAgo: 1,
+    updatedDaysAgo: 1,
+  }),
   // --- HOME LOAN RULES ---
   makeRule({
     id: "RL-101",
@@ -1705,6 +1765,23 @@ function generateFillerRules(count: number): BusinessRule[] {
 
 export const ALL_RULES: BusinessRule[] = [...CORE_RULES, ...generateFillerRules(98)];
 
+// Demo-realism patch for the new role-based data scoping (see
+// isRuleInScope/useUserScope in store.ts): a handful of filler rules already
+// sit in Ananya Verma's assigned category (Eligibility) but were procedurally
+// generated with a random org name as owner/createdBy, not her — leaving her
+// "Draft Rules (org-wide)" widget empty even though real matching content
+// exists. Reassigning two of them so the Rule Creator persona (the flagship
+// example in the role-scoping spec) has non-empty content out of the box.
+// IDs are stable — generateFillerRules uses a fixed-seed RNG (mulberry32
+// above), so these are the same two rules on every load.
+for (const id of ["RL-429", "RL-450"]) {
+  const rule = ALL_RULES.find((r) => r.id === id);
+  if (rule) {
+    rule.createdBy = "Ananya Verma";
+    rule.owner = "Ananya Verma";
+  }
+}
+
 // ============================================================
 // DECISION MATRICES
 // ============================================================
@@ -2135,7 +2212,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-kavita-rao",
     name: "Kavita Rao",
     email: "kavita.rao@example.com",
-    role: "Rule Approver",
+    role: "Credit/Risk Manager",
     department: "Credit Risk",
     status: "Active",
     approvalCategories: ["Eligibility", "Risk & Fraud"],
@@ -2146,7 +2223,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-arjun-nair",
     name: "Arjun Nair",
     email: "arjun.nair@example.com",
-    role: "Rule Tester",
+    role: "Underwriter/Claims",
     department: "Underwriting & Claims",
     status: "Active",
     approvalCategories: ["Underwriting", "Claims", "Collateral"],
@@ -2157,7 +2234,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-rohan-mehta",
     name: "Rohan Mehta",
     email: "rohan.mehta@example.com",
-    role: "Product Rule Manager",
+    role: "Product Manager",
     department: "Product Strategy",
     status: "Active",
     // Product administration only — products, metadata and rule config. NOT
@@ -2173,10 +2250,15 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-ananya-verma",
     name: "Ananya Verma",
     email: "ananya.verma@example.com",
-    role: "Rule Creator",
+    role: "Business Analyst",
     department: "Business Analysis",
     status: "Active",
-    adminScope: "system",
+    // A Maker has no business holding platform-admin rights — this was a
+    // leftover from before Vikram existed as the dedicated System Admin
+    // persona. Without this fix she'd bypass the User Access Mapping data
+    // scoping (see useUserScope in store.ts) and see every rule/product in
+    // the platform, defeating the whole point of a "Rule Creator sees only
+    // her own work" persona.
     approvalCategories: [],
     createdAt: USER_SEED_TIMESTAMP,
     updatedAt: USER_SEED_TIMESTAMP,
@@ -2185,7 +2267,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-divya-iyer",
     name: "Divya Iyer",
     email: "divya.iyer@example.com",
-    role: "Rule Viewer",
+    role: "Operations",
     department: "Operations",
     status: "Active",
     approvalCategories: [],
@@ -2215,11 +2297,11 @@ export const DEFAULT_USERS: AppUser[] = [
 // independently on the user record, not derived from the Job Title.
 // ============================================================
 export const DEFAULT_JOB_TITLES: JobTitle[] = [
-  { id: "jt-credit-risk-manager", name: "Rule Approver", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-underwriter-claims", name: "Rule Tester", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-product-manager", name: "Product Rule Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-business-analyst", name: "Rule Creator", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-operations", name: "Rule Viewer", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-credit-risk-manager", name: "Credit/Risk Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-underwriter-claims", name: "Underwriter/Claims", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-product-manager", name: "Product Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-business-analyst", name: "Business Analyst", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-operations", name: "Operations", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
   { id: "jt-system-administrator", name: "System Administrator", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
 ];
 
@@ -2310,6 +2392,20 @@ export const DEFAULT_USER_ACCESS_MAPPINGS: UserProductAccess[] = [
     id: "uam-divya-auto-compliance",
     userId: "usr-divya-iyer",
     productId: "prod-auto-loan",
+    categoryId: "compliance",
+    capabilities: ["rule.view", "rule.simulate"],
+    createdBy: "Vikram Chawla",
+    createdAt: USER_SEED_TIMESTAMP,
+    status: "Active",
+  },
+  {
+    // A single product/category grant left her read-only dashboard/repository
+    // scope down to a single rule — too thin to demo a "Rule Viewer sees the
+    // org-wide picture within her access" persona meaningfully. Widened to a
+    // second product on her existing Compliance category.
+    id: "uam-divya-home-compliance",
+    userId: "usr-divya-iyer",
+    productId: "prod-home-loan",
     categoryId: "compliance",
     capabilities: ["rule.view", "rule.simulate"],
     createdBy: "Vikram Chawla",

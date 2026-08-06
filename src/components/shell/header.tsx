@@ -12,7 +12,7 @@ import { CommandPalette } from "./command-palette";
 import { RoleSwitcherDialog } from "./role-switcher-dialog";
 import { AppearanceStudio } from "@/components/studio/appearance-studio";
 import { useTranslate } from "@/lib/use-translate";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useHasCapability } from "@/lib/store";
 
 export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -21,6 +21,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const setAppearanceOpen = useAppStore((s) => s.setAppearanceOpen);
   const router = useRouter();
   const t = useTranslate();
+  const canCreateRule = useHasCapability("rule.create");
   // The Domain filter only ever scopes the Dashboard's widgets (globalFilters
   // is consumed nowhere else) — showing it on every other page implied it
   // did something there too, when it silently did nothing.
@@ -70,10 +71,12 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             <ShieldCheck className="size-3.5" />
             <span className="hidden lg:inline">Switch User</span>
           </Button>
-          <Button size="sm" className="h-9 gap-1.5" onClick={() => router.push("/rule-builder")} aria-label="Create Rule">
-            <Plus className="size-3.5" />
-            <span className="hidden lg:inline">{t("header.createRule")}</span>
-          </Button>
+          {canCreateRule && (
+            <Button size="sm" className="h-9 gap-1.5" onClick={() => router.push("/rule-builder")} aria-label="Create Rule">
+              <Plus className="size-3.5" />
+              <span className="hidden lg:inline">{t("header.createRule")}</span>
+            </Button>
+          )}
           <div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />
           <Button
             variant="ghost"

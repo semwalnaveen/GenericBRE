@@ -4,83 +4,124 @@ function widgets(ids: string[]): DashboardConfig["widgets"] {
   return ids.map((id, order) => ({ id, visible: true, order }));
 }
 
-// Seed data only — fully editable at runtime via Configuration Studio →
-// Dashboard Management. Keyed per-user (AppUser.id): every user lands on
-// /dashboard by default regardless of role (still per-user configurable via
-// the Landing Route dropdown), while their widget set favors the panels most
-// relevant to that person's responsibilities, and their KPIs/Quick Actions
-// surface the numbers and shortcuts they act on. Every user's `kpis` list is
-// exactly 6 — the grid (see KpiCards) divides evenly into 6 at every
-// breakpoint (2 → 3 → 6 columns), so the KPI row always fills completely.
-// Role-based redesign: every user's `widgets` list is capped at 6 real
-// (non-"kpis") entries, each chosen for that person's actual job function —
-// no filler, no widget without real business value. "quick-actions" is now
-// included for every role (previously only Ananya's config actually
-// rendered it, despite everyone having `quickActions` data configured).
+// Each of the 6 seed personas gets a dashboard built around what that
+// functional role actually does day to day — not one shared layout. Widget
+// ids are still checked against the signed-in user's own effectiveCapabilities()
+// at render time (WIDGET_REQUIRED_CAPABILITY, dashboard/page.tsx), so this
+// list is a ceiling ("what this role's dashboard offers"), not a guarantee.
+
+// Rule Creator (usr-ananya-verma) — Maker: creates/edits/tests rules and
+// submits for approval, can't approve her own work or publish directly.
+// Manager-approved reference layout: chart-first (Rule Status, Monthly
+// Activity, Product Distribution, Draft Rules all render as
+// donut/bar charts, not plain lists), Rule Conflicts as the one operational
+// list, Quick Actions last. Every other persona below follows this same
+// chart-forward visual pattern — a max of one or two list-style panels,
+// charts everywhere a chart is meaningful — with the actual widget/KPI
+// *choices* swapped for what that role does.
+const RULE_CREATOR_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "rule-conflicts", "draft-rules", "quick-actions"]);
+const RULE_CREATOR_KPIS = ["total-rules", "active-rules", "active-products", "pending-approvals", "draft-rules"];
+
+// Product Rule Manager (usr-rohan-mehta) — maps approved rules to products
+// and configures execution sequence/pricing; doesn't author rule logic.
+// Three charts (Product Distribution, Rule Status, Monthly Activity) plus
+// his two real operational surfaces: Recent Deployments (what just shipped)
+// and Rule Conflicts (what to resolve before mapping).
+const PRODUCT_MANAGER_WIDGETS = widgets(["kpis", "domain-distribution", "rule-status", "monthly-activity", "rule-conflicts", "recent-deployments", "quick-actions"]);
+const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", "business-categories", "pending-approvals"];
+
+// Rule Approver (usr-kavita-rao) — Checker: reviews and approves/rejects
+// what Makers submit, can't create or modify business rules herself. Monthly
+// Activity's Approved-vs-Created split is directly her own approval velocity,
+// not just background chart filler. Approval Queue is the one list that has
+// to stay — it's the actual work she does every day, and no chart replaces
+// "here's what's waiting on me."
+const RULE_APPROVER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "approval-queue", "rule-conflicts", "quick-actions"]);
+const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "business-categories", "active-products"];
+
+// Rule Tester (usr-arjun-nair): simulate-only persona — rule.view + rule.simulate,
+// no rule.create/edit/publish. Its "charts" are already the simulator's own
+// outputs (Simulation Outcomes, Execution Timeline) rather than the rule-
+// catalogue charts every other role gets — those describe content he can't
+// author, these describe what he actually produced. Execution Logs, Decision
+// Lookup, and Batch Runs have no chart equivalent worth forcing.
+const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "execution-logs", "decision-lookup", "batch-runs"]);
+// Pending Approvals / Draft Rules dropped — this persona can't approve or
+// author, so both would only ever read as noise. Rule Executions (simulation
+// count) takes their place as the one number that's actually this role's own
+// output.
+const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "rule-executions", "business-categories"];
+
+// Rule Viewer (usr-divya-iyer) — read-only: dashboards, rules, approval
+// history, audit logs. Charts suit a pure observer even better than a lists —
+// nothing here is "her queue" to act on, so Rule Status/Product
+// Distribution/Monthly Activity read as the org-wide picture she's here to
+// watch. Recent Activity + Execution Logs cover her two audit-trail
+// responsibilities (approval history, audit logs) — no chart replaces those.
+const RULE_VIEWER_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "recent-activity", "execution-logs", "quick-actions"]);
+// Inactive & Archived stands in for the org-wide health number a read-only
+// observer cares about, in place of Pending Approvals (not her queue) or
+// Draft Rules (not her output).
+const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "business-categories", "inactive-archived-rules"];
+
+// System Administrator (usr-vikram-chawla, and usr-ved-prakash as the same
+// role reached by name-fallback in dashboard/page.tsx) — user/access/product/
+// platform administration, not rule authoring. Three charts for platform-wide
+// health (Rule Status, Product Distribution, Monthly Activity) plus Rule
+// Conflicts (needs attention) and Recent Activity (the full audit trail —
+// this is the one role that should see everyone's actions, not just rule
+// events).
+const SYSTEM_ADMIN_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "rule-conflicts", "recent-activity", "quick-actions"]);
+const SYSTEM_ADMIN_KPIS = ["total-rules", "active-products", "business-categories", "pending-approvals", "system-users"];
+
 export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-ananya-verma": {
-    // Business Analyst (Maker): what she's drafting, what she's recently
-    // touched, and whether her rules pass simulation before submitting them.
     userId: "usr-ananya-verma",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "rule-conflicts", "draft-rules", "quick-actions"]),
-    // "active-products"/"rule-executions" retired from every default KPI set
-    // below (still selectable per-user via Configuration Studio -> Dashboard
-    // Management) — backfilled with a role-relevant alternative so the row
-    // still fills all 6 slots.
-    kpis: ["total-rules", "draft-rules", "pending-approvals", "active-rules", "inactive-archived-rules", "active-products"],
+    widgets: RULE_CREATOR_WIDGETS,
+    kpis: RULE_CREATOR_KPIS,
     quickActions: ["create-rule", "open-repository", "run-simulator"],
   },
   "usr-rohan-mehta": {
-    // Product Manager: product/domain health, conflict detection, and his
-    // own approval queue (he holds rule.publish for Pricing) + deployment
-    // status — no generic activity feed diluting the product view.
     userId: "usr-rohan-mehta",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "domain-distribution", "rule-status", "rule-conflicts", "approval-queue", "recent-deployments"]),
-    kpis: ["active-rules", "pending-approvals", "total-rules", "business-categories", "draft-rules", "active-products"],
+    widgets: PRODUCT_MANAGER_WIDGETS,
+    kpis: PRODUCT_MANAGER_KPIS,
     quickActions: ["decision-matrix", "view-approvals", "open-repository"],
   },
   "usr-kavita-rao": {
-    // Checker + Risk Manager (she holds rule.publish for Eligibility and
-    // Risk & Fraud): her approval queue, the review backlog, conflicts as a
-    // risk signal, and domain exposure.
     userId: "usr-kavita-rao",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "approval-queue", "rules-awaiting-review", "rule-conflicts", "domain-distribution", "recent-activity"]),
-    kpis: ["active-products", "pending-approvals", "draft-rules", "active-rules", "total-rules", "business-categories"],
-    quickActions: ["view-approvals", "open-repository", "run-simulator"],
+    widgets: RULE_APPROVER_WIDGETS,
+    kpis: RULE_APPROVER_KPIS,
+    quickActions: ["view-approvals", "open-repository"],
   },
   "usr-arjun-nair": {
-    // Underwriter + Claims Manager (rule.publish across Underwriting,
-    // Claims, Collateral): decision/simulation results, his real review
-    // queue (previously missing despite him holding publish rights), and
-    // quick lookup.
     userId: "usr-arjun-nair",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "rules-awaiting-review", "recent-rules", "decision-lookup"]),
-    kpis: ["business-categories", "active-rules", "draft-rules", "total-rules", "pending-approvals", "active-products"],
+    widgets: RULE_TESTER_WIDGETS,
+    kpis: RULE_TESTER_KPIS,
     quickActions: ["run-simulator", "open-repository"],
   },
   "usr-divya-iyer": {
-    // Operations: the operational audit trail, quick lookup, simulation
-    // outcomes, and batch test run history (real BatchRunSummary data,
-    // previously not surfaced on any dashboard).
     userId: "usr-divya-iyer",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "execution-logs", "simulation-results", "decision-lookup", "recent-activity", "batch-runs"]),
-    kpis: ["rule-executions", "total-rules", "active-rules", "pending-approvals", "draft-rules", "active-products"],
-    quickActions: ["run-simulator", "open-repository"],
+    widgets: RULE_VIEWER_WIDGETS,
+    kpis: RULE_VIEWER_KPIS,
+    quickActions: ["open-repository"],
+  },
+  "usr-vikram-chawla": {
+    userId: "usr-vikram-chawla",
+    landingRoute: "/dashboard",
+    widgets: SYSTEM_ADMIN_WIDGETS,
+    kpis: SYSTEM_ADMIN_KPIS,
+    quickActions: ["manage-users", "view-audit-log", "configuration-studio"],
   },
   "usr-ved-prakash": {
-    // System Administrator: platform-wide audit trail, rule-base integrity
-    // checks (conflicts), user management usage.
     userId: "usr-ved-prakash",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "execution-logs", "rule-conflicts", "rule-status", "domain-distribution", "recent-activity"]),
-    // "draft-rules" swapped for "system-users" (real active-user count) —
-    // a better fit for an admin's KPI row than drafts, which he doesn't own.
-    kpis: ["total-rules", "active-rules", "business-categories", "pending-approvals", "active-products", "system-users"],
-    quickActions: ["manage-users", "view-audit-log", "system-settings"],
+    widgets: SYSTEM_ADMIN_WIDGETS,
+    kpis: SYSTEM_ADMIN_KPIS,
+    quickActions: ["manage-users", "view-audit-log", "configuration-studio"],
   },
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, ChevronRight, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Plus, Library, Grid3x3, FlaskConical, Settings, UserCheck, ChevronRight, ShieldCheck, Users, History, type LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { Capability } from "@/lib/types";
@@ -24,6 +24,8 @@ export const ACTION_LABELS: Record<string, string> = {
   "run-simulator": "Run Simulator",
   "view-approvals": "View Approvals",
   "configuration-studio": "Configuration Studio",
+  "manage-users": "Manage Users",
+  "view-audit-log": "View Audit Log",
 };
 
 // User Access Mapping gate per action — mirrors the requiredCapability each
@@ -36,6 +38,8 @@ const ACTION_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "run-simulator": "rule.simulate",
   "view-approvals": "rule.publish",
   "configuration-studio": "config.manage",
+  "manage-users": "system.manage",
+  "view-audit-log": "config.manage",
 };
 
 const ACTION_REGISTRY: Record<string, Action> = {
@@ -45,6 +49,8 @@ const ACTION_REGISTRY: Record<string, Action> = {
   "run-simulator": { label: ACTION_LABELS["run-simulator"], desc: "Test a live customer scenario", icon: FlaskConical, href: "/simulator", accent: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
   "view-approvals": { label: ACTION_LABELS["view-approvals"], desc: "Rules submitted and awaiting review", icon: UserCheck, href: "/repository?status=Pending Approval", accent: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
   "configuration-studio": { label: ACTION_LABELS["configuration-studio"], desc: "Manage metadata, roles & dashboards", icon: Settings, href: "/configuration-studio", accent: "bg-slate-500/10 text-slate-600 dark:text-slate-400" },
+  "manage-users": { label: ACTION_LABELS["manage-users"], desc: "Add, edit or deactivate platform users", icon: Users, href: "/configuration-studio?tab=users", accent: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  "view-audit-log": { label: ACTION_LABELS["view-audit-log"], desc: "Trace every change with full attribution", icon: History, href: "/audit-log", accent: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
 };
 
 export function QuickActions() {
