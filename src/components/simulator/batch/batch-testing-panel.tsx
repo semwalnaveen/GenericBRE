@@ -46,11 +46,6 @@ const REPORT_HEADERS = [
   "Failed Rules",
   "Final Decision",
   "Decision Reason",
-  "Error Details",
-  "Execution Time (ms)",
-  "Errors",
-  "Warnings",
-  "Variables Generated",
 ];
 
 export function BatchTestingPanel({ products, initialProduct }: { products: Product[]; initialProduct: Product }) {
@@ -231,11 +226,6 @@ export function BatchTestingPanel({ products, initialProduct }: { products: Prod
         failedRuleNames.join("; "),
         r.outcome ?? "",
         r.decision?.summary ?? r.errorMessage ?? "",
-        r.errorMessage ?? "",
-        Number(r.durationMs.toFixed(2)),
-        r.status === "Error" ? 1 : 0,
-        r.outcome === "Review Required" ? 1 : 0,
-        Object.keys(r.decision?.calculatedValues ?? {}).length,
       ];
     });
     if (fmt === "csv") {

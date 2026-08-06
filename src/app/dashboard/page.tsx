@@ -6,7 +6,11 @@ import { Sparkles, GripVertical } from "lucide-react";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentRulesPanel, RecentActivityPanel, RecentDeploymentsPanel } from "@/components/dashboard/recent-panels";
-import { DomainDistributionChart, RuleStatusChart, SimulationResultsChart, ExecutionTimelineChart, MonthlyRulesChart } from "@/components/dashboard/charts";
+import dynamic from "next/dynamic";
+const DomainDistributionChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.DomainDistributionChart), { ssr: false });
+const RuleStatusChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.RuleStatusChart), { ssr: false });
+const SimulationResultsChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.SimulationResultsChart), { ssr: false });
+const ExecutionTimelineChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.ExecutionTimelineChart), { ssr: false });
 import { DemoScenariosPanel } from "@/components/dashboard/demo-scenarios";
 import {
   DraftRulesPanel,

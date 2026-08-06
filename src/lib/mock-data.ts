@@ -2135,7 +2135,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-kavita-rao",
     name: "Kavita Rao",
     email: "kavita.rao@example.com",
-    role: "Credit/Risk Manager",
+    role: "Rule Approver",
     department: "Credit Risk",
     status: "Active",
     approvalCategories: ["Eligibility", "Risk & Fraud"],
@@ -2146,7 +2146,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-arjun-nair",
     name: "Arjun Nair",
     email: "arjun.nair@example.com",
-    role: "Underwriter/Claims",
+    role: "Rule Tester",
     department: "Underwriting & Claims",
     status: "Active",
     approvalCategories: ["Underwriting", "Claims", "Collateral"],
@@ -2157,7 +2157,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-rohan-mehta",
     name: "Rohan Mehta",
     email: "rohan.mehta@example.com",
-    role: "Product Manager",
+    role: "Product Rule Manager",
     department: "Product Strategy",
     status: "Active",
     // Product administration only — products, metadata and rule config. NOT
@@ -2173,7 +2173,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-ananya-verma",
     name: "Ananya Verma",
     email: "ananya.verma@example.com",
-    role: "Business Analyst",
+    role: "Rule Creator",
     department: "Business Analysis",
     status: "Active",
     adminScope: "system",
@@ -2185,7 +2185,7 @@ export const DEFAULT_USERS: AppUser[] = [
     id: "usr-divya-iyer",
     name: "Divya Iyer",
     email: "divya.iyer@example.com",
-    role: "Operations",
+    role: "Rule Viewer",
     department: "Operations",
     status: "Active",
     approvalCategories: [],
@@ -2215,11 +2215,11 @@ export const DEFAULT_USERS: AppUser[] = [
 // independently on the user record, not derived from the Job Title.
 // ============================================================
 export const DEFAULT_JOB_TITLES: JobTitle[] = [
-  { id: "jt-credit-risk-manager", name: "Credit/Risk Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-underwriter-claims", name: "Underwriter/Claims", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-product-manager", name: "Product Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-business-analyst", name: "Business Analyst", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
-  { id: "jt-operations", name: "Operations", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-credit-risk-manager", name: "Rule Approver", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-underwriter-claims", name: "Rule Tester", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-product-manager", name: "Product Rule Manager", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-business-analyst", name: "Rule Creator", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
+  { id: "jt-operations", name: "Rule Viewer", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
   { id: "jt-system-administrator", name: "System Administrator", createdAt: USER_SEED_TIMESTAMP, updatedAt: USER_SEED_TIMESTAMP },
 ];
 

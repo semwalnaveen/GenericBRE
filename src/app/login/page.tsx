@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { User, Lock, Eye, EyeOff, ShieldCheck, KeyRound, ScrollText, Workflow, AlertTriangle } from "lucide-react";
@@ -103,6 +104,13 @@ export default function LoginPage() {
       }
     >
       <AnimatedBackground />
+      {/* Full-screen, not scoped to the left panel — previously this sat
+          inside the left-panel div below, so its "absolute inset-0" only
+          ever filled that panel's width and the light sweep visibly stopped
+          short of the sign-in card instead of continuing behind it. No
+          z-index of its own (same as AnimatedBackground above), so normal
+          DOM order keeps it behind both z-10 panels. */}
+      <NetworkBackground className="pointer-events-none absolute inset-0 h-full w-full" />
 
       {/* Compact brand banner — mobile only (<768px). Replaces the old
           logo-only fallback so the trust story survives on phones instead
@@ -125,8 +133,6 @@ export default function LoginPage() {
           subset from tablet (md, ≥768px) — the mockup/badges step in only at
           lg so the panel degrades gracefully instead of disappearing. */}
       <div className="relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden px-6 py-6 text-sidebar-foreground md:flex md:px-8 md:py-8 lg:px-10 lg:py-10 xl:px-14 z-10">
-        <NetworkBackground className="pointer-events-none absolute inset-0 h-full w-full" />
-
         <div className="relative">
           <div className="flex items-center gap-3">
             <LogoMark className="size-10" />
@@ -176,10 +182,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[30rem] animate-[breCardFloat_6s_ease-in-out_infinite]">
           <div className="rounded-2xl border border-white/10 bg-card p-6 shadow-2xl shadow-black/50 sm:p-8">
             <div className="flex flex-col items-center text-center">
-              <div className="relative mb-4 flex h-14 w-full items-center justify-center overflow-hidden mix-blend-multiply">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={customLogo || "/custom-logo.png"} alt="Logo" className="h-32 max-w-[220px] object-contain" />
-              </div>
+                <Image src={customLogo || "/custom-logo.png"} alt="Logo" width={220} height={128} className="h-32 w-auto max-w-[220px] object-contain" priority />
               <h2 className="text-2xl font-bold tracking-tight text-[#0a1230]">Welcome Back</h2>
               <p className="mt-1 text-sm text-[#0a1230]/70">Sign in to your {appName} account</p>
             </div>
