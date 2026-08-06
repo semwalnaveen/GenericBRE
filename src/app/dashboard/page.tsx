@@ -11,6 +11,7 @@ const DomainDistributionChart = dynamic(() => import("@/components/dashboard/cha
 const RuleStatusChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.RuleStatusChart), { ssr: false });
 const SimulationResultsChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.SimulationResultsChart), { ssr: false });
 const ExecutionTimelineChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.ExecutionTimelineChart), { ssr: false });
+const MonthlyRulesChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.MonthlyRulesChart), { ssr: false });
 import { DemoScenariosPanel } from "@/components/dashboard/demo-scenarios";
 import {
   DraftRulesPanel,
