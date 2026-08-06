@@ -138,7 +138,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
           
 
           {/* PRE-FLIGHT VALIDATION PANEL */}
-          <ValidationPanel jsonText={sim.jsonText || "{}"} requiredFields={requiredFields} />
+          <ValidationPanel jsonText={JSON.stringify(sim.translatedPayload || {})} requiredFields={requiredFields} />
 
           {/* DUAL INPUT MODE (FORM VIEW VS JSON VIEW) */}
           <div className="rounded-xl border bg-card p-4 flex flex-col flex-1 shadow-xs min-h-0">
@@ -155,7 +155,7 @@ export function RunSimulatorRedesigned({ product, sim, products = [], onProductC
 
               <TabsContent value="form" className="mt-3 flex-1 overflow-auto max-h-[600px]">
                 <DynamicFormView
-                  jsonText={sim.jsonText || "{}"}
+                  jsonText={JSON.stringify(sim.translatedPayload || {}, null, 2)}
                   onUpdateJsonText={sim.setJsonText}
                   mappedFields={["applicant_age", "monthly_income", "credit_score", "loan_amount", "ltv_ratio", "dti_ratio"]}
                   requiredFields={requiredFields}

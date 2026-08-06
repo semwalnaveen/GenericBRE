@@ -65,15 +65,33 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
   // product's mapped-rule set changes (mapped/unmapped, or a different
   // product), so the input always matches the live configuration.
   useEffect(() => {
+    let newJsonText = "{}";
+    if (product) {
+      const requestMapping = jsonMappings.find((m) => m.productId === product.id && m.direction === "request");
+      if (requestMapping?.samplePayload) {
+        newJsonText = requestMapping.samplePayload;
+      } else {
+        newJsonText = templateJsonTextFor(product, rules, productRuleMappings, fieldCatalog);
+      }
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setJsonText(templateJsonTextFor(product, rules, productRuleMappings, fieldCatalog));
+    setJsonText(newJsonText);
     setDecisionResult(null);
     setSandboxRuleId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product?.id, mappedRuleIdsKey]);
 
   const resetToSampleJson = () => {
-    setJsonText(templateJsonTextFor(product, rules, productRuleMappings, fieldCatalog));
+    let newJsonText = "{}";
+    if (product) {
+      const requestMapping = jsonMappings.find((m) => m.productId === product.id && m.direction === "request");
+      if (requestMapping?.samplePayload) {
+        newJsonText = requestMapping.samplePayload;
+      } else {
+        newJsonText = templateJsonTextFor(product, rules, productRuleMappings, fieldCatalog);
+      }
+    }
+    setJsonText(newJsonText);
     setDecisionResult(null);
   };
 
@@ -100,23 +118,31 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
       : buildResponseShapePreview(product, rules, productRuleMappings);
   }, [product, rules, productRuleMappings, decisionResult]);
 
-  const runScenario = () => {
-    if (!product) return;
-    let parsed: Record<string, unknown>;
+  const translatedPayload = useMemo(() => {
+    if (!product) return {};
+    let parsed: Record<string, unknown> = {};
     try {
       parsed = JSON.parse(jsonText);
+    } catch {
+      return {};
+    }
+    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request")
+      || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
+    
+    return applyTranslationMapping(parsed as Record<string, string | number | boolean>, mapping);
+  }, [jsonText, product, domain, jsonMappings]);
+
+  const runScenario = () => {
+    if (!product) return;
+    
+    try {
+      JSON.parse(jsonText);
     } catch {
       toast.error("Invalid JSON", { description: "Fix the Sample Request JSON before running the simulation." });
       return;
     }
 
-    let input: Record<string, string | number | boolean> = { ...(parsed as Record<string, string | number | boolean>) };
-
-    // Apply JSON Value Mapping translation layer
-    const mapping = jsonMappings.find(m => m.productId === product.id && m.direction === "request")
-      || jsonMappings.find(m => m.industry === domain && !m.productId && m.direction === "request");
-
-    input = applyTranslationMapping(input, mapping) as Record<string, string | number | boolean>;
+    let input = { ...translatedPayload } as Record<string, string | number | boolean>;
 
     // Validate payload against field catalog constraints
     const validationErrors = validatePayload(input, fieldCatalog);
@@ -206,6 +232,7 @@ export function useRunSimulator(product: Product | null, initialSandboxRuleId: s
     mappedRules,
     jsonText,
     setJsonText,
+    translatedPayload,
     apiRequestEnvelope,
     responseShape,
     decisionResult,

@@ -485,6 +485,19 @@ export function validatePayload(
   return errors;
 }
 
+// Helper to extract a value from a deeply nested object using dot/bracket notation
+function getByPath(obj: Record<string, any>, path: string): any {
+  if (!path) return undefined;
+  const parts = path.replace(/\[/g, '.').replace(/\]/g, '').split('.');
+  let current = obj;
+  for (const p of parts) {
+    if (current === null || current === undefined) return undefined;
+    if (p === "") continue;
+    current = current[p];
+  }
+  return current;
+}
+
 export function applyTranslationMapping(
   payload: InputMap,
   mapping?: JsonMapping
@@ -498,12 +511,13 @@ export function applyTranslationMapping(
 
     const extKey = entry.externalAttribute;
     const intKey = entry.mappedField;
+    const jsonPath = entry.jsonPath;
 
-    if (extKey in output) {
-      let val = output[extKey];
+    let val = getByPath(payload, jsonPath);
 
+    if (val !== undefined) {
       // Translate Value if map exists
-      if (entry.valueMap && val !== null && val !== undefined && !Array.isArray(val)) {
+      if (entry.valueMap && val !== null && !Array.isArray(val)) {
         const strVal = String(val);
         if (entry.valueMap[strVal] !== undefined) {
           // If the translated value is purely numeric, cast it
@@ -513,12 +527,28 @@ export function applyTranslationMapping(
         }
       }
 
-      // Translate Key
-      if (extKey !== intKey) {
-        output[intKey] = val;
-        delete output[extKey];
-      } else {
-        output[intKey] = val;
+      // Map the extracted (and optionally translated) value to the flat internal key
+      output[intKey] = val as string | number | boolean;
+    } else {
+      // If the field wasn't found at the deep jsonPath, fallback to checking top-level just in case
+      // the payload was already flattened or it was a simple flat request.
+      const extKey = entry.externalAttribute;
+      if (extKey in output) {
+        val = output[extKey];
+        if (entry.valueMap && val !== null && !Array.isArray(val)) {
+          const strVal = String(val);
+          if (entry.valueMap[strVal] !== undefined) {
+            const translated = entry.valueMap[strVal];
+            const num = Number(translated);
+            val = !Number.isNaN(num) && String(num) === translated ? num : translated;
+          }
+        }
+        if (extKey !== intKey) {
+          output[intKey] = val as string | number | boolean;
+          delete output[extKey];
+        } else {
+          output[intKey] = val as string | number | boolean;
+        }
       }
     }
   }
