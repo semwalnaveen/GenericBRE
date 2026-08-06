@@ -13,12 +13,15 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { NAV_ITEMS, NAV_ITEMS_SECONDARY, visibleNavItems } from "@/lib/nav";
-import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
+import { useAppStore, useEffectiveCapabilities, useUserScope, isRuleInScope } from "@/lib/store";
 import { StatusBadge } from "@/components/status-badge";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const router = useRouter();
   const rules = useAppStore((s) => s.rules);
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const currentUserName = useAppStore((s) => s.currentUser.name);
+  const userScope = useUserScope();
   const capabilities = useEffectiveCapabilities();
   const [query, setQuery] = useState("");
 
@@ -30,8 +33,14 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
 
   if (!open) return null;
 
+  // Global search should never surface a rule the signed-in user isn't
+  // allowed to open — same scoping as the Dashboard/Repository (see
+  // isRuleInScope/useUserScope in store.ts).
   const matchedRules = query.length > 0
-    ? rules.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()) || r.id.toLowerCase().includes(query.toLowerCase())).slice(0, 6)
+    ? rules
+        .filter((r) => isRuleInScope(r, userScope, productRuleMappings, currentUserName))
+        .filter((r) => r.name.toLowerCase().includes(query.toLowerCase()) || r.id.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 6)
     : [];
 
   const go = (href: string) => {

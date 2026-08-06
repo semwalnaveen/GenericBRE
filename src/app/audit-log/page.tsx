@@ -3,7 +3,7 @@
 import { Fragment, useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Download, Search, ScrollText, ShieldCheck, ShieldAlert, ShieldQuestion, ChevronRight, ChevronLeft } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useUserScope, isRuleInScope } from "@/lib/store";
 import { AuditEntry, BusinessRule, Product, SimulationResult } from "@/lib/types";
 import { verifyAuditChain, AuditIntegrityResult } from "@/lib/audit-chain";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,10 @@ export default function AuditLogPage() {
   const products = useAppStore((s) => s.products);
   const simulations = useAppStore((s) => s.simulations);
   const industries = useAppStore((s) => s.industries);
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const currentUserName = useAppStore((s) => s.currentUser.name);
+  const userScope = useUserScope();
+  const ruleById = useMemo(() => new Map(rules.map((r) => [r.id, r])), [rules]);
   const [search, setSearch] = useState("");
   const [actions, setActions] = useState<string[]>([]);
   const [entityTypes, setEntityTypes] = useState<string[]>([]);
@@ -84,6 +88,16 @@ export default function AuditLogPage() {
   );
 
   const filtered = auditLog.filter((a) => {
+    // Never surface a BusinessRule entry for a rule this user isn't allowed
+    // to open — same scoping as Dashboard/Repository/Search (see
+    // isRuleInScope/useUserScope in store.ts). Verification (runVerify
+    // above) still runs against the full, unfiltered auditLog — the hash
+    // chain is sequential across every entry, so scoping the chain itself
+    // would break integrity checking, not just visibility.
+    if (a.entity === "BusinessRule") {
+      const rule = ruleById.get(a.entityId);
+      if (rule && !isRuleInScope(rule, userScope, productRuleMappings, currentUserName)) return false;
+    }
     if (search && !`${a.user} ${a.entityId} ${a.details}`.toLowerCase().includes(search.toLowerCase())) return false;
     if (actions.length && !actions.includes(a.action)) return false;
     if (entityTypes.length && !entityTypes.includes(a.entity)) return false;

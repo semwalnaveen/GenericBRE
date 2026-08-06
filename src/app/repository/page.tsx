@@ -4,7 +4,7 @@ import { Suspense, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Download, Upload, Plus, AlertTriangle, X, ShieldAlert, CheckCircle2, XCircle, FileWarning, Info, Columns3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
-import { useAppStore, useHasCapability } from "@/lib/store";
+import { useAppStore, useHasCapability, useUserScope, isRuleInScope } from "@/lib/store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,7 @@ function nextRuleId(existing: BusinessRule[], taken: Set<string>) {
 }
 
 function RepositoryContent() {
-  const rules = useAppStore((s) => s.rules);
+  const allRules = useAppStore((s) => s.rules);
   const addRule = useAppStore((s) => s.addRule);
   const cloneRule = useAppStore((s) => s.cloneRule);
   const setRuleStatus = useAppStore((s) => s.setRuleStatus);
@@ -70,13 +70,30 @@ function RepositoryContent() {
   const canCreate = useHasCapability("rule.create");
   const canEdit = useHasCapability("rule.edit");
   const canDelete = useHasCapability("rule.delete");
+  const currentUser = useAppStore((s) => s.currentUser);
+  const currentUserName = useAppStore((s) => s.currentUser.name);
+  const userScope = useUserScope();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Never show a rule this user isn't even allowed to open — same predicate
+  // the dashboard KPIs/widgets use (see useScopedRules/isRuleInScope in
+  // store.ts), applied before any of the page's own search/status/category
+  // filters below.
+  const rules = useMemo(
+    () => allRules.filter((r) => isRuleInScope(r, userScope, productRuleMappings, currentUserName)),
+    [allRules, userScope, productRuleMappings, currentUserName]
+  );
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [statuses, setStatuses] = useState<string[]>(searchParams.getAll("status").length > 0 ? searchParams.getAll("status") : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [productFilters, setProductFilters] = useState<string[]>([]);
+  // "My X" KPI clicks (Rule Creator's My Draft Rules/My Pending Approval)
+  // push ?owner=me — a narrower filter on top of the category/product scope
+  // above, not baked into it: a Rule Approver's org-wide queue should still
+  // show everyone's submissions within her assigned categories.
+  const ownerIsMe = searchParams.get("owner") === "me";
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -160,6 +177,7 @@ function RepositoryContent() {
 
   const filtered = useMemo(() => {
     return rules.filter((r) => {
+      if (ownerIsMe && r.createdBy !== currentUserName && r.owner !== currentUserName) return false;
       if (search) {
         const q = search.toLowerCase();
         const m = r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
@@ -175,7 +193,7 @@ function RepositoryContent() {
       }
       return true;
     });
-  }, [rules, search, statuses, categoryFilters, productFilters, productRuleMappings]);
+  }, [rules, ownerIsMe, currentUserName, search, statuses, categoryFilters, productFilters, productRuleMappings]);
 
   const columns = useMemo(
     () =>
@@ -335,6 +353,11 @@ function RepositoryContent() {
         <DataTable
           columns={columns}
           data={filtered}
+          emptyMessage={
+            rules.length === 0
+              ? "No rules assigned to your categories or products yet."
+              : "No rules match the current filters."
+          }
           onSelectionChange={setSelectedRows}
           resetSelectionSignal={resetSelectionSignal}
           renderTopToolbar={(table) => (
@@ -364,14 +387,18 @@ function RepositoryContent() {
 
               <MultiSelect
                 label="Category"
-                options={ruleCategories.map((c) => ({ value: c.name, label: c.name }))}
+                options={ruleCategories
+                  .filter((c) => userScope.bypass || userScope.categories.has(c.name))
+                  .map((c) => ({ value: c.name, label: c.name }))}
                 selected={categoryFilters}
                 onChange={setCategoryFilters}
               />
 
               <MultiSelect
                 label="Product"
-                options={products.map((p) => ({ value: p.id, label: p.name }))}
+                options={products
+                  .filter((p) => userScope.bypass || userScope.productIds.has(p.id))
+                  .map((p) => ({ value: p.id, label: p.name }))}
                 selected={productFilters}
                 onChange={setProductFilters}
               />

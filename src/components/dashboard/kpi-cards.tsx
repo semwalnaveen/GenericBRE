@@ -17,7 +17,7 @@ import {
   Package,
   Archive,
 } from "lucide-react";
-import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
+import { useAppStore, useEffectiveCapabilities, useUserScope, isRuleInScope } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
 import { cn } from "@/lib/utils";
 import { useTranslate } from "@/lib/use-translate";
@@ -49,9 +49,8 @@ export const KPI_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "inactive-archived-rules": "rule.view",
 };
 
-// Exactly 6 — matches every role's dashboardConfigs.kpis length, so the grid
-// below always fills completely at every breakpoint with no trailing gap.
-export const DEFAULT_KPI_IDS = ["total-rules", "active-rules", "draft-rules", "rule-executions", "business-categories", "active-products"];
+// User requested 5 KPIs: Total Rules, Published, Active Products, Pending Approvals, Draft Rules
+export const DEFAULT_KPI_IDS = ["total-rules", "active-rules", "active-products", "pending-approvals", "draft-rules"];
 
 export const KPI_LABELS: Record<string, string> = {
   "total-rules": "Total Rules",
@@ -102,18 +101,27 @@ export function KpiCards() {
   const allProducts = useAppStore((s) => s.products);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const userId = useAppStore((s) => s.currentUser.userId);
+  const currentUserName = useAppStore((s) => s.currentUser.name);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const scope = useUserScope();
   const router = useRouter();
 
-  // Every widget scopes to the header's Industry filter when one is active —
-  // this is the one place in the app that filter previously did nothing.
-  const rules = domainFilter.length ? allRules.filter((r) => domainFilter.includes(r.domain)) : allRules;
+  // Every widget scopes to the header's Industry filter when one is active,
+  // AND to the signed-in user's own product/category access (see
+  // isRuleInScope/useUserScope in store.ts) — a KPI number should never
+  // count rules this user isn't even allowed to open.
+  const domainScoped = domainFilter.length ? allRules.filter((r) => domainFilter.includes(r.domain)) : allRules;
+  const rules = domainScoped.filter((r) => isRuleInScope(r, scope, productRuleMappings, currentUserName));
   const ruleIds = new Set(rules.map((r) => r.id));
   const simulations = domainFilter.length ? allSimulations.filter((s) => domainFilter.includes(s.domain)) : allSimulations;
-  const approvalRequests = domainFilter.length ? allApprovalRequests.filter((a) => ruleIds.has(a.ruleId)) : allApprovalRequests;
-  const deploymentEvents = auditLog.filter(
-    (a) => a.action === "Published Rule" && (!domainFilter.length || ruleIds.has(a.entityId))
-  );
+  // Was only filtering by ruleIds when an Industry filter was active — ruleIds
+  // is now always a real, non-trivial constraint (the signed-in user's own
+  // scope, not just "every rule"), so this must apply unconditionally or a
+  // Rule Approver's "Pending Approvals" KPI counts everyone's queue instead
+  // of just the categories/products she's actually assigned.
+  const approvalRequests = allApprovalRequests.filter((a) => ruleIds.has(a.ruleId));
+  const deploymentEvents = auditLog.filter((a) => a.action === "Published Rule" && ruleIds.has(a.entityId));
 
   const disabled = rules.filter((r) => r.status === "Inactive" || r.status === "Archived").length;
 
@@ -159,7 +167,12 @@ export function KpiCards() {
     },
     "active-products": {
       label: t(KPI_TRANSLATION_KEYS["active-products"]),
-      value: allProducts.filter((p) => p.status === "Active" && (!domainFilter.length || domainFilter.includes(p.id))).length,
+      value: allProducts.filter(
+        (p) =>
+          p.status === "Active" &&
+          (!domainFilter.length || domainFilter.includes(p.id)) &&
+          (scope.bypass || scope.productIds.has(p.id))
+      ).length,
       icon: Package,
       accent: "text-purple-600 bg-purple-500/10 dark:text-purple-400",
       href: "/products",

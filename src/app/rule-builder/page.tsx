@@ -24,7 +24,7 @@ import {
   Network,
   Variable
 } from "lucide-react";
-import { useAppStore, useHasCapability } from "@/lib/store";
+import { useAppStore, useHasCapability, useUserScope, isRuleInScope } from "@/lib/store";
 import { BusinessField, BusinessRule, CaseWhenClause, Condition, ConditionGroup, RuleAction, RuleTemplate } from "@/lib/types";
 import {
   emptyGroup,
@@ -170,8 +170,22 @@ function RuleBuilderContent() {
   const fieldCatalog = useAppStore((s) => s.fieldCatalog);
   const canCreate = useHasCapability("rule.create");
   const canEdit = useHasCapability("rule.edit");
+  const userScope = useUserScope();
 
   const existingRule = useMemo(() => rules.find((r) => r.id === editId), [rules, editId]);
+
+  // A deep link (or a stale bookmark) to a rule outside this user's assigned
+  // categories/products shouldn't quietly load a full editor for it — same
+  // scoping as the Repository/Dashboard (see isRuleInScope/useUserScope in
+  // store.ts). Redirect back to the Repository rather than rendering a blank
+  // editor, which would look like a bug rather than a permissions boundary.
+  useEffect(() => {
+    if (!existingRule) return;
+    if (isRuleInScope(existingRule, userScope, productRuleMappings, currentUser.name)) return;
+    toast.error("You don't have access to this rule", { description: "It's outside your assigned categories/products." });
+    router.replace("/repository");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingRule]);
 
   const [rule, setRule] = useState<BusinessRule>(() => {
     if (editId && typeof window !== "undefined") {

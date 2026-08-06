@@ -38,6 +38,7 @@ interface DataTableProps<TData, TValue> {
   rightToolbar?: React.ReactNode;
   renderTopToolbar?: (table: any) => React.ReactNode;
   className?: string;
+  emptyMessage?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -51,6 +52,7 @@ export function DataTable<TData, TValue>({
   rightToolbar,
   renderTopToolbar,
   className,
+  emptyMessage = "No rules match the current filters.",
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -112,7 +114,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-32 text-center text-[13px] text-muted-foreground">
-                  No rules match the current filters.
+                  {emptyMessage}
                 </TableCell>
               </TableRow>
             )}

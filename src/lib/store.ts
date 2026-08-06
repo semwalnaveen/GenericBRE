@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -1650,9 +1651,115 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 58,
+      version: 67,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v64 -> v65: inject newly created RL-DEMO-1, RL-DEMO-2, RL-DEMO-3
+        // into existing persisted sessions so they show up for the user immediately.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.rules && !s.rules.some((r) => r.id.startsWith("RL-DEMO-"))) {
+            const demoRules = ALL_RULES.filter(r => r.id.startsWith("RL-DEMO-"));
+            s.rules = [...demoRules, ...s.rules];
+          }
+        }
+
+        // v63 -> v64: demo-realism patch for the new role-based data scoping
+        // (see mock-data.ts's ALL_RULES post-processing block and the new
+        // "uam-divya-home-compliance" mapping). Backfills both onto already-
+        // persisted sessions so the fix isn't only visible on a fresh install.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.rules) {
+            for (const id of ["RL-429", "RL-450"]) {
+              const rule = s.rules.find((r) => r.id === id);
+              if (rule) {
+                rule.createdBy = "Ananya Verma";
+                rule.owner = "Ananya Verma";
+              }
+            }
+          }
+          if (s?.userAccessMappings && !s.userAccessMappings.some((m) => m.id === "uam-divya-home-compliance")) {
+            const seedRow = DEFAULT_USER_ACCESS_MAPPINGS.find((m) => m.id === "uam-divya-home-compliance");
+            if (seedRow) s.userAccessMappings.push(seedRow);
+          }
+        }
+
+        // v62 -> v63: Ananya Verma (Rule Creator/Maker) shouldn't hold
+        // adminScope "system" — a leftover from before Vikram existed as the
+        // dedicated System Admin persona. Left as-is she'd bypass the new
+        // User Access Mapping data scoping (isRuleInScope/useUserScope) and
+        // see every rule/product regardless of her assigned categories,
+        // defeating the "Rule Creator sees only her own work" persona.
+        {
+          const s = persistedState as Partial<AppState>;
+          const ananya = s?.users?.find((u) => u.id === "usr-ananya-verma") as (AppUser & { adminScope?: string }) | undefined;
+          if (ananya?.adminScope) delete ananya.adminScope;
+        }
+
+        // v61 -> v62: manager-approved reference layout. The Rule Creator
+        // dashboard (chart-first: Rule Status/Monthly Activity/Product
+        // Distribution/Draft Rules as donut/bar charts, Rule Conflicts as
+        // the one list, Quick Actions last) was signed off as-is — reverted
+        // her config back to that exact chart-forward shape (undoing the
+        // v59 -> v60 list-panel version) and carried the same chart-forward
+        // visual pattern into every other seed persona's layout too, still
+        // with each role's own relevant widget/KPI choices.
+        {
+          const s = persistedState as Partial<AppState>;
+          const RESET_IDS = ["usr-ananya-verma", "usr-rohan-mehta", "usr-kavita-rao", "usr-divya-iyer", "usr-vikram-chawla", "usr-ved-prakash"];
+          if (s?.dashboardConfigs) {
+            for (const id of RESET_IDS) {
+              if (s.dashboardConfigs[id]) s.dashboardConfigs[id] = DEFAULT_DASHBOARD_CONFIGS[id];
+            }
+          }
+        }
+
+        // v60 -> v61: RULE_CREATOR_WIDGETS originally included
+        // "rules-awaiting-review", which is gated on rule.publish (the
+        // Checker grant) — a Maker never holds that, so the widget was
+        // silently invisible to Ananya. Swapped for "recent-deployments" in
+        // dashboards.ts; re-reset her config since v60 already baked the
+        // broken list into anyone who migrated through it.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-ananya-verma"]) {
+            s.dashboardConfigs["usr-ananya-verma"] = DEFAULT_DASHBOARD_CONFIGS["usr-ananya-verma"];
+          }
+        }
+
+        // v59 -> v60: the remaining 5 seed personas (+ the ved-prakash admin
+        // fallback account) each get their own persona-specific dashboard —
+        // see dashboards.ts's RULE_CREATOR_/PRODUCT_MANAGER_/RULE_APPROVER_/
+        // RULE_VIEWER_/SYSTEM_ADMIN_ WIDGETS/KPIS — replacing the single
+        // layout every role previously shared. Also backfills a dashboard
+        // config for usr-vikram-chawla, who previously had none of his own
+        // and silently borrowed usr-ved-prakash's via the role-name fallback
+        // in dashboard/page.tsx.
+        {
+          const s = persistedState as Partial<AppState>;
+          const RESET_IDS = ["usr-ananya-verma", "usr-rohan-mehta", "usr-kavita-rao", "usr-divya-iyer", "usr-ved-prakash"];
+          if (s?.dashboardConfigs) {
+            for (const id of RESET_IDS) {
+              if (s.dashboardConfigs[id]) s.dashboardConfigs[id] = DEFAULT_DASHBOARD_CONFIGS[id];
+            }
+            if (!s.dashboardConfigs["usr-vikram-chawla"]) {
+              s.dashboardConfigs["usr-vikram-chawla"] = DEFAULT_DASHBOARD_CONFIGS["usr-vikram-chawla"];
+            }
+          }
+        }
+
+        // v58 -> v59: Rule Tester (usr-arjun-nair) gets a persona-specific
+        // dashboard — see dashboards.ts's RULE_TESTER_WIDGETS/RULE_TESTER_KPIS
+        // — instead of the standard layout every role shared. Wholesale reset
+        // of the persisted config, same pattern as the v55 -> v56 block below.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
+
         // v57 -> v58: generic BRE persona terminology. The seed roster's Job
         // Titles were organization-specific (banking-flavored) job titles;
         // renamed to functional BRE personas so the platform's own demo data
@@ -2455,6 +2562,47 @@ export const useAppStore = create<AppState>()(
         // Used" list) — a brand-new key, the default shallow merge fills it
         // in from initial state ([]) automatically, nothing to backfill.
 
+        // v66 -> v67: restore the functional job-title flavor for the seed
+        // roster's role/title labels (Credit/Risk Manager, Underwriter/
+        // Claims, Product Manager, Business Analyst, Operations) — the
+        // generic "Rule Approver/Tester/..." labels from the v57 -> v58 pass
+        // read as too abstract in the role-switcher, per direct comparison
+        // against the target screenshot. Placed last (not at the top, the
+        // usual spot for a new block) so it runs after — and so wins over —
+        // the still-present v57 -> v58 block above, which unconditionally
+        // reassigns these same fields back to the generic labels on every
+        // hydration; same pattern as that earlier rename otherwise: label
+        // swap only, same ids, no access-mapping change.
+        {
+          const s = persistedState as Partial<AppState>;
+          const ROLE_RENAME: Record<string, string> = {
+            "usr-kavita-rao": "Credit/Risk Manager",
+            "usr-arjun-nair": "Underwriter/Claims",
+            "usr-rohan-mehta": "Product Manager",
+            "usr-ananya-verma": "Business Analyst",
+            "usr-divya-iyer": "Operations",
+          };
+          if (s?.users) {
+            for (const u of s.users) {
+              const renamed = ROLE_RENAME[u.id];
+              if (renamed) u.role = renamed;
+            }
+          }
+          const JOB_TITLE_RENAME: Record<string, string> = {
+            "jt-credit-risk-manager": "Credit/Risk Manager",
+            "jt-underwriter-claims": "Underwriter/Claims",
+            "jt-product-manager": "Product Manager",
+            "jt-business-analyst": "Business Analyst",
+            "jt-operations": "Operations",
+          };
+          if (s?.jobTitles) {
+            for (const jt of s.jobTitles) {
+              const renamed = JOB_TITLE_RENAME[jt.id];
+              if (renamed) jt.name = renamed;
+            }
+          }
+        }
+
         // REQUIRED: zustand persist uses this return value as the migrated
         // state (merged over the fresh defaults). Without it, every version
         // bump silently discarded all persisted customization.
@@ -2567,19 +2715,83 @@ export function useHasCapability(capability: Capability): boolean {
   return useEffectiveCapabilities().has(capability);
 }
 
-// Rules scoped to the header's Industry filter when one is active — shared
-// by every dashboard widget so that filter isn't just decorative.
+// Which products/categories the signed-in user is actually allowed to see,
+// resolved from their Active User Access Mapping rows — the productId/
+// categoryId columns on those rows previously fed nothing but
+// effectiveCapabilities()'s flat yes/no set; this is what turns them into
+// real data-visibility scoping. adminScope "system" (platform admin) and
+// "product" (manages products/mappings platform-wide) both bypass scoping
+// entirely — same admins who already hold every non-rule capability get to
+// see every rule too, not just the ones on their own access-mapping rows.
+export interface UserScope {
+  bypass: boolean;
+  productIds: Set<string>;
+  categories: Set<string>;
+}
+
+// Selects the store's stable array/primitive references and derives the Set-
+// based UserScope in a useMemo — building fresh Sets straight out of a
+// Zustand selector would return a new object identity every render (Zustand
+// only skips re-renders when the *selected* value is Object.is-equal to
+// last time, so a selector that always returns `{ ...new Set() }` never
+// gets that short-circuit), which both re-renders more than necessary and
+// breaks downstream useMemo/React Compiler analysis for anything that lists
+// this scope in its own dependency array.
+export function useUserScope(): UserScope {
+  const adminScope = useAppStore((s) => s.users.find((u) => u.id === s.currentUser.userId)?.adminScope);
+  const userId = useAppStore((s) => s.currentUser.userId);
+  const userAccessMappings = useAppStore((s) => s.userAccessMappings);
+  const ruleCategories = useAppStore((s) => s.ruleCategories);
+
+  return useMemo(() => {
+    const bypass = adminScope === "system" || adminScope === "product";
+    const mappings = userAccessMappings.filter((m) => m.userId === userId && m.status === "Active");
+    const productIds = new Set(mappings.map((m) => m.productId));
+    const categories = new Set(
+      mappings.map((m) => ruleCategories.find((c) => c.id === m.categoryId)?.name).filter((n): n is string => !!n)
+    );
+    return { bypass, productIds, categories };
+  }, [adminScope, userId, userAccessMappings, ruleCategories]);
+}
+
+// A rule is visible to the current user when its category is one they're
+// assigned AND (it's mapped to at least one of their assigned products, OR
+// it isn't mapped to any product yet — a maker's freshly created, not-yet-
+// mapped draft shouldn't disappear before they've had a chance to map it, so
+// that case falls back to "did I create/own this rule").
+export function isRuleInScope(rule: BusinessRule, scope: UserScope, productRuleMappings: ProductRuleMapping[], currentUserName: string): boolean {
+  if (scope.bypass) return true;
+  if (!scope.categories.has(rule.category)) return false;
+  const mappedProducts = productRuleMappings.filter((m) => m.ruleId === rule.id).map((m) => m.productId);
+  if (mappedProducts.length === 0) return rule.createdBy === currentUserName || rule.owner === currentUserName;
+  return mappedProducts.some((p) => scope.productIds.has(p));
+}
+
+// Rules scoped to the header's Industry filter (when one is active) AND the
+// signed-in user's own product/category access — shared by every dashboard
+// widget (persona-widgets.tsx, recent-panels.tsx, charts.tsx), so a Rule
+// Approver's "Rule Conflicts" widget only ever shows conflicts within her
+// own assigned categories, not the whole 182-rule catalogue.
 export function useScopedRules(): BusinessRule[] {
   const rules = useAppStore((s) => s.rules);
   const domainFilter = useAppStore((s) => s.globalFilters.domains);
-  return domainFilter.length ? rules.filter((r) => domainFilter.includes(r.domain)) : rules;
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const currentUserName = useAppStore((s) => s.currentUser.name);
+  const scope = useUserScope();
+  const domainScoped = domainFilter.length ? rules.filter((r) => domainFilter.includes(r.domain)) : rules;
+  return domainScoped.filter((r) => isRuleInScope(r, scope, productRuleMappings, currentUserName));
 }
 
-// Products visible to the logged-in user. Access is now driven per-user
-// through User Access Mapping (see effectiveCapabilities); this returns every
-// product (default-allow-all) so no user is ever locked out of the Products
-// Hub or Simulator picker. Per-product visibility, if ever needed, can derive
-// from the user's access mappings here.
+// Products visible to the logged-in user, scoped the same way rules are (see
+// useUserScope/isRuleInScope above) — System/Product Admin bypass and see
+// every product; anyone else sees only the products on their own Active User
+// Access Mapping rows. Used by the Products Hub and Simulator's product
+// picker (both single-run and batch).
 export function useAccessibleProducts(): Product[] {
-  return useAppStore((s) => s.products);
+  const products = useAppStore((s) => s.products);
+  const scope = useUserScope();
+  return useMemo(
+    () => (scope.bypass ? products : products.filter((p) => scope.productIds.has(p.id))),
+    [products, scope]
+  );
 }
