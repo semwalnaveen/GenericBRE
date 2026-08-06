@@ -24,7 +24,11 @@ export function getOutputTypeForKey(rules: BusinessRule[], key: string): FieldDa
 // percentage/currency get the same display convention as the rest of the app
 // (see matrix/editable-cell.tsx's formatDisplay), everything else falls back
 // to plain string/number display.
-export function formatVariableValue(rules: BusinessRule[], key: string, value: string | number): string {
+export function formatVariableValue(rules: BusinessRule[], key: string, value: unknown): string {
+  if (value && typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  
   const type = getOutputTypeForKey(rules, key);
   if (typeof value === "number") {
     if (type === "percentage") return `${value}%`;

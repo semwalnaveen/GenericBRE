@@ -368,13 +368,13 @@ export function FieldCatalogManager() {
                   </TableCell>
                   <TableCell className="py-2.5 text-right">
                     <div className="flex justify-end gap-0.5">
-                      <Button variant="ghost" size="icon-sm" className="size-7 opacity-0 group-hover/row:opacity-100 transition-opacity" onClick={() => startEdit(f)} title="Edit Field">
+                      <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(f)} title="Edit Field">
                         <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="size-7 opacity-0 group-hover/row:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        className="size-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         onClick={() => setPendingDelete(f)}
                         title="Delete Field"
                       >

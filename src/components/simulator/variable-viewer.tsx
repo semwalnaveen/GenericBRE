@@ -34,7 +34,10 @@ export function VariableViewer({ traceSteps, jsonText, fieldCatalog, rules }: Va
       const parsed = JSON.parse(jsonText || "{}");
       for (const [k, v] of Object.entries(parsed)) {
         const field = fieldCatalog.find((f) => f.key === k);
-        const valStr = field?.mask ? "***" : String(v);
+        let valStr = "***";
+        if (!field?.mask) {
+          valStr = (v && typeof v === "object") ? JSON.stringify(v) : String(v);
+        }
         items.push({
           key: k,
           producedByRule: "Input Request",

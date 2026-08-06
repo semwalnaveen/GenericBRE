@@ -186,23 +186,7 @@ export const CORE_RULES: BusinessRule[] = [
     createdDaysAgo: 120,
     updatedDaysAgo: 2,
   }),
-  makeRule({
-    id: "RL-102",
-    name: "Age Restriction Policy",
-    domain: "Lending",
-    category: "Eligibility",
-    priority: 1,
-    status: "Active",
-    description: "Policy rule restricting applicants aged 21 and above.",
-    owner: "Credit Risk Division",
-    rootGroup: group("AND", [cond("applicant_age", ">=", "21")]),
-    actions: [
-      { id: cid(), type: "Reject", reasonCode: "AGE_RESTRICTED", message: "Age restriction triggered for applicant age >= 21." },
-      { id: cid(), type: "Assign Value", outputField: "loan_decision", outputValue: "Reject" },
-    ],
-    createdDaysAgo: 119,
-    updatedDaysAgo: 2,
-  }),
+
   makeRule({
     id: "RL-103",
     name: "Minimum Income Requirement",
@@ -2106,7 +2090,7 @@ function mapping(id: string, productId: string, ruleId: string, order: number): 
 export const DEFAULT_PRODUCT_RULE_MAPPINGS: ProductRuleMapping[] = [
   // Home Loan (8 rules - 2 Critical Conflicts)
   mapping("prm-hl-1", "prod-home-loan", "RL-101", 0),
-  mapping("prm-hl-2", "prod-home-loan", "RL-102", 1),
+
   mapping("prm-hl-3", "prod-home-loan", "RL-103", 2),
   mapping("prm-hl-4", "prod-home-loan", "RL-104", 3),
   mapping("prm-hl-5", "prod-home-loan", "RL-105", 4),

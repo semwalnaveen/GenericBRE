@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Trash2, Upload, Wand2, FileJson, Save, ArrowDown, ArrowUp, ArrowUpDown, Package, Search, Settings2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useAppStore } from "@/lib/store";
-import { JsonMapping, JsonMappingEntry, FieldDataType } from "@/lib/types";
+import { JsonMapping, JsonMappingEntry, FieldDataType, BusinessField } from "@/lib/types";
 import { flattenJson, FlattenedAttribute } from "@/lib/json-mapping";
 import { buildTemplateJson, buildResponseShapePreview } from "@/lib/simulator-json";
 import { Button } from "@/components/ui/button";
@@ -45,22 +45,52 @@ type SortColumn = "externalAttribute" | "jsonPath" | "mappedField" | "dataType" 
 
 const FIELD_TYPES: FieldDataType[] = ["number", "string", "boolean", "enum", "currency", "list"];
 
-function entriesFromFlattened(flattened: FlattenedAttribute[], existing: JsonMappingEntry[]): JsonMappingEntry[] {
+function entriesFromFlattened(
+  flattened: FlattenedAttribute[],
+  existing: JsonMappingEntry[],
+  fieldCatalog?: BusinessField[]
+): JsonMappingEntry[] {
   // Preserve any manual mappedField/transformationRule/required edits on
   // attributes that still exist after re-generating from the product's
   // current template/response shape — only genuinely new paths get a fresh
   // Unmapped row.
   const byPath = new Map(existing.map((e) => [e.jsonPath, e]));
   return flattened.map((f) => {
+    const externalAttribute = f.path.split(/[.[]/).pop()?.replace("]", "") || f.path;
+
+    // Auto-map logic
+    let mappedField: string | undefined = undefined;
+    let status: "Mapped" | "Unmapped" = "Unmapped";
+
+    if (fieldCatalog) {
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const normalizedExternal = normalize(externalAttribute);
+      const match = fieldCatalog.find(
+        (field) => normalize(field.key) === normalizedExternal || normalize(field.label) === normalizedExternal
+      );
+      if (match) {
+        mappedField = match.key;
+        status = "Mapped";
+      }
+    }
+
     const prior = byPath.get(f.path);
-    if (prior) return prior;
+    if (prior) {
+      // Auto-map existing unmapped entries if we found a match
+      if (!prior.mappedField && mappedField) {
+        return { ...prior, mappedField, status };
+      }
+      return prior;
+    }
+
     return {
       id: `entry-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      externalAttribute: f.path.split(/[.[]/).pop()?.replace("]", "") || f.path,
+      externalAttribute,
       jsonPath: f.path,
       dataType: f.inferredType,
+      mappedField,
       required: false,
-      status: "Unmapped",
+      status,
     };
   });
 }
@@ -113,7 +143,7 @@ export function JsonMappingManager() {
     if (!selectedProduct) return;
     if (!requestMapping) {
       const templateJson = buildTemplateJson(selectedProduct, rules, productRuleMappings, fieldCatalog);
-      const entries = entriesFromFlattened(flattenJson(templateJson), []);
+      const entries = entriesFromFlattened(flattenJson(templateJson), [], fieldCatalog);
       addJsonMapping({
         id: `jm-${selectedProduct.id}-request`,
         name: `${selectedProduct.name} — Request Mapping`,
@@ -127,7 +157,7 @@ export function JsonMappingManager() {
     }
     if (!responseMapping) {
       const responseShape = buildResponseShapePreview(selectedProduct, rules, productRuleMappings);
-      const entries = entriesFromFlattened(flattenJson(responseShape), []);
+      const entries = entriesFromFlattened(flattenJson(responseShape), [], fieldCatalog);
       addJsonMapping({
         id: `jm-${selectedProduct.id}-response`,
         name: `${selectedProduct.name} — Response Mapping`,
@@ -180,7 +210,7 @@ export function JsonMappingManager() {
       toast.error("That isn't valid JSON.");
       return;
     }
-    const entries = entriesFromFlattened(flattenJson(parsed), active.entries);
+    const entries = entriesFromFlattened(flattenJson(parsed), active.entries, fieldCatalog);
     updateActive({ entries });
     setDrawerOpen(true);
     toast.success(`Detected ${entries.length} attribute(s) from payload.`);
