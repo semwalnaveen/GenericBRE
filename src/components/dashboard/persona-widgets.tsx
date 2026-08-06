@@ -116,8 +116,8 @@ export function ApprovalQueuePanel() {
               >
                 <div className="min-w-0" title={rule?.name ?? a.ruleId}>
                   <p className="truncate text-xs font-bold text-foreground">{rule?.name ?? a.ruleId}</p>
-                  <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={`Requested by ${a.requestedBy} · ${formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}`}>
-                    Requested by {a.requestedBy} · {formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={`Requested by ${a.requestedBy} for ${a.requestType === "delete" ? "Deletion" : "Publish"} · ${formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}`}>
+                    Requested by {a.requestedBy} for {a.requestType === "delete" ? "Deletion" : "Publish"} · {formatDistanceToNow(new Date(a.requestedAt), { addSuffix: true })}
                   </p>
                 </div>
               </button>

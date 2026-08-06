@@ -111,13 +111,13 @@ export function RuleViewClient() {
         </div>
       </ScrollArea>
 
-      {rule.status === "Pending Approval" && (
+      {(rule.status === "Pending Approval" || rule.status === "Pending Deletion") && (
         <div className="sticky bottom-0 mt-auto flex items-center justify-end gap-2 border-t bg-card/80 p-4 backdrop-blur-md">
           <Button variant="outline" className="gap-1.5" disabled={!canPublish} onClick={() => handleReject(rule)}>
-            <Undo2 className="size-4" /> Reject
+            <Undo2 className="size-4" /> {rule.status === "Pending Deletion" ? "Reject Deletion" : "Reject"}
           </Button>
           <Button className="gap-1.5" disabled={!canPublish} onClick={() => handleApprove(rule)}>
-            <CheckCheck className="size-4" /> Approve
+            <CheckCheck className="size-4" /> {rule.status === "Pending Deletion" ? "Approve Deletion" : "Approve"}
           </Button>
         </div>
       )}

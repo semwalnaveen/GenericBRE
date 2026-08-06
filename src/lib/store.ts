@@ -1179,53 +1179,50 @@ export const useAppStore = create<AppState>()(
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to approve ${rule.name} without the rule.publish capability.` });
           return { ok: false, reason: `${currentUser.name} doesn't have permission to approve rules.` };
         }
-        if (rule.status !== "Pending Approval") {
-          return { ok: false, reason: `Only rules Pending Approval can be approved — "${rule.name}" is ${rule.status}.` };
+        if (rule.status !== "Pending Approval" && rule.status !== "Pending Deletion") {
+          return { ok: false, reason: `Only rules Pending Approval or Pending Deletion can be approved — "${rule.name}" is ${rule.status}.` };
         }
-        // A rule can't be approved unless a product mapping exists.
-        if (!get().productRuleMappings.some((m) => m.ruleId === ruleId)) {
+        if (rule.status === "Pending Approval" && !get().productRuleMappings.some((m) => m.ruleId === ruleId)) {
           return { ok: false, reason: "This rule has no product mapping — it can't be approved." };
         }
-        // Maker-Checker category scoping — an empty approvalCategories list
-        // means "unrestricted" (e.g. a System Administrator persona), a
-        // non-empty list is a strict whitelist of the categories this person
-        // is authorized to approve, matching User Management's own framing
-        // ("Rule Approval Responsibilities").
         const approver = users.find((u) => u.name === currentUser.name);
         if (approver && approver.approvalCategories.length > 0 && !approver.approvalCategories.includes(rule.category)) {
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to approve ${rule.name} (category "${rule.category}") outside their approval responsibilities (${approver.approvalCategories.join(", ")}).` });
           return { ok: false, reason: `Your approval responsibilities don't include the "${rule.category}" category.` };
         }
-        // Segregation of duties — the approver may not be the rule's creator
-        // or its submitter. The same person can never create/map and approve.
         const pending = approvalRequests.find((a) => a.ruleId === ruleId && a.stage === "Pending Review");
         if (rule.createdBy === currentUser.name || (pending && pending.requestedBy === currentUser.name)) {
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} cannot approve ${rule.name} — they created or submitted it (segregation of duties).` });
           return { ok: false, reason: "You created or submitted this rule — a different Checker must approve it." };
         }
 
-        // Approve now publishes atomically — there is no separate manual
-        // Publish step. "Approved" is never a resting status; a rule goes
-        // straight from Pending Approval to Published in one action.
-        set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Published", updatedAt: new Date().toISOString() } : r)),
-          approvalRequests: s.approvalRequests.map((a) =>
-            a.ruleId === ruleId && a.stage === "Pending Review"
-              ? { ...a, stage: "Approved", decidedBy: currentUser.name, decidedAt: new Date().toISOString() }
-              : a
-          ),
-        }));
-        // Reuses the "Published Rule" action string (not "Approved Rule")
-        // so the Deployments KPI (kpi-cards.tsx's deploymentEvents, filtered
-        // on this exact string) keeps counting this as a deployment with no
-        // changes needed there.
-        get().logAudit({ user: currentUser.name, action: "Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved and published by ${currentUser.name} — now live.` });
+        if (pending?.requestType === "delete") {
+          set((s) => ({
+            rules: s.rules.filter((r) => r.id !== ruleId),
+            approvalRequests: s.approvalRequests.map((a) =>
+              a.ruleId === ruleId && a.stage === "Pending Review"
+                ? { ...a, stage: "Approved", decidedBy: currentUser.name, decidedAt: new Date().toISOString() }
+                : a
+            ),
+          }));
+          get().logAudit({ user: currentUser.name, action: "Approved Deletion", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved for deletion by ${currentUser.name} — permanently removed.` });
+        } else {
+          set((s) => ({
+            rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Published", updatedAt: new Date().toISOString() } : r)),
+            approvalRequests: s.approvalRequests.map((a) =>
+              a.ruleId === ruleId && a.stage === "Pending Review"
+                ? { ...a, stage: "Approved", decidedBy: currentUser.name, decidedAt: new Date().toISOString() }
+                : a
+            ),
+          }));
+          get().logAudit({ user: currentUser.name, action: "Published Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} approved and published by ${currentUser.name} — now live.` });
+        }
         return { ok: true };
       },
       rejectRule: (ruleId, comment) => {
         const rule = get().rules.find((r) => r.id === ruleId);
         if (!rule) return { ok: false, reason: "Rule not found." };
-        const { currentUser, users } = get();
+        const { currentUser, approvalRequests, users } = get();
 
         if (!can(get(), "rule.publish")) {
           get().logAudit({ user: currentUser.name, action: "Approval Denied", entity: "BusinessRule", entityId: ruleId, details: `${currentUser.name} attempted to reject ${rule.name} without the rule.publish capability.` });
@@ -1237,15 +1234,22 @@ export const useAppStore = create<AppState>()(
           return { ok: false, reason: `Your approval responsibilities don't include the "${rule.category}" category.` };
         }
 
+        const pending = approvalRequests.find((a) => a.ruleId === ruleId && a.stage === "Pending Review");
+        
         set((s) => ({
-          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: "Rejected", updatedAt: new Date().toISOString() } : r)),
+          rules: s.rules.map((r) => (r.id === ruleId ? { ...r, status: pending?.requestType === "delete" ? "Archived" : "Rejected", updatedAt: new Date().toISOString() } : r)),
           approvalRequests: s.approvalRequests.map((a) =>
             a.ruleId === ruleId && a.stage === "Pending Review"
               ? { ...a, stage: "Rejected", decidedBy: currentUser.name, decidedAt: new Date().toISOString(), comment }
               : a
           ),
         }));
-        get().logAudit({ user: currentUser.name, action: "Rejected Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} rejected during review${comment ? `: ${comment}` : "."}` });
+        
+        if (pending?.requestType === "delete") {
+          get().logAudit({ user: currentUser.name, action: "Rejected Deletion", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} deletion rejected by ${currentUser.name}${comment ? `: ${comment}` : "."}` });
+        } else {
+          get().logAudit({ user: currentUser.name, action: "Rejected Rule", entity: "BusinessRule", entityId: ruleId, details: `${rule.name} rejected during review${comment ? `: ${comment}` : "."}` });
+        }
         return { ok: true };
       },
       // Rule-centric product mapping used by the Map-to-Product dialog during
@@ -1492,8 +1496,14 @@ export const useAppStore = create<AppState>()(
           return { ok: false, reason: "Only Archived rules can be permanently deleted." };
         }
 
-        set((s) => ({ rules: s.rules.filter((r) => r.id !== id) }));
-        get().logAudit({ user: currentUser.name, action: "Deleted Rule", entity: "BusinessRule", entityId: id, details: `${rule.name} permanently deleted.` });
+        set((s) => ({
+          rules: s.rules.map((r) => (r.id === id ? { ...r, status: "Pending Deletion", updatedAt: new Date().toISOString() } : r)),
+          approvalRequests: [
+            { id: `AR-${Date.now()}`, ruleId: id, stage: "Pending Review", requestType: "delete", requestedBy: currentUser.name, requestedAt: new Date().toISOString() },
+            ...s.approvalRequests,
+          ],
+        }));
+        get().logAudit({ user: currentUser.name, action: "Requested Deletion", entity: "BusinessRule", entityId: id, details: `${rule.name} submitted for deletion approval.` });
         return { ok: true };
       },
 
