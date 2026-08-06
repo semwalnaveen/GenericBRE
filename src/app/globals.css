@@ -363,6 +363,29 @@ html[data-large-targets="true"] [role="menuitem"] {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 0.75; }
 }
+/* A quieter cousin of ucrmDustPulse for the login hero's hex lattice — a
+   narrower opacity swing reads as a slow shimmer rather than a blink. */
+@keyframes ucrmHexShimmer {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.4; }
+}
+/* A soft light band sweeping left-to-right across the hex lattice. Pure
+   transform + opacity (no left/background-position) so it's GPU-composited —
+   translateX is relative to the element's own width, not the viewport, so
+   the exact percentages only need to carry it from fully off-screen-left to
+   fully off-screen-right for a 35%-container-wide band starting at left:-35%. */
+@keyframes ucrmHexWave {
+  0% { transform: translateX(0%); opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(400%); opacity: 0; }
+}
+/* Tiny particles drifting between hex cells — small transform-only motion,
+   deliberately understated ("very slow movement" per spec). */
+@keyframes ucrmParticleDrift {
+  0%, 100% { transform: translate(0, 0); opacity: 0.15; }
+  50% { transform: translate(4px, -6px); opacity: 0.5; }
+}
 @keyframes ucrmCountFade {
   0% { opacity: 0.4; }
   100% { opacity: 1; }

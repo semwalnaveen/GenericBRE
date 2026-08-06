@@ -1640,9 +1640,45 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 57,
+      version: 58,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v57 -> v58: generic BRE persona terminology. The seed roster's Job
+        // Titles were organization-specific (banking-flavored) job titles;
+        // renamed to functional BRE personas so the platform's own demo data
+        // matches its "generic, any-industry" positioning. Purely a label
+        // swap — same JobTitle ids, same AppUser.role field, no change to
+        // adminScope, approvalCategories, or any access mapping.
+        {
+          const s = persistedState as Partial<AppState>;
+          const ROLE_RENAME: Record<string, string> = {
+            "usr-kavita-rao": "Rule Approver",
+            "usr-arjun-nair": "Rule Tester",
+            "usr-rohan-mehta": "Product Rule Manager",
+            "usr-ananya-verma": "Rule Creator",
+            "usr-divya-iyer": "Rule Viewer",
+          };
+          if (s?.users) {
+            for (const u of s.users) {
+              const renamed = ROLE_RENAME[u.id];
+              if (renamed) u.role = renamed;
+            }
+          }
+          const JOB_TITLE_RENAME: Record<string, string> = {
+            "jt-credit-risk-manager": "Rule Approver",
+            "jt-underwriter-claims": "Rule Tester",
+            "jt-product-manager": "Product Rule Manager",
+            "jt-business-analyst": "Rule Creator",
+            "jt-operations": "Rule Viewer",
+          };
+          if (s?.jobTitles) {
+            for (const jt of s.jobTitles) {
+              const renamed = JOB_TITLE_RENAME[jt.id];
+              if (renamed) jt.name = renamed;
+            }
+          }
+        }
+
         // v56 -> v57: segregation of duties. The single `isAdmin` boolean
         // granted system.manage AND config.manage as one indivisible bundle,
         // so a Product Manager could grant permissions — including to

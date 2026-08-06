@@ -45,7 +45,7 @@ export function ProductMockup({
           <span className="size-2 rounded-full bg-red-400/70" />
           <span className="size-2 rounded-full bg-amber-400/70" />
           <span className="size-2 rounded-full bg-emerald-400/70" />
-          <span className="ml-2 text-sm font-medium text-sidebar-foreground/60">Rule Simulator — Home Loan</span>
+          <span className="ml-2 text-sm font-medium text-sidebar-foreground/60">Rule Simulator</span>
         </div>
 
         {/* KPI row */}

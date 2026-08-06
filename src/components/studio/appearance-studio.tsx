@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Image from "next/image";
 import {
   ArrowLeft,
   Check,
@@ -17,6 +18,13 @@ import {
   Upload,
   Workflow,
   X,
+  Save,
+  Eye,
+  Palette,
+  Layout,
+  Type,
+  MousePointer2,
+  ChevronRight,
 } from "lucide-react";
 import { useAppStore, useHasCapability, DEFAULT_APPEARANCE } from "@/lib/store";
 import { applyAppearance } from "@/components/providers";
@@ -534,7 +542,7 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                       </div>
                       {draft.logo && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={draft.logo} alt="Logo preview" className="size-12 rounded-lg border object-contain p-1" />
+                        <Image src={draft.logo} alt="Logo preview" width={48} height={48} className="size-12 rounded-lg border object-contain p-1" />
                       )}
                       <p className="text-sm text-muted-foreground">
                         Replaces the default brand mark in the sidebar, header, and login screen.
@@ -633,7 +641,7 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                     >
                       {draft.logo ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={draft.logo} alt="" className="size-full object-contain p-1" />
+                        <Image src={draft.logo} alt="App Logo" fill className="object-contain p-1" />
                       ) : (
                         <Workflow className="size-4" />
                       )}
@@ -665,7 +673,7 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                     <div className="mb-3 flex items-center gap-2">
                       {draft.logo && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={draft.logo} alt="" className="size-5 shrink-0 rounded object-contain" />
+                        <Image src={draft.logo} alt="App Logo" width={20} height={20} className="size-5 shrink-0 rounded object-contain" />
                       )}
                       <div className="min-w-0">
                         <p className="truncate text-xs font-bold leading-tight">{draft.appName || "Business Rules Engine"}</p>
@@ -808,7 +816,7 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                           <div className="relative mb-3 flex h-8 w-full items-center justify-center mix-blend-multiply">
                             {draft.logo ? (
                                // eslint-disable-next-line @next/next/no-img-element
-                               <img src={draft.logo} alt="" className="h-full object-contain" />
+                               <Image src={draft.logo} alt="App Logo" width={64} height={64} className="h-full w-auto object-contain" />
                             ) : (
                                <Workflow className="size-6 text-[#0a1230]" />
                             )}

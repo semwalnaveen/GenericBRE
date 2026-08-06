@@ -115,7 +115,7 @@ function buildColumns(onRowClick: (row: BatchRowResult) => void): ColumnDef<Batc
       id: "reason",
       header: "Decision Reason",
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground truncate block max-w-[400px]" title={row.original.decision?.summary ?? row.original.errorMessage ?? "—"}>
+        <span className="text-xs text-muted-foreground truncate block max-w-[200px]" title={row.original.decision?.summary ?? row.original.errorMessage ?? "—"}>
           {row.original.decision?.summary ?? row.original.errorMessage ?? "—"}
         </span>
       ),

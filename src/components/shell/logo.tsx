@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useAppStore } from "@/lib/store";
 import { Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,8 +8,7 @@ import { cn } from "@/lib/utils";
 export function LogoMark({ className }: { className?: string }) {
   const logo = useAppStore((s) => s.appearance.logo);
   if (logo) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={logo} alt="Client logo" className={cn("size-8 rounded-md object-contain", className)} />;
+    return <Image src={logo} alt="Client logo" width={32} height={32} className={cn("size-8 rounded-md object-contain", className)} priority />;
   }
   return (
     <div
