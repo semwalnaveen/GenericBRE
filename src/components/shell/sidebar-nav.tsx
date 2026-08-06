@@ -118,24 +118,26 @@ export function SidebarNav({ collapsed, onNavigate }: { collapsed: boolean; onNa
           />
         ))}
       </div>
-      <div className="flex flex-col gap-0.5">
-        {!collapsed && (
-          <p className="px-2.5 pb-1 text-sm font-bold uppercase tracking-wider text-sidebar-foreground/60">
-            {t("nav.platform")}
-          </p>
-        )}
-        {secondaryItems.map((item) => (
-          <NavLink
-            key={item.href}
-            href={item.href}
-            label={t(item.labelKey)}
-            Icon={item.icon}
-            collapsed={collapsed}
-            disabled={item.disabled}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </div>
+      {secondaryItems.length > 0 && (
+        <div className="flex flex-col gap-0.5">
+          {!collapsed && (
+            <p className="px-2.5 pb-1 text-sm font-bold uppercase tracking-wider text-sidebar-foreground/60">
+              {t("nav.platform")}
+            </p>
+          )}
+          {secondaryItems.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={t(item.labelKey)}
+              Icon={item.icon}
+              collapsed={collapsed}
+              disabled={item.disabled}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

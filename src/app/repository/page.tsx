@@ -8,7 +8,6 @@ import { useAppStore, useHasCapability, useUserScope, isRuleInScope } from "@/li
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { cn } from "@/lib/utils";
 import {
@@ -21,14 +20,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -96,7 +87,6 @@ function RepositoryContent() {
   const ownerIsMe = searchParams.get("owner") === "me";
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
-  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
 
@@ -342,7 +332,7 @@ function RepositoryContent() {
               "relative h-8 shrink-0 gap-1.5 text-xs font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
               criticalConflicts.length > 0 ? "bg-red-600 hover:bg-red-700 text-white" : "bg-amber-600 hover:bg-amber-700 text-white"
             )}
-            onClick={() => setReportModalOpen(true)}
+            onClick={() => router.push("/repository/conflicts")}
           >
             View Report <ArrowRight className="size-3.5" />
           </Button>
@@ -433,90 +423,6 @@ function RepositoryContent() {
           )}
         />
       </div>
-
-      {/* PRODUCT-LEVEL RULE CONFLICT DETECTION REPORT MODAL */}
-      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
-        <DialogContent className="sm:max-w-4xl lg:max-w-5xl w-full">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="size-5 text-amber-500" />
-              Product-Level Rule Conflict Detection Report
-            </DialogTitle>
-            <DialogDescription>
-              Evaluates all mapped products for contradictory decisions, overlapping thresholds, and duplicate rules mapped to the same product.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg border p-3 text-center bg-card">
-                <p className="text-xs text-muted-foreground font-medium">Mapped Products Analyzed</p>
-                <p className="text-xl font-bold text-foreground mt-0.5">{products.length}</p>
-              </div>
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-center">
-                <p className="text-xs text-destructive font-medium">Critical Conflicts</p>
-                <p className="text-xl font-bold text-destructive mt-0.5">{criticalConflicts.length}</p>
-              </div>
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center">
-                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Duplicate Warnings</p>
-                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 mt-0.5">{mediumConflicts.length}</p>
-              </div>
-            </div>
-
-            <ScrollArea className="max-h-[380px] space-y-3">
-              <div className="space-y-3 pr-2">
-                {productConflicts.map(({ productName, finding: c }, idx) => (
-                  <div
-                    key={idx}
-                    className={
-                      c.severity === "Critical"
-                        ? "rounded-lg border border-destructive/40 bg-destructive/5 p-3.5 space-y-2"
-                        : "rounded-lg border border-amber-500/40 bg-amber-500/5 p-3.5 space-y-2"
-                    }
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={c.severity === "Critical" ? "destructive" : "secondary"}>
-                          {c.severity}
-                        </Badge>
-                        <span className="font-semibold text-sm">
-                          [{productName}] Rule {c.ruleAId} ({c.ruleAName}) vs Rule {c.ruleBId} ({c.ruleBName})
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-background/60 p-2.5 rounded border font-mono">
-                      <div>
-                        <span className="text-muted-foreground block font-sans text-[11px]">Rule {c.ruleAId}</span>
-                        <span className="text-foreground">{c.conditionA || c.ruleAId}</span>
-                        {c.decisionA && <span className="block text-primary font-semibold mt-0.5">Decision: {c.decisionA}</span>}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block font-sans text-[11px]">Rule {c.ruleBId}</span>
-                        <span className="text-foreground">{c.conditionB || c.ruleBId}</span>
-                        {c.decisionB && <span className="block text-destructive font-semibold mt-0.5">Decision: {c.decisionB}</span>}
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-muted-foreground">
-                      <strong className="text-foreground">Reason:</strong> {c.reason}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <strong className="text-foreground">Recommendation:</strong> {c.recommendation}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReportModalOpen(false)}>
-              Close Report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={(v) => !v && setDeleteConfirm(null)}>
         <AlertDialogContent>
