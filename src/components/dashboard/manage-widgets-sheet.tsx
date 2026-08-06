@@ -23,6 +23,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   "simulation-results": "Simulation Outcomes",
   "execution-timeline": "Execution Timeline",
   "batch-runs": "Batch Runs",
+  "monthly-activity": "Monthly Activity",
 };
 
 // User Access Mapping gate per widget — an admin can curate which widgets a
@@ -50,4 +51,5 @@ export const WIDGET_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "simulation-results": "rule.simulate",
   "execution-timeline": "rule.simulate",
   "batch-runs": "rule.simulate",
+  "monthly-activity": "rule.view",
 };

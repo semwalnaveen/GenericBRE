@@ -57,6 +57,7 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "simulation-results": () => <SimulationResultsChart />,
   "execution-timeline": () => <ExecutionTimelineChart />,
   "batch-runs": () => <BatchRunsPanel />,
+  "monthly-activity": () => <MonthlyRulesChart />,
 };
 
 const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };
