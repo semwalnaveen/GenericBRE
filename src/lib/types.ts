@@ -39,7 +39,8 @@ export type RuleStatus =
   | "Rejected"
   | "Published"
   | "Inactive"
-  | "Archived";
+  | "Archived"
+  | "Pending Deletion";
 
 // How the engine resolves multiple rules qualifying for the same case.
 // "execute-all" (default, matches pre-existing behavior) evaluates every
@@ -460,6 +461,7 @@ export interface JsonMapping {
   /** Optional — scopes this mapping to one product's integration contract. Unset = applies industry-wide (every product in `industry` shares this shape). */
   productId?: string;
   direction: "request" | "response";
+  samplePayload?: string;
   entries: JsonMappingEntry[];
   createdAt: string;
   updatedAt: string;
@@ -918,10 +920,13 @@ export type ApprovalStage = "Pending Review" | "Approved" | "Rejected";
 // Lightweight governance record implementing BRD §5.5's Draft -> Testing ->
 // Review -> Publish workflow. One rule can accumulate a history of these as
 // it cycles through review rounds.
+export type ApprovalRequestType = "publish" | "delete";
+
 export interface ApprovalRequest {
   id: string;
   ruleId: string;
   stage: ApprovalStage;
+  requestType?: ApprovalRequestType;
   requestedBy: string;
   requestedAt: string;
   decidedBy?: string;

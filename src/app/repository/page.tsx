@@ -522,12 +522,10 @@ function RepositoryContent() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-destructive" /> Delete {deleteConfirm?.id} permanently?
+              <AlertTriangle className="size-4 text-destructive" /> Request Deletion of {deleteConfirm?.id}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This removes {deleteConfirm?.name} and its condition/action definitions for good — unlike Archive, this
-              can&apos;t be undone. Its version history and audit trail entries stay for the record, but the rule
-              itself is gone.
+              This will submit a deletion request for {deleteConfirm?.name} to be reviewed by a Checker. The rule will enter a &quot;Pending Deletion&quot; state until it is approved or rejected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -537,14 +535,14 @@ function RepositoryContent() {
                 if (!deleteConfirm) return;
                 const result = deleteRule(deleteConfirm.id);
                 if (result.ok) {
-                  toast.success(`${deleteConfirm.id} deleted permanently`);
+                  toast.success(`Deletion request submitted for ${deleteConfirm.id}`);
                 } else {
                   toast.error("Delete blocked", { description: result.reason });
                 }
                 setDeleteConfirm(null);
               }}
             >
-              Delete Permanently
+              Request Deletion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

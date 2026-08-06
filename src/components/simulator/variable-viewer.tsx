@@ -71,6 +71,13 @@ export function VariableViewer({ traceSteps, jsonText, fieldCatalog, rules }: Va
     return items;
   }, [traceSteps, jsonText, fieldCatalog, rules]);
 
+  const rowVirtualizer = useVirtualizer({
+    count: variables.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 36,
+    overscan: 5,
+  });
+
   if (variables.length === 0) {
     return (
       <p className="text-xs text-muted-foreground italic py-3 text-center">
@@ -78,13 +85,6 @@ export function VariableViewer({ traceSteps, jsonText, fieldCatalog, rules }: Va
       </p>
     );
   }
-
-  const rowVirtualizer = useVirtualizer({
-    count: variables.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 36,
-    overscan: 5,
-  });
 
   return (
     <div className="space-y-2.5 rounded-lg border bg-card p-3 text-xs">
