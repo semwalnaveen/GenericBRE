@@ -6,7 +6,7 @@ import { Sparkles, GripVertical } from "lucide-react";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentRulesPanel, RecentActivityPanel, RecentDeploymentsPanel } from "@/components/dashboard/recent-panels";
-import { DomainDistributionChart, RuleStatusChart, SimulationResultsChart, ExecutionTimelineChart } from "@/components/dashboard/charts";
+import { DomainDistributionChart, RuleStatusChart, SimulationResultsChart, ExecutionTimelineChart, MonthlyRulesChart } from "@/components/dashboard/charts";
 import { DemoScenariosPanel } from "@/components/dashboard/demo-scenarios";
 import {
   DraftRulesPanel,
@@ -53,6 +53,7 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "simulation-results": () => <SimulationResultsChart />,
   "execution-timeline": () => <ExecutionTimelineChart />,
   "batch-runs": () => <BatchRunsPanel />,
+  "monthly-activity": () => <MonthlyRulesChart />,
 };
 
 const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };

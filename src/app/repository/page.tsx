@@ -74,7 +74,7 @@ function RepositoryContent() {
   const searchParams = useSearchParams();
 
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [statuses, setStatuses] = useState<string[]>(searchParams.get("status") ? [searchParams.get("status")!] : []);
+  const [statuses, setStatuses] = useState<string[]>(searchParams.getAll("status").length > 0 ? searchParams.getAll("status") : []);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [productFilters, setProductFilters] = useState<string[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);

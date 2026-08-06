@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { PanelHeader, ACTION_DOT, initials } from "./recent-panels";
 import { cn } from "@/lib/utils";
+import { DistributionDonutWidget } from "./premium-widgets";
 
 function EmptyRow({ children }: { children: React.ReactNode }) {
   return <p className="px-3.5 py-4 text-center text-xs text-muted-foreground">{children}</p>;
@@ -21,33 +22,39 @@ function EmptyRow({ children }: { children: React.ReactNode }) {
 // rather than faked as "my" rules.
 export function DraftRulesPanel() {
   const rules = useScopedRules();
-  const router = useRouter();
-  const drafts = useMemo(
-    () => rules.filter((r) => r.status === "Draft").sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)),
-    [rules]
-  );
+  const drafts = useMemo(() => rules.filter((r) => r.status === "Draft"), [rules]);
+  
+  const data = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of drafts) {
+      const cat = r.category || "Uncategorized";
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [drafts]);
+
+  const donutData = useMemo(() => {
+    const CHART_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#6366f1", "#14b8a6"];
+    return data.map((d, i) => ({
+      name: d.name,
+      value: d.value,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+      bgSoftColor: "bg-slate-50",
+      percentage: drafts.length > 0 ? `${Math.round((d.value / drafts.length) * 100)}%` : "0%",
+      absoluteText: d.value.toString()
+    }));
+  }, [data, drafts]);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Draft Rules (org-wide)" icon={FileText} action="View all" onAction={() => router.push("/repository?status=Draft")} />
-      <ScrollArea className="min-h-0 flex-1">
-        <div className="divide-y divide-border">
-          {drafts.slice(0, 8).map((r) => (
-            <button
-              key={r.id}
-              onClick={() => router.push(`/rule-builder?id=${r.id}`)}
-              className="flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left hover:bg-accent/50 transition-colors"
-            >
-              <div className="min-w-0" title={r.name}>
-                <p className="truncate text-xs font-bold text-foreground">{r.name}</p>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5" title={`${r.id} · ${r.category}`}>{r.id} · {r.category}</p>
-              </div>
-            </button>
-          ))}
-          {drafts.length === 0 && <EmptyRow>No rules currently in Draft.</EmptyRow>}
-        </div>
-      </ScrollArea>
-    </div>
+    <DistributionDonutWidget
+      title="Draft Rules (org-wide)"
+      totalText="DRAFTS"
+      totalSubtext={drafts.length.toString()}
+      data={donutData}
+      action="View all"
+    />
   );
 }
 

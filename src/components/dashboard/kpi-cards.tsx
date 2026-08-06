@@ -15,6 +15,7 @@ import {
   XCircle,
   Users,
   Package,
+  Archive,
 } from "lucide-react";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
@@ -45,6 +46,7 @@ export const KPI_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "rule-executions": "rule.simulate",
   "business-categories": "rule.view",
   "system-users": "system.manage",
+  "inactive-archived-rules": "rule.view",
 };
 
 // Exactly 6 — matches every role's dashboardConfigs.kpis length, so the grid
@@ -60,6 +62,7 @@ export const KPI_LABELS: Record<string, string> = {
   "rule-executions": "Rule Executions",
   "business-categories": "Business Categories",
   "system-users": "System Users",
+  "inactive-archived-rules": "Inactive & Archived Rules",
 };
 
 // Same ids as KPI_LABELS above (kept as the English source for the admin
@@ -74,6 +77,7 @@ const KPI_TRANSLATION_KEYS: Record<string, TranslationKey> = {
   "rule-executions": "kpi.ruleExecutions",
   "business-categories": "kpi.businessCategories",
   "system-users": "kpi.systemUsers",
+  "inactive-archived-rules": "kpi.inactiveArchivedRules" as TranslationKey,
 };
 
 // Generates a deterministic sparkline array (values 20-100) based on a seed (e.g. the KPI value)
@@ -131,6 +135,13 @@ export function KpiCards() {
       icon: CheckCircle2,
       accent: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
       href: "/repository?status=Published",
+    },
+    "inactive-archived-rules": {
+      label: "Inactive & Archived",
+      value: disabled,
+      icon: Archive,
+      accent: "text-slate-600 bg-slate-500/10 dark:text-slate-400",
+      href: "/repository?status=Inactive&status=Archived",
     },
     "draft-rules": {
       label: t(KPI_TRANSLATION_KEYS["draft-rules"]),
@@ -193,8 +204,17 @@ export function KpiCards() {
     .map((id) => registry[id])
     .filter((k): k is Kpi => !!k);
 
+  const gridColsClass = {
+    1: "xl:grid-cols-1",
+    2: "xl:grid-cols-2",
+    3: "xl:grid-cols-3",
+    4: "xl:grid-cols-4",
+    5: "xl:grid-cols-5",
+    6: "xl:grid-cols-6",
+  }[kpis.length] || "xl:grid-cols-6";
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+    <div className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3", gridColsClass)}>
       {kpis.map((k, i) => (
         <motion.button
           key={k.label}
@@ -204,21 +224,21 @@ export function KpiCards() {
           transition={{ delay: i * 0.03, duration: 0.2 }}
           whileTap={{ scale: 0.98 }}
           whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
-          className="group flex flex-col justify-center gap-0.5 rounded-xl border border-[#ffffff8c] bg-white px-3 py-1.5 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
+          className="group flex flex-col justify-center gap-1 rounded-xl border border-[#ffffff8c] bg-white px-3 py-2 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
         >
           <div className="flex w-full min-w-0 items-center justify-between gap-1.5" title={k.label}>
-            <span className="truncate text-[11px] font-semibold text-muted-foreground">
+            <span className="truncate text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">
               {k.label}
             </span>
             <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-lg", k.accent)}>
               <k.icon className="size-3" />
             </span>
           </div>
-          <div className="flex items-baseline gap-2 w-full">
-            <span className="text-2xl font-bold tracking-tight leading-none text-slate-900">
+          <div className="flex items-baseline gap-1.5 w-full">
+            <span className="text-[20px] font-bold tracking-tight leading-none text-slate-900">
               {k.value > 1000 ? (k.value / 1000).toFixed(1) + "K" : k.value}
             </span>
-            <span className="text-xs text-muted-foreground truncate leading-none pb-0.5">
+            <span className="text-[10px] text-muted-foreground truncate leading-none pb-0">
               {k.suffix || "metrics"}
             </span>
           </div>

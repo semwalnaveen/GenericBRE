@@ -23,12 +23,12 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
     // touched, and whether her rules pass simulation before submitting them.
     userId: "usr-ananya-verma",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "quick-actions", "draft-rules", "recent-rules", "simulation-results", "execution-timeline", "recent-activity"]),
+    widgets: widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "rule-conflicts", "draft-rules", "quick-actions"]),
     // "active-products"/"rule-executions" retired from every default KPI set
     // below (still selectable per-user via Configuration Studio -> Dashboard
     // Management) — backfilled with a role-relevant alternative so the row
     // still fills all 6 slots.
-    kpis: ["draft-rules", "pending-approvals", "active-rules", "total-rules", "business-categories", "active-products"],
+    kpis: ["total-rules", "draft-rules", "pending-approvals", "active-rules", "inactive-archived-rules", "active-products"],
     quickActions: ["create-rule", "open-repository", "run-simulator"],
   },
   "usr-rohan-mehta": {

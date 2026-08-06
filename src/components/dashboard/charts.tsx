@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area } from "recharts";
+import { format, subMonths, startOfMonth, isSameMonth } from "date-fns";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, AreaChart, Area, Legend } from "recharts";
 import { useAppStore, useScopedRules } from "@/lib/store";
 import { PanelHeader } from "./recent-panels";
 import { RuleStatus } from "@/lib/types";
@@ -22,11 +23,17 @@ const STATUS_BAR_COLORS: Record<RuleStatus, string> = {
   Archived: "bg-slate-500",
 };
 
-function ChartTooltip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color?: string }[], label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-popover px-2.5 py-1.5 text-sm shadow-md">
-      <span className="font-medium">{payload[0].name}</span>: {payload[0].value}
+      {label && <div className="mb-1 text-xs font-semibold text-muted-foreground">{label}</div>}
+      {payload.map((entry, index) => (
+        <div key={index} className="flex items-center gap-1.5">
+          {entry.color && <div className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />}
+          <span className="font-medium">{entry.name}</span>: {entry.value}
+        </div>
+      ))}
     </div>
   );
 }
@@ -248,6 +255,65 @@ export function ExecutionTimelineChart() {
       ) : (
         <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
           No simulation history.
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MonthlyRulesChart() {
+  const rules = useScopedRules();
+  
+  const data = useMemo(() => {
+    const result = [];
+    // Generate last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(new Date(), i);
+      const monthStart = startOfMonth(d);
+      
+      let created = 0;
+      let approved = 0;
+      
+      for (const r of rules) {
+        if (r.createdAt && isSameMonth(new Date(r.createdAt), monthStart)) {
+          created++;
+        }
+        if ((r.status === "Published" || r.status === "Approved") && r.updatedAt && isSameMonth(new Date(r.updatedAt), monthStart)) {
+          approved++;
+        }
+      }
+      
+      result.push({
+        month: format(monthStart, "MMM"),
+        Created: created,
+        Approved: approved
+      });
+    }
+    return result;
+  }, [rules]);
+
+  const hasData = rules.length > 0;
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <PanelHeader title="Monthly Activity" />
+      {hasData ? (
+        <div className="min-h-0 flex-1 p-3">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={10} stroke="var(--muted-foreground)" />
+              <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="var(--muted-foreground)" width={45} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.1 }} />
+              <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} iconType="circle" iconSize={8} />
+              <Bar dataKey="Created" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={14} />
+              <Bar dataKey="Approved" fill="#10b981" radius={[4, 4, 0, 0]} barSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
+          No activity found in the last 6 months.
         </div>
       )}
     </div>
