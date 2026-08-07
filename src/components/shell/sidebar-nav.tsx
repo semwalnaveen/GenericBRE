@@ -40,8 +40,8 @@ function NavLink({
     disabled
       ? "cursor-not-allowed text-sidebar-foreground/35 rounded-full"
       : active
-      ? "bg-[linear-gradient(90deg,#0462c8,#135aa2)] text-white font-[600] shadow-[0_8px_18px_-10px_#0462c880] rounded-[10px]"
-      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-medium rounded-full"
+      ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white font-[600] shadow-[0_4px_20px_-4px_rgba(37,99,235,0.7)] rounded-[12px] border border-blue-400/20"
+      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground font-medium rounded-[12px]"
   );
 
   const handleClick = (e: React.MouseEvent) => {
@@ -51,7 +51,7 @@ function NavLink({
 
   const linkContent = (
     <>
-      <Icon className={cn("size-4 shrink-0 transition-transform duration-200 group-hover:scale-110", active && "text-sidebar-primary-foreground")} strokeWidth={2.2} />
+      <Icon className={cn("size-4 shrink-0 transition-all duration-300 group-hover:scale-110", active && "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]")} strokeWidth={2.2} />
       {!collapsed && <span className="truncate" title={label}>{label}</span>}
       {!collapsed && badge ? (
         <Badge className="ml-auto h-4.5 min-w-4.5 rounded-full px-1 text-sm">{badge}</Badge>

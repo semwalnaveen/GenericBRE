@@ -42,7 +42,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b px-3 backdrop-blur-sm sm:px-4" style={{ background: 'linear-gradient(180deg, rgba(234, 242, 250, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%)' }}>
+      <header className="z-20 ml-0 mr-1 mt-2 mb-2 flex h-14 shrink-0 items-center gap-2 rounded-2xl border border-white/40 bg-gradient-to-r from-sidebar/80 via-sidebar/60 to-sidebar/40 px-3 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.1)] backdrop-blur-xl dark:border-white/10 dark:from-black/40 dark:to-black/10 sm:ml-0 sm:mr-2 sm:px-4 transition-all duration-300 ease-out hover:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.15)]">
         <Button variant="ghost" size="icon" className="size-9 md:hidden" onClick={onOpenMobileNav} aria-label="Open menu">
           <Menu className="size-[18px]" />
         </Button>
@@ -53,11 +53,11 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
         <button
           onClick={() => setPaletteOpen(true)}
           aria-label="Search"
-          className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card px-0 text-sm text-muted-foreground transition-colors hover:border-ring/50 sm:ml-3 sm:w-full sm:max-w-70 sm:justify-start sm:px-3"
+          className="group relative ml-1 flex h-9 w-9 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full border bg-card/50 text-sm text-muted-foreground transition-all duration-300 ease-out hover:bg-card hover:shadow-sm hover:ring-1 hover:ring-primary/20 sm:ml-3 sm:w-60 sm:justify-start sm:px-3"
         >
-          <Search className="size-3.5 shrink-0" />
-          <span className="hidden sm:inline">{t("header.searchPlaceholder")}</span>
-          <kbd className="ml-auto hidden rounded border bg-muted px-1.5 py-0.5 font-mono text-sm sm:inline">
+          <Search className="size-4 shrink-0 transition-transform duration-300 group-hover:text-primary" />
+          <span className="hidden whitespace-nowrap sm:inline">{t("header.searchPlaceholder")}</span>
+          <kbd className="absolute right-1.5 top-1.5 hidden h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
             ⌘K
           </kbd>
         </button>

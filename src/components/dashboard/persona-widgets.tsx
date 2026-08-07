@@ -30,6 +30,7 @@ export function DraftRulesPanel() {
     const counts: Record<string, number> = {};
     for (const r of drafts) {
       const cat = r.category || "Uncategorized";
+      if (cat.toLowerCase() === "risk & fraud") continue;
       counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return Object.entries(counts)

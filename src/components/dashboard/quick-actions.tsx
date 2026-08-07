@@ -71,7 +71,7 @@ export function QuickActions() {
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
       <PanelHeader title="Quick Actions" />
-      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2.5">
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
         {actions.map((a, i) => (
           <motion.button
             key={a.label}
@@ -80,14 +80,14 @@ export function QuickActions() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
             whileTap={{ scale: 0.98 }}
-            className="group flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60"
+            className="group flex items-center gap-2.5 rounded-lg border bg-card px-2.5 py-1.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60"
           >
-            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${a.accent}`}>
-              <a.icon className="size-4" />
+            <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${a.accent}`}>
+              <a.icon className="size-3.5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold leading-tight truncate" title={a.label}>{a.label}</p>
-              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate" title={a.desc}>{a.desc}</p>
+              <p className="text-[11px] font-bold leading-tight truncate" title={a.label}>{a.label}</p>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 truncate" title={a.desc}>{a.desc}</p>
             </div>
             <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
           </motion.button>

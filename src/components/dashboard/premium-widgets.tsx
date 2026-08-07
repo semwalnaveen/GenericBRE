@@ -26,7 +26,7 @@ export function WidgetCard({ title, subtitle, children, className, action }: Wid
         </div>
         {action && <div className="text-[11px] font-medium text-muted-foreground">{action}</div>}
       </div>
-      <div className="flex-1 flex flex-col min-h-0 p-2 overflow-y-auto">{children}</div>
+      <div className="flex-1 flex flex-col min-h-0 p-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">{children}</div>
     </div>
   );
 }
@@ -146,9 +146,9 @@ interface DistributionDonutWidgetProps {
 export function DistributionDonutWidget({ title, totalText, totalSubtext, data, action }: DistributionDonutWidgetProps) {
   return (
     <WidgetCard title={title} action={action}>
-      <div className="flex h-full min-h-[140px] items-center gap-6">
+      <div className="flex h-full min-h-[120px] items-center gap-6">
         {/* Donut Chart */}
-        <div className="relative h-[140px] w-[120px] shrink-0">
+        <div className="relative h-[120px] w-[110px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -157,8 +157,8 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={38}
-                outerRadius={56}
+                innerRadius={32}
+                outerRadius={46}
                 paddingAngle={0}
                 stroke="none"
               >
@@ -176,17 +176,17 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
         </div>
 
         {/* Custom Legend */}
-        <div className="flex flex-1 flex-col justify-center gap-1.5">
+        <div className="flex flex-1 flex-col justify-center gap-1">
           {data.map((item, i) => (
             <div
               key={i}
-              className={cn("flex items-center justify-between rounded-lg border border-transparent px-2.5 py-1", item.bgSoftColor)}
+              className={cn("flex items-center justify-between rounded-md border border-transparent px-2 py-0.5", item.bgSoftColor)}
             >
-              <div className="flex items-center gap-2">
-                <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs font-medium text-foreground">{item.name}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-[11px] font-medium text-foreground">{item.name}</span>
               </div>
-              <div className="flex items-center gap-3 text-xs font-bold text-foreground">
+              <div className="flex items-center gap-2 text-[11px] font-bold text-foreground">
                 <span>{item.percentage}</span>
                 <span className="text-muted-foreground font-medium">{item.absoluteText}</span>
               </div>

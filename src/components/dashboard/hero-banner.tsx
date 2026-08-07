@@ -15,7 +15,7 @@ export function HeroBanner({
 }) {
   return (
     <div
-      className="relative overflow-hidden text-[#f3f8fb] !border-none !rounded-none !border-b !border-[#ffffff1a] !shadow-[0_12px_32px_-20px_#02143259]"
+      className="relative ml-0 mr-1 mt-2 overflow-hidden rounded-2xl border border-[#ffffff1a] text-[#f3f8fb] shadow-[0_12px_32px_-12px_rgba(2,20,50,0.4)] sm:ml-0 sm:mr-2"
       style={{ background: "linear-gradient(90deg, #2f679d, #002f58)" }}
     >
       <div className="mx-auto max-w-[1400px]">
