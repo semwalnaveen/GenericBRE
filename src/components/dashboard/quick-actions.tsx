@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useAppStore, useEffectiveCapabilities } from "@/lib/store";
 import { Capability } from "@/lib/types";
 import { PanelHeader } from "./recent-panels";
+import { cn } from "@/lib/utils";
 
 interface Action {
   label: string;
@@ -69,7 +70,7 @@ export function QuickActions() {
     .filter((a): a is Action => !!a);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Quick Actions" />
       <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
         {actions.map((a, i) => (
@@ -80,10 +81,10 @@ export function QuickActions() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
             whileTap={{ scale: 0.98 }}
-            className="group flex items-center gap-2.5 rounded-lg border bg-card px-2.5 py-1.5 text-left transition-colors hover:border-primary/40 hover:bg-accent/60"
+            className="group animate-glass-shimmer flex items-center gap-2.5 rounded-lg border border-white/40 bg-white/40 px-2.5 py-1.5 text-left shadow-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:border-blue-400/50 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-transparent hover:shadow-[0_8px_16px_-6px_rgba(59,130,246,0.2)] dark:border-white/10 dark:bg-white/5 dark:hover:from-blue-900/30"
           >
-            <span className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${a.accent}`}>
-              <a.icon className="size-3.5" />
+            <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 ease-out group-hover:scale-[1.15] group-hover:-rotate-3 group-hover:shadow-md", a.accent)}>
+              <a.icon className="size-3.5 transition-transform duration-300 group-hover:scale-110" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold leading-tight truncate" title={a.label}>{a.label}</p>

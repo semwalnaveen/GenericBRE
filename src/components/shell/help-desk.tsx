@@ -922,7 +922,7 @@ export function HelpDesk() {
               )}
             </div>
 
-            <Button render={<a href="mailto:bre-support@qualtechedge.com" />} className="mt-2">
+            <Button render={<a href="mailto:bre-support@qualtechedge.com" />} nativeButton={false} className="mt-2">
               <Mail className="size-4" /> Email Support
             </Button>
           </div>

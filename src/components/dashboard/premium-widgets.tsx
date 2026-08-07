@@ -3,6 +3,7 @@
 import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 /* -------------------------------------------------------------------------- */
 /*                                SHARED WRAPPER                              */
@@ -18,13 +19,13 @@ interface WidgetCardProps {
 
 export function WidgetCard({ title, subtitle, children, className, action }: WidgetCardProps) {
   return (
-    <div className={cn("flex h-full flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden", className)}>
-      <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
+    <div className={cn("flex h-full flex-col rounded-xl overflow-hidden premium-card", className)}>
+      <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-white/40 dark:border-white/10">
         <div>
-          <h3 className="text-sm font-bold text-foreground">{title}</h3>
+          <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/90">{title}</h3>
           {subtitle && <div className="mt-0.5 text-[11px] text-muted-foreground">{subtitle}</div>}
         </div>
-        {action && <div className="text-[11px] font-medium text-muted-foreground">{action}</div>}
+        {action && <div className="text-[11px] font-bold text-primary">{action}</div>}
       </div>
       <div className="flex-1 flex flex-col min-h-0 p-2 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">{children}</div>
     </div>
@@ -151,6 +152,33 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
         <div className="relative h-[120px] w-[110px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
+              <defs>
+                {data.map((entry, index) => (
+                  <linearGradient key={`grad-${index}`} id={`colorGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                    <stop offset="100%" stopColor={entry.color} stopOpacity={0.5} />
+                  </linearGradient>
+                ))}
+                <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="3" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+              <RechartsTooltip 
+                cursor={false} 
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className="rounded-xl border border-white/50 bg-white/60 px-3 py-2 text-sm shadow-[0_8px_32px_-8px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/50">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full" style={{ backgroundColor: payload[0].payload.color, boxShadow: `0 0 8px ${payload[0].payload.color}` }} />
+                        <span className="font-semibold">{payload[0].payload.name}</span>
+                        <span className="ml-2 font-bold">{payload[0].value}</span>
+                      </div>
+                    </div>
+                  );
+                }}
+              />
               <Pie
                 data={data}
                 dataKey="value"
@@ -163,7 +191,12 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
                 stroke="none"
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={`url(#colorGrad-${index})`} 
+                    filter="url(#neon-glow)" 
+                    className="transition-all duration-300 hover:opacity-80 outline-none"
+                  />
                 ))}
               </Pie>
             </PieChart>
@@ -171,7 +204,9 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
           {/* Center Text */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{totalText}</span>
-            <span className="text-sm font-bold text-foreground">{totalSubtext}</span>
+            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#002f58] via-blue-700 to-[#2f679d]">
+              {!isNaN(Number(totalSubtext)) ? <AnimatedNumber value={Number(totalSubtext)} /> : totalSubtext}
+            </span>
           </div>
         </div>
 
@@ -262,10 +297,14 @@ export function ProgressDonutListWidget({
               cy="50"
             />
           </svg>
-          <div className="absolute flex flex-col items-center justify-center text-center">
-            <span className="text-xl font-bold leading-none text-foreground">{circleValue}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-1">{circleSubtext}</span>
-          </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#002f58] via-blue-700 to-[#2f679d]">
+                {typeof circleValue === 'number' || !isNaN(Number(circleValue)) ? <AnimatedNumber value={Number(circleValue)} /> : circleValue}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
+                {circleSubtext}
+              </span>
+            </div>
         </div>
 
         {/* Pill List */}
@@ -419,9 +458,9 @@ export function CleanListWidget({ title, action, items, emptyMessage = "No data 
   return (
     <div className="flex h-full w-full min-h-0 flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden">
       <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
-        <h3 className="text-sm font-bold text-foreground">{title}</h3>
+        <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/90">{title}</h3>
         {action && (
-          <div className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+          <div className="text-[11px] font-bold text-primary transition-colors hover:text-primary/80 cursor-pointer">
             {action}
           </div>
         )}

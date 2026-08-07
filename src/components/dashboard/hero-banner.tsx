@@ -25,7 +25,9 @@ export function HeroBanner({
                 color: var(--foreground) }` rule wins over inherited color
                 regardless of the parent's text class, so without this the
                 greeting renders near-black instead of the intended off-white. */}
-            <h1 className="text-lg font-semibold tracking-tight text-[#f3f8fb] sm:text-xl">Hi, {name} 👋</h1>
+            <h1 className="text-lg font-semibold tracking-tight text-[#f3f8fb] sm:text-xl">
+              Hi, <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-white to-blue-300">{name}</span> 👋
+            </h1>
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </div>

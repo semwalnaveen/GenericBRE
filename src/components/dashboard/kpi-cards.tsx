@@ -23,12 +23,14 @@ import { cn } from "@/lib/utils";
 import { useTranslate } from "@/lib/use-translate";
 import { TranslationKey } from "@/lib/i18n";
 import { Capability } from "@/lib/types";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 
 interface Kpi {
   label: string;
   value: number;
   icon: React.ElementType;
   accent: string;
+  hoverAccent: string;
   href: string;
   suffix?: string;
 }
@@ -134,6 +136,7 @@ export function KpiCards() {
       value: rules.length,
       icon: FileStack,
       accent: "text-primary bg-primary/10",
+      hoverAccent: "group-hover:text-primary",
       href: "/repository",
       suffix: disabled ? `· ${disabled} disabled` : undefined,
     },
@@ -142,6 +145,7 @@ export function KpiCards() {
       value: rules.filter((r) => r.status === "Published").length,
       icon: CheckCircle2,
       accent: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
+      hoverAccent: "group-hover:text-emerald-600 dark:group-hover:text-emerald-400",
       href: "/repository?status=Published",
     },
     "inactive-archived-rules": {
@@ -149,6 +153,7 @@ export function KpiCards() {
       value: disabled,
       icon: Archive,
       accent: "text-slate-600 bg-slate-500/10 dark:text-slate-400",
+      hoverAccent: "group-hover:text-slate-600 dark:group-hover:text-slate-400",
       href: "/repository?status=Inactive&status=Archived",
     },
     "draft-rules": {
@@ -156,6 +161,7 @@ export function KpiCards() {
       value: rules.filter((r) => r.status === "Draft").length,
       icon: FileEdit,
       accent: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
+      hoverAccent: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
       href: "/repository?status=Draft",
     },
     "pending-approvals": {
@@ -163,6 +169,7 @@ export function KpiCards() {
       value: approvalRequests.filter((a) => a.stage === "Pending Review").length,
       icon: UserCheck,
       accent: "text-orange-600 bg-orange-500/10 dark:text-orange-400",
+      hoverAccent: "group-hover:text-orange-600 dark:group-hover:text-orange-400",
       href: "/repository?status=Pending Approval",
     },
     "active-products": {
@@ -175,6 +182,7 @@ export function KpiCards() {
       ).length,
       icon: Package,
       accent: "text-purple-600 bg-purple-500/10 dark:text-purple-400",
+      hoverAccent: "group-hover:text-purple-600 dark:group-hover:text-purple-400",
       href: "/products",
     },
     "rule-executions": {
@@ -184,6 +192,7 @@ export function KpiCards() {
       value: domainFilter.length ? simulations.length : simulations.length + 256,
       icon: FlaskConical,
       accent: "text-cyan-600 bg-cyan-500/10 dark:text-cyan-400",
+      hoverAccent: "group-hover:text-cyan-600 dark:group-hover:text-cyan-400",
       href: "/simulator",
     },
     "business-categories": {
@@ -191,6 +200,7 @@ export function KpiCards() {
       value: new Set(rules.map((r) => r.category)).size,
       icon: Layers,
       accent: "text-indigo-600 bg-indigo-500/10 dark:text-indigo-400",
+      hoverAccent: "group-hover:text-indigo-600 dark:group-hover:text-indigo-400",
       href: "/metadata-explorer",
     },
     "system-users": {
@@ -200,6 +210,7 @@ export function KpiCards() {
       value: allUsers.filter((u) => u.status === "Active").length,
       icon: Users,
       accent: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+      hoverAccent: "group-hover:text-violet-600 dark:group-hover:text-violet-400",
       href: "/configuration-studio",
     },
   };
@@ -240,16 +251,19 @@ export function KpiCards() {
           className="group flex flex-col justify-center gap-1 rounded-xl border border-[#ffffff8c] bg-white px-3 py-2 text-left shadow-[0_10px_28px_-12px_#00000073] hover:shadow-[0_15px_35px_-10px_#00000080] transition-colors duration-150 ease-out hover:bg-slate-50"
         >
           <div className="flex w-full min-w-0 items-center justify-between gap-1.5" title={k.label}>
-            <span className="truncate text-[10px] font-semibold text-muted-foreground uppercase tracking-tight">
+            <span className={cn(
+              "truncate text-[9px] font-bold uppercase tracking-wider transition-colors duration-300 text-muted-foreground",
+              k.hoverAccent
+            )}>
               {k.label}
             </span>
-            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-lg", k.accent)}>
+            <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110", k.accent)}>
               <k.icon className="size-3" />
             </span>
           </div>
           <div className="flex items-baseline gap-1.5 w-full">
-            <span className="text-[20px] font-bold tracking-tight leading-none text-slate-900">
-              {k.value > 1000 ? (k.value / 1000).toFixed(1) + "K" : k.value}
+            <span className="text-[20px] font-bold tracking-tight leading-none bg-clip-text text-transparent bg-gradient-to-r from-[#002f58] via-blue-700 to-[#2f679d]">
+              <AnimatedNumber value={k.value} />
             </span>
             <span className="text-[10px] text-muted-foreground truncate leading-none pb-0">
               {k.suffix || "metrics"}

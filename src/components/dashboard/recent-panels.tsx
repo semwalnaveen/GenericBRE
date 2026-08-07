@@ -14,11 +14,11 @@ export function PanelHeader({ title, action, onAction, icon: Icon }: { title: st
     <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-1 rounded-t-xl dark:bg-muted/30">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="size-4 text-muted-foreground/70" />}
-        <h3 className="text-sm font-bold text-foreground">{title}</h3>
+        <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/90">{title}</h3>
       </div>
       {action && (
-        <button onClick={onAction} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-          {action} <ArrowUpRight className="size-3" />
+        <button onClick={onAction} className="group flex items-center gap-1 text-[11px] font-bold text-primary transition-colors hover:text-primary/80">
+          {action} <ArrowUpRight className="size-3 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </button>
       )}
     </div>
@@ -31,7 +31,7 @@ export function RecentRulesPanel() {
   const recent = [...rules].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)).slice(0, 6);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Recently Modified Rules" icon={FileEdit} action="View all" onAction={() => router.push("/repository")} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="divide-y divide-border pb-1">
@@ -129,7 +129,7 @@ export function RecentDeploymentsPanel() {
     .slice(0, 5);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Recent Deployments" icon={Rocket} />
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-0.5 p-2">

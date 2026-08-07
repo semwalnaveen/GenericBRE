@@ -27,12 +27,13 @@ const STATUS_BAR_COLORS: Record<RuleStatus, string> = {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color?: string }[], label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border bg-popover px-2.5 py-1.5 text-sm shadow-md">
-      {label && <div className="mb-1 text-xs font-semibold text-muted-foreground">{label}</div>}
+    <div className="rounded-xl border border-white/50 bg-white/60 px-3 py-2 text-sm shadow-[0_8px_32px_-8px_rgba(0,0,0,0.15)] backdrop-blur-2xl dark:border-white/10 dark:bg-black/50">
+      {label && <div className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{label}</div>}
       {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-1.5">
-          {entry.color && <div className="size-2 rounded-full" style={{ backgroundColor: entry.color }} />}
-          <span className="font-medium">{entry.name}</span>: {entry.value}
+        <div key={index} className="flex items-center gap-2">
+          {entry.color && <div className="size-2 rounded-full" style={{ backgroundColor: entry.color, boxShadow: `0 0 8px ${entry.color}` }} />}
+          <span className="font-semibold">{entry.name}</span>
+          <span className="ml-auto font-bold">{entry.value}</span>
         </div>
       ))}
     </div>
@@ -71,7 +72,7 @@ export function DomainDistributionChart() {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <div className="flex h-full flex-col premium-card overflow-hidden">
         <PanelHeader title="Product Distribution" />
         <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
           No mapped rules in the current selection.
@@ -190,7 +191,7 @@ export function SimulationResultsChart() {
 
   if (!hasData) {
     return (
-      <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <div className="flex h-full flex-col premium-card overflow-hidden">
         <PanelHeader title="Simulation Outcomes" />
         <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
           No simulations in the current selection.
@@ -237,7 +238,7 @@ export function ExecutionTimelineChart() {
   const hasData = data.length > 0;
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Execution Timeline" />
       {hasData ? (
         <div className="min-h-0 flex-1 p-3">
@@ -300,19 +301,33 @@ export function MonthlyRulesChart() {
   const hasData = rules.length > 0;
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Monthly Activity" />
       {hasData ? (
         <div className="min-h-0 flex-1 p-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                </linearGradient>
+                <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.4}/>
+                </linearGradient>
+                <filter id="bar-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
               <XAxis dataKey="month" tickLine={false} axisLine={false} fontSize={10} stroke="var(--muted-foreground)" />
               <YAxis tickLine={false} axisLine={false} fontSize={11} stroke="var(--muted-foreground)" width={45} />
               <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.1 }} />
               <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} iconType="circle" iconSize={8} />
-              <Bar dataKey="Created" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={14} />
-              <Bar dataKey="Approved" fill="#10b981" radius={[4, 4, 0, 0]} barSize={14} />
+              <Bar dataKey="Created" fill="url(#colorCreated)" filter="url(#bar-glow)" radius={[4, 4, 0, 0]} barSize={14} className="transition-all duration-300 hover:opacity-80" />
+              <Bar dataKey="Approved" fill="url(#colorApproved)" filter="url(#bar-glow)" radius={[4, 4, 0, 0]} barSize={14} className="transition-all duration-300 hover:opacity-80" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -353,7 +368,7 @@ export function RulesPublishedPerProductChart() {
   }, [rules, products, mappings]);
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-white shadow-sm">
+    <div className="flex h-full flex-col premium-card overflow-hidden">
       <PanelHeader title="Rules Published per Product" />
       {data.length === 0 ? (
         <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
@@ -363,6 +378,16 @@ export function RulesPublishedPerProductChart() {
         <div className="flex-1 p-4 pb-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 20 }}>
+              <defs>
+                <linearGradient id="colorPublished" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                </linearGradient>
+                <filter id="bar-glow-pub" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
               <XAxis
                 dataKey="name"
@@ -378,22 +403,15 @@ export function RulesPublishedPerProductChart() {
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 dx={-5}
               />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "none",
-                  boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
-                  fontSize: "12px",
-                  padding: "8px 12px",
-                }}
-                cursor={{ fill: "#f1f5f9" }}
-              />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.1 }} />
               <Bar
                 dataKey="value"
                 name="Published Rules"
-                fill="#3b82f6"
+                fill="url(#colorPublished)"
+                filter="url(#bar-glow-pub)"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={50}
+                className="transition-all duration-300 hover:opacity-80"
               />
             </BarChart>
           </ResponsiveContainer>
