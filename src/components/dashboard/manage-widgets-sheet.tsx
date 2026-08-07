@@ -18,12 +18,14 @@ export const WIDGET_LABELS: Record<string, string> = {
   "rules-awaiting-review": "Rules Awaiting Review",
   "approval-queue": "Approval Queue",
   "rule-conflicts": "Rule Conflicts",
+  "product-conflict-summary": "Product Conflict Summary",
   "execution-logs": "Execution Logs",
   "decision-lookup": "Decision Lookup",
   "simulation-results": "Simulation Outcomes",
   "execution-timeline": "Execution Timeline",
   "batch-runs": "Batch Runs",
   "monthly-activity": "Monthly Activity",
+  "pending-applications": "Pending Applications",
 };
 
 // User Access Mapping gate per widget — an admin can curate which widgets a
@@ -46,6 +48,7 @@ export const WIDGET_REQUIRED_CAPABILITY: Partial<Record<string, Capability>> = {
   "rules-awaiting-review": "rule.publish",
   "approval-queue": "rule.publish",
   "rule-conflicts": "rule.view",
+  "product-conflict-summary": "rule.view",
   "execution-logs": "rule.view",
   "decision-lookup": "rule.view",
   "simulation-results": "rule.simulate",

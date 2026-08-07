@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ChevronDown,
@@ -12,7 +12,7 @@ import {
   Search,
   ShieldAlert,
 } from "lucide-react";
-import { useAppStore, useUserScope, isRuleInScope } from "@/lib/store";
+import { useAppStore, useUserScope, isRuleInScope, useAccessibleProducts } from "@/lib/store";
 import { detectProductRuleConflicts, ProductConflictFinding } from "@/lib/product-conflict-detection";
 import { BusinessRule } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,15 @@ type SortMode = "critical-first" | "most-conflicts" | "name-asc";
 
 const PRODUCTS_PER_PAGE = 5;
 
-export default function ProductConflictReportPage() {
+function ProductConflictReportContent() {
   const router = useRouter();
-  const products = useAppStore((s) => s.products);
+  const searchParams = useSearchParams();
+  // Same product-authorization scoping the dashboard's Product Conflict
+  // Summary widget uses (useAccessibleProducts) — bypasses to every product
+  // for System/Product Admin scope, otherwise only the signed-in user's own
+  // Active User Access Mapping rows. Keeps "View Full Report" and a widget
+  // row click showing the exact same product set the widget itself offered.
+  const products = useAccessibleProducts();
   const allRules = useAppStore((s) => s.rules);
   const productRuleMappings = useAppStore((s) => s.productRuleMappings);
   const currentUserName = useAppStore((s) => s.currentUser.name);
@@ -84,7 +90,7 @@ export default function ProductConflictReportPage() {
   }, [products, rules, productRuleMappings, ruleById]);
 
   const [search, setSearch] = useState("");
-  const [productFilters, setProductFilters] = useState<string[]>([]);
+  const [productFilters, setProductFilters] = useState<string[]>(searchParams.getAll("product"));
   const [kindFilters, setKindFilters] = useState<string[]>([]);
   const [severityFilters, setSeverityFilters] = useState<string[]>([]);
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
@@ -483,5 +489,13 @@ export default function ProductConflictReportPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function ProductConflictReportPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductConflictReportContent />
+    </Suspense>
   );
 }

@@ -14,12 +14,13 @@ function widgets(ids: string[]): DashboardConfig["widgets"] {
 // submits for approval, can't approve her own work or publish directly.
 // Manager-approved reference layout: chart-first (Rule Status, Monthly
 // Activity, Product Distribution, Draft Rules all render as
-// donut/bar charts, not plain lists), Rule Conflicts as the one operational
-// list, Quick Actions last. Every other persona below follows this same
+// donut/bar charts, not plain lists), Product Conflict Summary (grouped by
+// product, not individual rule pairs — see persona-widgets.tsx) as the one
+// operational list, Quick Actions last. Every other persona below follows this same
 // chart-forward visual pattern — a max of one or two list-style panels,
 // charts everywhere a chart is meaningful — with the actual widget/KPI
 // *choices* swapped for what that role does.
-const RULE_CREATOR_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "rule-conflicts", "draft-rules", "quick-actions"]);
+const RULE_CREATOR_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "product-conflict-summary", "draft-rules", "quick-actions"]);
 const RULE_CREATOR_KPIS = ["total-rules", "active-rules", "active-products", "pending-approvals", "draft-rules"];
 
 // Product Rule Manager (usr-rohan-mehta) — maps approved rules to products
@@ -36,7 +37,7 @@ const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", 
 // not just background chart filler. Approval Queue is the one list that has
 // to stay — it's the actual work she does every day, and no chart replaces
 // "here's what's waiting on me."
-const RULE_APPROVER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "approval-queue", "rule-conflicts", "quick-actions"]);
+const RULE_APPROVER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "approval-queue", "product-conflict-summary", "quick-actions"]);
 const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "active-products"];
 
 // Rule Tester (usr-arjun-nair): simulate-only persona — rule.view + rule.simulate,
@@ -45,7 +46,7 @@ const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", 
 // catalogue charts every other role gets — those describe content he can't
 // author, these describe what he actually produced. Execution Logs, Decision
 // Lookup, and Batch Runs have no chart equivalent worth forcing.
-const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "execution-logs", "decision-lookup", "batch-runs"]);
+const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "pending-applications", "decision-lookup", "batch-runs"]);
 // Pending Approvals / Draft Rules dropped — this persona can't approve or
 // author, so both would only ever read as noise. Rule Executions (simulation
 // count) takes their place as the one number that's actually this role's own
@@ -67,11 +68,12 @@ const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "ina
 // System Administrator (usr-vikram-chawla, and usr-ved-prakash as the same
 // role reached by name-fallback in dashboard/page.tsx) — user/access/product/
 // platform administration, not rule authoring. Three charts for platform-wide
-// health (Rule Status, Product Distribution, Monthly Activity) plus Rule
-// Conflicts (needs attention) and Recent Activity (the full audit trail —
-// this is the one role that should see everyone's actions, not just rule
-// events).
-const SYSTEM_ADMIN_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "rule-conflicts", "recent-activity", "quick-actions"]);
+// health (Rule Status, Product Distribution, Monthly Activity) plus Product
+// Conflict Summary (needs attention, org-wide — bypasses the per-user product
+// scope like every other System Admin surface) and Recent Activity (the full
+// audit trail — this is the one role that should see everyone's actions, not
+// just rule events).
+const SYSTEM_ADMIN_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "product-conflict-summary", "recent-activity", "quick-actions"]);
 const SYSTEM_ADMIN_KPIS = ["total-rules", "active-products", "pending-approvals", "system-users"];
 
 export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
@@ -85,7 +87,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-rohan-mehta": {
     userId: "usr-rohan-mehta",
     landingRoute: "/dashboard",
-    widgets: widgets(["kpis", "rule-status", "monthly-activity", "rules-published-per-product", "rule-conflicts", "draft-rules", "quick-actions"]),
+    widgets: widgets(["kpis", "rule-status", "monthly-activity", "rules-published-per-product", "product-conflict-summary", "draft-rules", "quick-actions"]),
     kpis: PRODUCT_MANAGER_KPIS,
     quickActions: ["decision-matrix", "view-approvals", "open-repository"],
   },

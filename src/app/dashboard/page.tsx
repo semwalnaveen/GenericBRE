@@ -19,9 +19,11 @@ import {
   RulesAwaitingReviewPanel,
   ApprovalQueuePanel,
   RuleConflictsPanel,
+  ProductConflictSummaryPanel,
   ExecutionLogsPanel,
   DecisionLookupPanel,
   BatchRunsPanel,
+  PendingApplicationsPanel,
 } from "@/components/dashboard/persona-widgets";
 import { WIDGET_LABELS, WIDGET_REQUIRED_CAPABILITY } from "@/components/dashboard/manage-widgets-sheet";
 import { DashboardControls } from "@/components/dashboard/dashboard-controls";
@@ -61,6 +63,8 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "batch-runs": () => <BatchRunsPanel />,
   "monthly-activity": () => <MonthlyRulesChart />,
   "rules-published-per-product": () => <RulesPublishedPerProductChart />,
+  "product-conflict-summary": () => <ProductConflictSummaryPanel />,
+  "pending-applications": () => <PendingApplicationsPanel />,
 };
 
 const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };

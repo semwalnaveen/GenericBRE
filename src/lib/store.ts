@@ -1651,9 +1651,51 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 68,
+      version: 71,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v70 -> v71: Reset Arjun Nair's dashboard so he gets the new "Pending Applications" widget
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
+        // v70 -> v71: extend the product-level "Product Conflict Summary"
+        // widget (dashboards.ts) — previously swapped in only for the
+        // Product Manager (usr-rohan-mehta) — to every other role that
+        // showed the shared org-wide "rule-conflicts" widget: Rule Creator
+        // (usr-ananya-verma), Rule Approver (usr-kavita-rao), and System
+        // Administrator (usr-vikram-chawla). Each still only ever shows the
+        // conflicts for that signed-in user's own accessible products
+        // (useAccessibleProducts/useScopedRules in persona-widgets.tsx), so
+        // this is "the same widget, but per-role scoped," not one shared
+        // view. No dedicated block needed here either — the v55 -> v56
+        // wholesale dashboardConfig resync further down already picks this
+        // up once the version bump forces it to run again.
+
+        // v69 -> v70: Inject RL-102 (Age Restriction Policy) into Home Loan mappings
+        // to re-enable the critical conflict for demo purposes.
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.productRuleMappings && !s.productRuleMappings.some(m => m.id === "prm-hl-2")) {
+            const prm2 = DEFAULT_PRODUCT_RULE_MAPPINGS.find(m => m.id === "prm-hl-2");
+            if (prm2) {
+              s.productRuleMappings = [...s.productRuleMappings, prm2];
+            }
+          }
+        }
+        // v68 -> v69: Product Manager's (usr-rohan-mehta) dashboard swaps the
+        // shared org-wide "rule-conflicts" widget for the new product-scoped
+        // "product-conflict-summary" widget (dashboards.ts) — no dedicated
+        // block needed here either. The v55 -> v56 block further down already
+        // unconditionally overwrites every known seed user's entire
+        // dashboardConfig (widgets/kpis/quickActions) with the current
+        // DEFAULT_DASHBOARD_CONFIGS whenever that persisted key exists, so
+        // bumping the version to force that pass to run again picks up this
+        // widget swap for free — still per-user overridable via Configuration
+        // Studio -> Dashboard Management afterward.
+
         // v67 -> v68: "Business Categories" KPI removed from every role's
         // default dashboard (dashboards.ts) — no dedicated block needed here.
         // The v32 -> v33 block further down already unconditionally resyncs

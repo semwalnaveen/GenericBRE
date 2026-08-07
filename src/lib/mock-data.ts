@@ -2090,6 +2090,7 @@ function mapping(id: string, productId: string, ruleId: string, order: number): 
 export const DEFAULT_PRODUCT_RULE_MAPPINGS: ProductRuleMapping[] = [
   // Home Loan (8 rules - 2 Critical Conflicts)
   mapping("prm-hl-1", "prod-home-loan", "RL-101", 0),
+  mapping("prm-hl-2", "prod-home-loan", "RL-102", 1),
 
   mapping("prm-hl-3", "prod-home-loan", "RL-103", 2),
   mapping("prm-hl-4", "prod-home-loan", "RL-104", 3),

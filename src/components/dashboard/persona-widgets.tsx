@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Search, AlertTriangle, ShieldQuestion, FileText, CheckSquare, ClipboardList, ShieldAlert, FileSearch } from "lucide-react";
-import { useAppStore, useScopedRules } from "@/lib/store";
+import { useAppStore, useScopedRules, useAccessibleProducts } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
+import { detectProductRuleConflicts } from "@/lib/product-conflict-detection";
 import { StatusBadge } from "@/components/status-badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -167,6 +168,75 @@ export function RuleConflictsPanel() {
   );
 }
 
+// Product-level rollup for Product Manager-style personas — governance over
+// entire products, not individual rule pairs, so unlike RuleConflictsPanel
+// (rule-vs-rule, org-wide) this groups by product and shows one row per
+// product the signed-in user is actually authorized to manage (see
+// useAccessibleProducts — bypasses to "every product" for System/Product
+// Admin scope, otherwise only their own Active User Access Mapping rows).
+// Severity/counts come straight from the unmodified detectProductRuleConflicts
+// — this only re-presents its output, never recomputes conflict logic.
+const PRODUCT_STATUS_STYLES: Record<"Healthy" | "Warning" | "Critical", { dot: string; badge: string }> = {
+  Healthy: { dot: "bg-emerald-500", badge: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  Warning: { dot: "bg-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  Critical: { dot: "bg-red-500", badge: "bg-red-500/10 text-red-600 dark:text-red-400" },
+};
+
+export function ProductConflictSummaryPanel() {
+  const products = useAccessibleProducts();
+  const rules = useScopedRules();
+  const productRuleMappings = useAppStore((s) => s.productRuleMappings);
+  const router = useRouter();
+
+  const summary = useMemo(() => {
+    return products
+      .map((p) => {
+        const findings = detectProductRuleConflicts(p.id, rules, productRuleMappings);
+        const criticalCount = findings.filter((f) => f.severity === "Critical").length;
+        const mediumCount = findings.filter((f) => f.severity === "Medium").length;
+        const total = criticalCount + mediumCount;
+        const status: "Healthy" | "Warning" | "Critical" = criticalCount > 0 ? "Critical" : mediumCount > 0 ? "Warning" : "Healthy";
+        return { productId: p.id, productName: p.name, total, criticalCount, mediumCount, status };
+      })
+      .sort((a, b) => b.criticalCount - a.criticalCount || b.total - a.total);
+  }, [products, rules, productRuleMappings]);
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <PanelHeader
+        title="Product Conflicts"
+        icon={ShieldAlert}
+        action="View Full Report"
+        onAction={() => router.push("/repository/conflicts")}
+      />
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="divide-y divide-border">
+          {summary.map((s) => {
+            const style = PRODUCT_STATUS_STYLES[s.status];
+            const badgeText = s.total === 0 ? "No Conflicts" : s.criticalCount > 0 ? `${s.criticalCount} Critical` : `${s.mediumCount} Medium`;
+            return (
+              <button
+                key={s.productId}
+                onClick={() => router.push(`/repository/conflicts?product=${s.productId}`)}
+                className="flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className={cn("size-1.5 shrink-0 rounded-full", style.dot)} />
+                  <p className="truncate text-xs font-bold text-foreground">{s.productName}</p>
+                </div>
+                <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold", style.badge)}>
+                  {badgeText}
+                </span>
+              </button>
+            );
+          })}
+          {summary.length === 0 && <EmptyRow>No products assigned to your role yet.</EmptyRow>}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
 const OPERATIONAL_ACTIONS = new Set(["Ran Simulation", "Published Rule", "Disabled Rule", "Export Delivered"]);
 
 import { CleanListWidget } from "./premium-widgets";
@@ -285,6 +355,84 @@ export function DecisionLookupPanel() {
             <Search className="size-3.5" />
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function PendingApplicationsPanel() {
+  const applications = useAppStore((s) => s.applications);
+  const products = useAppStore((s) => s.products);
+
+  const pendingApps = useMemo(() => {
+    return applications
+      .filter((app) => ["Submitted", "Under Review", "Pending Documents"].includes(app.status))
+      .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
+      .slice(0, 10); // Show top 10 oldest first
+  }, [applications]);
+
+  const getProductName = (id: string) => products.find((p) => p.id === id)?.name || id;
+
+  const calculateSLA = (submittedAt: string) => {
+    const hoursElapsed = (new Date().getTime() - new Date(submittedAt).getTime()) / (1000 * 60 * 60);
+    const slaHours = 72; // 3 days
+    const remaining = Math.max(0, slaHours - hoursElapsed);
+    
+    if (remaining === 0) return { text: "Overdue", color: "text-destructive" };
+    if (remaining < 24) return { text: `${Math.floor(remaining)}h left`, color: "text-amber-600 dark:text-amber-400" };
+    return { text: `${Math.floor(remaining)}h left`, color: "text-muted-foreground" };
+  };
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
+      <PanelHeader title="Pending Applications" actionLabel="View all" onAction={() => {}} />
+      <div className="flex-1 overflow-auto">
+        {pendingApps.length === 0 ? (
+          <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
+            No pending applications.
+          </div>
+        ) : (
+          <table className="w-full text-left text-sm">
+            <thead className="sticky top-0 bg-card/95 backdrop-blur">
+              <tr className="border-b text-xs font-medium text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Application ID</th>
+                <th className="px-4 py-3 font-medium">Applicant Name</th>
+                <th className="px-4 py-3 font-medium">Product</th>
+                <th className="px-4 py-3 font-medium">Decision Status</th>
+                <th className="px-4 py-3 font-medium">SLA Remaining</th>
+                <th className="px-4 py-3 font-medium text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {pendingApps.map((app) => {
+                const sla = calculateSLA(app.submittedAt);
+                return (
+                  <tr key={app.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-foreground">{app.id}</td>
+                    <td className="px-4 py-3 text-foreground">{app.applicantName}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{getProductName(app.productId)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        app.status === "Under Review" ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
+                        : app.status === "Pending Documents" ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400"
+                      }`}>
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 ${sla.color}`}>{sla.text}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
+                        Open Review
+                        <ArrowRight className="size-3" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
