@@ -1651,9 +1651,19 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 67,
+      version: 68,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v67 -> v68: "Business Categories" KPI removed from every role's
+        // default dashboard (dashboards.ts) — no dedicated block needed here.
+        // The v32 -> v33 block further down already unconditionally resyncs
+        // every persisted role's `kpis` array to the current
+        // DEFAULT_DASHBOARD_CONFIGS whenever its length isn't exactly 6 (true
+        // for every role now, since none has 6 KPIs any more), so simply
+        // bumping the version to force that resync to run again is enough —
+        // still per-user overridable via Configuration Studio -> Dashboard
+        // Management for anyone who wants it back.
+
         // v64 -> v65: inject newly created RL-DEMO-1, RL-DEMO-2, RL-DEMO-3
         // into existing persisted sessions so they show up for the user immediately.
         {

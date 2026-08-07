@@ -322,3 +322,81 @@ export function MonthlyRulesChart() {
     </div>
   );
 }
+
+export function RulesPublishedPerProductChart() {
+  const rules = useScopedRules();
+  const products = useAppStore((s) => s.products);
+  const mappings = useAppStore((s) => s.productRuleMappings);
+
+  const data = useMemo(() => {
+    // Only count "Published" rules
+    const publishedRuleIds = new Set(rules.filter(r => r.status === "Published").map((r) => r.id));
+    const counts: Record<string, number> = {};
+    
+    for (const m of mappings) {
+      if (m.active && publishedRuleIds.has(m.ruleId)) {
+        counts[m.productId] = (counts[m.productId] ?? 0) + 1;
+      }
+    }
+    
+    const result = Object.entries(counts).map(([productId, value]) => {
+      const product = products.find((p) => p.id === productId);
+      return {
+        name: product?.name || productId,
+        value,
+      };
+    });
+    
+    return result.sort((a, b) => b.value - a.value);
+  }, [rules, products, mappings]);
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border bg-white shadow-sm">
+      <PanelHeader title="Rules Published per Product" />
+      {data.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center p-4 text-center text-sm text-muted-foreground">
+          No published rules mapped to products.
+        </div>
+      ) : (
+        <div className="flex-1 p-4 pb-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: "#64748b" }}
+                dy={10}
+                interval={0}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 11, fill: "#64748b" }}
+                dx={-5}
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: "8px",
+                  border: "none",
+                  boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                }}
+                cursor={{ fill: "#f1f5f9" }}
+              />
+              <Bar
+                dataKey="value"
+                name="Published Rules"
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={50}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+}

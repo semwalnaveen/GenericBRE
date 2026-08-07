@@ -12,6 +12,7 @@ const RuleStatusChart = dynamic(() => import("@/components/dashboard/charts").th
 const SimulationResultsChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.SimulationResultsChart), { ssr: false });
 const ExecutionTimelineChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.ExecutionTimelineChart), { ssr: false });
 const MonthlyRulesChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.MonthlyRulesChart), { ssr: false });
+const RulesPublishedPerProductChart = dynamic(() => import("@/components/dashboard/charts").then((mod) => mod.RulesPublishedPerProductChart), { ssr: false });
 import { DemoScenariosPanel } from "@/components/dashboard/demo-scenarios";
 import {
   DraftRulesPanel,
@@ -59,6 +60,7 @@ const WIDGET_RENDERERS: Record<string, () => React.ReactNode> = {
   "execution-timeline": () => <ExecutionTimelineChart />,
   "batch-runs": () => <BatchRunsPanel />,
   "monthly-activity": () => <MonthlyRulesChart />,
+  "rules-published-per-product": () => <RulesPublishedPerProductChart />,
 };
 
 const WIDGET_DEFAULT_SIZE: Record<string, WidgetSize> = { "demo-scenarios": "LG", "execution-timeline": "SM" };

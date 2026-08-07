@@ -28,7 +28,7 @@ const RULE_CREATOR_KPIS = ["total-rules", "active-rules", "active-products", "pe
 // his two real operational surfaces: Recent Deployments (what just shipped)
 // and Rule Conflicts (what to resolve before mapping).
 const PRODUCT_MANAGER_WIDGETS = widgets(["kpis", "domain-distribution", "rule-status", "monthly-activity", "rule-conflicts", "recent-deployments", "quick-actions"]);
-const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", "business-categories", "pending-approvals"];
+const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", "pending-approvals"];
 
 // Rule Approver (usr-kavita-rao) — Checker: reviews and approves/rejects
 // what Makers submit, can't create or modify business rules herself. Monthly
@@ -37,7 +37,7 @@ const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", 
 // to stay — it's the actual work she does every day, and no chart replaces
 // "here's what's waiting on me."
 const RULE_APPROVER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "approval-queue", "rule-conflicts", "quick-actions"]);
-const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "business-categories", "active-products"];
+const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "active-products"];
 
 // Rule Tester (usr-arjun-nair): simulate-only persona — rule.view + rule.simulate,
 // no rule.create/edit/publish. Its "charts" are already the simulator's own
@@ -50,7 +50,7 @@ const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-result
 // author, so both would only ever read as noise. Rule Executions (simulation
 // count) takes their place as the one number that's actually this role's own
 // output.
-const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "rule-executions", "business-categories"];
+const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "rule-executions"];
 
 // Rule Viewer (usr-divya-iyer) — read-only: dashboards, rules, approval
 // history, audit logs. Charts suit a pure observer even better than a lists —
@@ -62,7 +62,7 @@ const RULE_VIEWER_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution
 // Inactive & Archived stands in for the org-wide health number a read-only
 // observer cares about, in place of Pending Approvals (not her queue) or
 // Draft Rules (not her output).
-const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "business-categories", "inactive-archived-rules"];
+const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "inactive-archived-rules"];
 
 // System Administrator (usr-vikram-chawla, and usr-ved-prakash as the same
 // role reached by name-fallback in dashboard/page.tsx) — user/access/product/
@@ -72,7 +72,7 @@ const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "bus
 // this is the one role that should see everyone's actions, not just rule
 // events).
 const SYSTEM_ADMIN_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "rule-conflicts", "recent-activity", "quick-actions"]);
-const SYSTEM_ADMIN_KPIS = ["total-rules", "active-products", "business-categories", "pending-approvals", "system-users"];
+const SYSTEM_ADMIN_KPIS = ["total-rules", "active-products", "pending-approvals", "system-users"];
 
 export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-ananya-verma": {
@@ -85,7 +85,7 @@ export const DEFAULT_DASHBOARD_CONFIGS: Record<string, DashboardConfig> = {
   "usr-rohan-mehta": {
     userId: "usr-rohan-mehta",
     landingRoute: "/dashboard",
-    widgets: PRODUCT_MANAGER_WIDGETS,
+    widgets: widgets(["kpis", "rule-status", "monthly-activity", "rules-published-per-product", "rule-conflicts", "draft-rules", "quick-actions"]),
     kpis: PRODUCT_MANAGER_KPIS,
     quickActions: ["decision-matrix", "view-approvals", "open-repository"],
   },
