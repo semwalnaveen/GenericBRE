@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
+import aiFoundryLogo from "@/assets/AI-Foundry.png";
 import {
   ArrowLeft,
   Check,
@@ -670,16 +671,26 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                     }}
                   >
                     {draft.background.target === "dashboard" && wallpaperLayer}
-                    <div className="mb-3 flex items-center gap-2">
-                      {draft.logo && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <Image src={draft.logo} alt="App Logo" width={20} height={20} className="size-5 shrink-0 rounded object-contain" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-bold leading-tight">{draft.appName || "Business Rules Engine"}</p>
-                        <p className="truncate text-[9.5px] leading-tight" style={{ color: "var(--muted-foreground)" }}>
-                          {draft.tagline || "Decision Platform"}
-                        </p>
+                    
+                    {/* Mock Dashboard Header */}
+                    <div className="mb-4 flex items-center justify-between border-b border-border/50 pb-3 pt-1">
+                      <div className="flex gap-2">
+                        <div className="h-5 w-5 rounded bg-muted" />
+                        <div className="h-5 w-20 rounded bg-muted/50" />
+                      </div>
+                      
+                      {/* Centered AI Foundry Logo Mockup */}
+                      <div className="flex items-center group">
+                        <Image 
+                          src={aiFoundryLogo} 
+                          alt="AI Foundry" 
+                          className="h-4 w-auto object-contain opacity-70 dark:invert" 
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2 items-center">
+                        <div className="size-5 rounded-full bg-muted" />
+                        <div className="size-6 rounded-full bg-primary" />
                       </div>
                     </div>
 
@@ -775,10 +786,16 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                   <div 
                     className="flex overflow-hidden rounded-2xl border shadow-xl h-96 relative flex-col md:flex-row"
                     style={{
+                      "--sidebar": "#041124",
+                      "--sidebar-foreground": "#f3f8fb",
+                      "--sidebar-primary": "#4361EE",
+                      "--sidebar-accent": "rgba(243, 248, 251, 0.08)",
+                      "--sidebar-accent-foreground": "#f3f8fb",
+                      "--sidebar-border": "rgba(243, 248, 251, 0.14)",
                       background:
                         "linear-gradient(135deg, color-mix(in oklch, var(--sidebar) 88%, black 12%) 0%, var(--sidebar) 45%, color-mix(in oklch, var(--sidebar) 78%, var(--sidebar-primary) 22%) 100%)",
                       color: "var(--sidebar-foreground)",
-                    }}
+                    } as React.CSSProperties}
                   >
                     {/* Left Brand Panel */}
                     <div className="relative hidden flex-1 flex-col justify-between p-6 md:flex z-10">
@@ -789,6 +806,8 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                             <p className="text-sm font-semibold tracking-tight leading-tight">{draft.appName || "Business Rules System"}</p>
                             <p className="text-[10px] text-sidebar-foreground/80 leading-tight">{draft.tagline || "Decision Platform"}</p>
                           </div>
+                          <Sparkles className="ml-1 size-4 shrink-0 text-sidebar-primary" />
+                          <Image src={aiFoundryLogo} alt="AI Foundry" className="ml-1 h-5 w-auto object-contain brightness-0 invert opacity-80" />
                         </div>
                         <h1 className="mt-4 text-xl font-bold tracking-tight">
                           <span className="text-sidebar-foreground">One business rules engine </span>
@@ -811,42 +830,40 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
 
                     {/* Right Floating Card */}
                     <div className="relative flex flex-1 flex-col items-center justify-center p-4 z-10">
-                      <div className="w-full max-w-[240px] rounded-xl border border-white/10 bg-card p-4 shadow-2xl">
+                      <div className="w-full max-w-[240px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-col items-center text-center">
-                          <div className="relative mb-3 flex h-8 w-full items-center justify-center mix-blend-multiply">
+                          <div className="relative mb-2 flex h-8 w-full items-center justify-center">
                             {draft.logo ? (
-                               // eslint-disable-next-line @next/next/no-img-element
-                               <Image src={draft.logo} alt="App Logo" width={64} height={64} className="h-full w-auto object-contain" />
+                               <Image src={draft.logo} alt="App Logo" width={64} height={64} className="h-full w-auto object-contain brightness-0 invert" />
                             ) : (
-                               <Workflow className="size-6 text-[#0a1230]" />
+                               <Workflow className="size-6 text-white" />
                             )}
                           </div>
-                          <h2 className="text-sm font-bold text-[#0a1230]">Welcome Back</h2>
-                          <p className="mt-0.5 text-[10px] text-[#0a1230]/70">Sign in to your account</p>
+                          <h2 className="text-sm font-bold text-white">Welcome Back</h2>
+                          <p className="mt-0.5 text-[10px] text-white/80">Sign in to your account</p>
                         </div>
                         
                         <div className="mt-4 space-y-3">
                           <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-[#0a1230]">Employee ID</p>
-                            <div className="h-7 rounded border border-[#c7cfe3] px-2 flex items-center text-[10px] text-[#0a1230]/50 bg-white/50">
+                            <p className="text-[10px] font-medium text-white">Employee ID</p>
+                            <div className="h-7 rounded border border-white/10 px-2 flex items-center text-[10px] text-white/50 bg-black/20 backdrop-blur-sm">
                               EMP-0001
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-[#0a1230]">Password</p>
-                            <div className="h-7 rounded border border-[#c7cfe3] px-2 flex items-center text-[10px] text-[#0a1230]/50 bg-white/50">
+                            <p className="text-[10px] font-medium text-white">Password</p>
+                            <div className="h-7 rounded border border-white/10 px-2 flex items-center text-[10px] text-white/50 bg-black/20 backdrop-blur-sm">
                               ••••••••
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-[9px]">
-                            <label className="flex items-center gap-1 text-[#0a1230]">
-                              <input type="checkbox" className="size-2.5" />
+                            <label className="flex items-center gap-1 text-white/90">
+                              <input type="checkbox" className="size-2.5 rounded-sm border-white/40" />
                               Remember me
                             </label>
                           </div>
                           <div
-                            className="h-7 rounded-md flex items-center justify-center font-semibold text-[10px] shadow-sm"
-                            style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+                            className="h-7 rounded-md flex items-center justify-center font-semibold text-[10px] shadow-sm bg-blue-600 text-white border-0"
                           >
                             Sign In
                           </div>

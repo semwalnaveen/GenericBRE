@@ -2,20 +2,23 @@
 
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { LogoLockup } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
 import { Button } from "@/components/ui/button";
 
 export function Sidebar() {
-  const collapsed = useAppStore((s) => s.sidebarCollapsed);
-  const setCollapsed = useAppStore((s) => s.setSidebarCollapsed);
+  const storeCollapsed = useAppStore((s) => s.sidebarCollapsed);
+  const setStoreCollapsed = useAppStore((s) => s.setSidebarCollapsed);
+  const [isHovered, setIsHovered] = useState(false);
 
-  // Expand/collapse only via the explicit toggle button below — no
-  // expand-on-hover. Hover-to-expand isn't standard sidebar behavior (it
-  // fights click-through and causes layout jumps on accidental mouse-over).
+  const collapsed = storeCollapsed && !isHovered;
+
   return (
     <motion.aside
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       animate={{ width: collapsed ? 56 : 230 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
       className="sidebar-glass relative z-30 hidden shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex"
@@ -32,10 +35,10 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => setStoreCollapsed(!storeCollapsed)}
           className="w-full justify-center text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground dark:hover:bg-sidebar-accent"
         >
-          {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          {storeCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
         </Button>
       </div>
     </motion.aside>

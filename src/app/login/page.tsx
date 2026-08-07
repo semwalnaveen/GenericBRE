@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupButton } from "@/components/ui/input-group";
 import { AnimatedBackground } from "@/components/login/animated-background";
+import aiFoundryLogo from "@/assets/AI-Foundry.png";
 
 const CAPABILITIES = [
   "No-Code Rule Builder",
@@ -140,14 +141,15 @@ export default function LoginPage() {
               <p className="text-lg font-semibold tracking-tight">{appName}</p>
               <p className="text-sm text-sidebar-foreground/85">{tagline}</p>
             </div>
-            <SparkleAccent className="ml-1 size-7 lg:size-9" />
+            <SparkleAccent className="ml-1 size-7 lg:size-9 shrink-0" />
+            <Image src={aiFoundryLogo} alt="AI Foundry" className="ml-2 h-10 w-auto object-contain brightness-0 invert opacity-80 transition-all duration-500 hover:scale-110 hover:opacity-100 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] cursor-pointer" />
           </div>
 
           <h1 className="mt-4 max-w-3xl text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
             <span className="text-sidebar-foreground">One business rules engine </span>
             <span className="text-sidebar-primary">for every industry.</span>
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-sidebar-foreground/80">
+          <p className="mt-2 mb-10 max-w-lg text-sm text-sidebar-foreground/80">
             Configure once, evaluate everywhere — no code required.
           </p>
         </div>
@@ -155,19 +157,19 @@ export default function LoginPage() {
         <div className="flex flex-1 items-center justify-center py-2 lg:mt-0 lg:-translate-y-[6px]">
           <div className="relative">
             <ProductMockup totalRules={totalRules} activeRules={activeRules} simulationsRun={simulationsRun} />
-            
+
             {/* No-Code Rule Builder (Top Left) */}
             <FeatureBadge label={CAPABILITIES[0]} className="absolute right-[100%] top-10 mr-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.8s ease-in-out infinite' }} />
-            
+
             {/* Decision Matrix Configuration (Middle Right) */}
             <FeatureBadge label={CAPABILITIES[1]} className="absolute left-[100%] top-1/4 ml-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 6.2s ease-in-out infinite 0.5s' }} />
-            
+
             {/* Approval Workflow & Governance (Bottom Right) */}
             <FeatureBadge label={CAPABILITIES[2]} className="absolute left-[100%] bottom-[64px] ml-5 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.5s ease-in-out infinite 1s' }} />
-            
+
             {/* Conflict Detection (Middle Left, moved slightly up) */}
             <FeatureBadge label={CAPABILITIES[3]} className="absolute right-[100%] top-[45%] mr-12 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 6.0s ease-in-out infinite 1.5s' }} />
-            
+
             {/* Full Audit Trail (Bottom Left, below Conflict Detection) */}
             <FeatureBadge label={CAPABILITIES[4]} className="absolute right-[100%] bottom-[40px] mr-6 hidden lg:flex whitespace-nowrap" style={{ animation: 'ucrmLoginBadgeBob 5.7s ease-in-out infinite 0.2s' }} />
           </div>
@@ -180,19 +182,19 @@ export default function LoginPage() {
           single visually dominant CTA. */}
       <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-10 sm:px-10 md:flex-none md:justify-center md:px-10 md:py-12 lg:pr-10 xl:pr-12 z-10">
         <div className="w-full max-w-[30rem] animate-[breCardFloat_6s_ease-in-out_infinite]">
-          <div className="rounded-2xl border border-white/10 bg-card p-6 shadow-2xl shadow-black/50 sm:p-8">
+          <div className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] sm:p-8">
             <div className="flex flex-col items-center text-center">
-                <Image src={customLogo || "/custom-logo.png"} alt="Logo" width={220} height={128} className="h-32 w-auto max-w-[220px] object-contain" priority />
-              <h2 className="text-2xl font-bold tracking-tight text-[#0a1230]">Welcome Back</h2>
-              <p className="mt-1 text-sm text-[#0a1230]/70">Sign in to your {appName} account</p>
+              <Image src={customLogo || "/custom-logo.png"} alt="Logo" width={220} height={128} className="h-32 w-auto max-w-[220px] object-contain brightness-0 invert" priority />
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">Welcome Back</h2>
+              <p className="mt-1 text-sm text-white/80">Sign in to your {appName} account</p>
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleSignIn}>
-              <div className="space-y-1.5">
-                <Label htmlFor="employeeId" className="font-bold text-[#0a1230]">Employee ID</Label>
-                <InputGroup className="h-[42px] border-[#c7cfe3] bg-white/50 backdrop-blur-sm transition-all focus-within:border-[#0056b3] focus-within:ring-2 focus-within:ring-[#0056b3]/20">
+              <div className="space-y-1.5 text-left">
+                <Label htmlFor="employeeId" className="font-medium text-white">Employee ID</Label>
+                <InputGroup className="h-[42px] border-white/10 bg-black/20 backdrop-blur-md transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-white/20">
                   <InputGroupAddon>
-                    <User className="size-4 text-[#0a1230]/80" />
+                    <User className="size-4 text-white/70" />
                   </InputGroupAddon>
                   <InputGroupInput
                     id="employeeId"
@@ -201,16 +203,16 @@ export default function LoginPage() {
                     onChange={(e) => setEmployeeId(e.target.value)}
                     autoComplete="username"
                     autoFocus
-                    className="login-input"
+                    className="login-input text-white placeholder:text-white/50"
                   />
                 </InputGroup>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="font-bold text-[#0a1230]">Password</Label>
-                <InputGroup className="h-[42px] border-[#c7cfe3] bg-white/50 backdrop-blur-sm transition-all focus-within:border-[#0056b3] focus-within:ring-2 focus-within:ring-[#0056b3]/20">
+              <div className="space-y-1.5 text-left">
+                <Label htmlFor="password" className="font-medium text-white">Password</Label>
+                <InputGroup className="h-[42px] border-white/10 bg-black/20 backdrop-blur-md transition-all focus-within:border-white/40 focus-within:ring-2 focus-within:ring-white/20">
                   <InputGroupAddon>
-                    <Lock className="size-4 text-[#0a1230]/80" />
+                    <Lock className="size-4 text-white/70" />
                   </InputGroupAddon>
                   <InputGroupInput
                     id="password"
@@ -219,14 +221,14 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
-                    className="login-input"
+                    className="login-input text-white placeholder:text-white/50"
                   />
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       onClick={() => setShowPassword((s) => !s)}
                     >
-                      {showPassword ? <EyeOff className="size-4 text-[#0a1230]/80" /> : <Eye className="size-4 text-[#0a1230]/80" />}
+                      {showPassword ? <EyeOff className="size-4 text-white/70" /> : <Eye className="size-4 text-white/70" />}
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
@@ -239,29 +241,29 @@ export default function LoginPage() {
               )}
 
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-[#0a1230]">
-                  <Checkbox checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} />
+                <label className="flex items-center gap-2 text-sm text-white/90">
+                  <Checkbox checked={rememberMe} onCheckedChange={(v) => setRememberMe(!!v)} className="border-white/40 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
                   Remember me
                 </label>
                 <button
                   type="button"
                   onClick={() => toast.info("Contact your administrator to reset your password.")}
-                  className="text-sm font-medium text-primary hover:underline"
+                  className="text-sm font-medium text-white hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
 
-              <Button type="submit" size="lg" className="w-full h-12 font-semibold shadow-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 border-0 text-white transition-all hover:-translate-y-[2px] hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+              <Button type="submit" size="lg" className="w-full h-12 font-semibold shadow-sm bg-blue-600 hover:bg-blue-500 border-0 text-white transition-all hover:-translate-y-[2px] hover:shadow-[0_0_15px_rgba(37,99,235,0.4)]">
                 Sign In
               </Button>
             </form>
 
-            <div className="mt-5 text-center text-sm text-[#0a1230]/70">
+            <div className="mt-5 text-center text-sm text-white/70">
               Need Demo Access?{" "}
               <button
                 onClick={() => setPickerOpen(true)}
-                className="font-medium text-[#0a1230] underline-offset-2 hover:underline"
+                className="font-medium text-white underline-offset-2 hover:underline"
               >
                 Enter Demo Mode
               </button>
