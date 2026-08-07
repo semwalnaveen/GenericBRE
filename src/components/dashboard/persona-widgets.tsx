@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Search, AlertTriangle, ShieldQuestion, FileText, CheckSquare, ClipboardList, ShieldAlert, FileSearch } from "lucide-react";
+import { Search, AlertTriangle, ShieldQuestion, FileText, CheckSquare, ClipboardList, ShieldAlert, FileSearch, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAppStore, useScopedRules, useAccessibleProducts } from "@/lib/store";
 import { detectRuleConflicts } from "@/lib/conflict-detection";
 import { detectProductRuleConflicts } from "@/lib/product-conflict-detection";
@@ -385,7 +386,7 @@ export function PendingApplicationsPanel() {
 
   return (
     <div className="flex h-full flex-col rounded-xl border bg-card shadow-sm">
-      <PanelHeader title="Pending Applications" actionLabel="View all" onAction={() => {}} />
+      <PanelHeader title="Pending Applications" action="View all" onAction={() => {}} />
       <div className="flex-1 overflow-auto">
         {pendingApps.length === 0 ? (
           <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">

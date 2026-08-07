@@ -21,6 +21,7 @@ const STATUS_BAR_COLORS: Record<RuleStatus, string> = {
   Rejected: "bg-red-500",
   Inactive: "bg-slate-400",
   Archived: "bg-slate-500",
+  "Pending Deletion": "bg-orange-500",
 };
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color?: string }[], label?: string }) {
@@ -142,6 +143,7 @@ export function RuleStatusChart() {
     Rejected: "#ef4444", // red-500
     Inactive: "#94a3b8", // slate-400
     Archived: "#64748b", // slate-500
+    "Pending Deletion": "#f97316", // orange-500
   };
 
   const donutData = data.map((d) => ({

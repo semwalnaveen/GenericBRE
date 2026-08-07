@@ -12,6 +12,7 @@ const RULE_STATUS_STYLES: Record<RuleStatus, string> = {
   Published: "text-emerald-600 dark:text-emerald-400",
   Inactive: "text-slate-500 dark:text-slate-400",
   Archived: "text-slate-600 dark:text-slate-500",
+  "Pending Deletion": "text-orange-600 dark:text-orange-400",
 };
 
 const RULE_STATUS_DOT: Record<RuleStatus, string> = {
@@ -22,6 +23,7 @@ const RULE_STATUS_DOT: Record<RuleStatus, string> = {
   Published: "bg-emerald-500",
   Inactive: "bg-slate-400",
   Archived: "bg-slate-500",
+  "Pending Deletion": "bg-orange-500",
 };
 
 export function StatusBadge({ status, className }: { status: RuleStatus; className?: string }) {
