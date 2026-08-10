@@ -339,7 +339,7 @@ function RepositoryContent() {
         </div>
       )}
 
-      <div className="min-h-0 flex-1 p-5 sm:p-6">
+      <div className="flex flex-col min-h-0 flex-1 p-5 sm:p-6">
         <DataTable
           columns={columns}
           data={filtered}

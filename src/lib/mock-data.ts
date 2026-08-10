@@ -108,6 +108,66 @@ function makeRule(partial: {
 // CORE, FULLY-WIRED RULES — these drive the live simulator demo
 // ============================================================
 export const CORE_RULES: BusinessRule[] = [
+  makeRule({
+    id: "RL-601", name: "Minimum Income Requirement", domain: "Lending", category: "Eligibility", priority: 1, status: "Active",
+    description: "Requires minimum income of 25000.", owner: "Ananya Verma", rootGroup: group("AND", [cond("monthly_income", ">=", "25000")]),
+    actions: [{ id: cid(), type: "Assign Value", outputField: "eligibility", outputValue: "Pass" }],
+    createdDaysAgo: 10, updatedDaysAgo: 5,
+  }),
+  makeRule({
+    id: "RL-602", name: "Premium Card Pricing", domain: "Retail Banking", category: "Pricing", priority: 2, status: "Active",
+    description: "Sets interest rate for premium cards.", owner: "Rohan Mehta", rootGroup: group("AND", [cond("credit_score", ">=", "750")]),
+    actions: [{ id: cid(), type: "Assign Value", outputField: "interest_rate", outputValue: "12.5" }],
+    createdDaysAgo: 20, updatedDaysAgo: 2,
+  }),
+  makeRule({
+    id: "RL-603", name: "Basic Card Pricing", domain: "Retail Banking", category: "Pricing", priority: 3, status: "Active",
+    description: "Sets interest rate for basic cards.", owner: "Rohan Mehta", rootGroup: group("AND", [cond("credit_score", "<", "750")]),
+    actions: [{ id: cid(), type: "Assign Value", outputField: "interest_rate", outputValue: "18.9" }],
+    createdDaysAgo: 22, updatedDaysAgo: 2,
+  }),
+  makeRule({
+    id: "RL-604", name: "Auto Loan LTV Cap", domain: "Lending", category: "Underwriting", priority: 1, status: "Active",
+    description: "Caps LTV at 90% for auto loans.", owner: "System", rootGroup: group("AND", [cond("ltv_ratio", ">", "90")]),
+    actions: [{ id: cid(), type: "Reject", reasonCode: "LTV_TOO_HIGH", message: "LTV exceeds 90% cap." }],
+    createdDaysAgo: 30, updatedDaysAgo: 30,
+  }),
+  makeRule({
+    id: "RL-605", name: "Gold Loan Valuation", domain: "Lending", category: "Collateral", priority: 1, status: "Active",
+    description: "Validates gold purity.", owner: "System", rootGroup: group("AND", [cond("gold_purity", "<", "22")]),
+    actions: [{ id: cid(), type: "Flag for Review", reasonCode: "LOW_PURITY", message: "Gold purity is below 22k." }],
+    createdDaysAgo: 15, updatedDaysAgo: 15,
+  }),
+  makeRule({
+    id: "RL-606", name: "KYC Compliance Check", domain: "Compliance", category: "Compliance", priority: 1, status: "Active",
+    description: "Checks if KYC is complete.", owner: "Divya Iyer", rootGroup: group("AND", [cond("kyc_status", "=", "Incomplete")]),
+    actions: [{ id: cid(), type: "Reject", reasonCode: "KYC_INCOMPLETE", message: "KYC is incomplete." }],
+    createdDaysAgo: 50, updatedDaysAgo: 10,
+  }),
+  makeRule({
+    id: "RL-607", name: "Fraud Check - High Risk Area", domain: "Risk", category: "Risk & Fraud", priority: 1, status: "Active",
+    description: "Flags applications from high risk areas.", owner: "System", rootGroup: group("AND", [cond("risk_area", "=", "High")]),
+    actions: [{ id: cid(), type: "Flag for Review", reasonCode: "HIGH_RISK_AREA", message: "Applicant resides in a high-risk area." }],
+    createdDaysAgo: 40, updatedDaysAgo: 40,
+  }),
+  makeRule({
+    id: "RL-608", name: "Pending Income Verification", domain: "Lending", category: "Eligibility", priority: 1, status: "Testing",
+    description: "Pending rule for income verification.", owner: "Ananya Verma", rootGroup: group("AND", [cond("income_verified", "=", "false")]),
+    actions: [{ id: cid(), type: "Flag for Review", reasonCode: "INCOME_UNVERIFIED", message: "Income is not verified." }],
+    createdDaysAgo: 3, updatedDaysAgo: 1,
+  }),
+  makeRule({
+    id: "RL-609", name: "Pending Employment Check", domain: "Lending", category: "Eligibility", priority: 2, status: "Testing",
+    description: "Pending rule for employment check.", owner: "Ananya Verma", rootGroup: group("AND", [cond("employment_type", "=", "Unemployed")]),
+    actions: [{ id: cid(), type: "Reject", reasonCode: "UNEMPLOYED", message: "Applicant is unemployed." }],
+    createdDaysAgo: 2, updatedDaysAgo: 2,
+  }),
+  makeRule({
+    id: "RL-610", name: "Draft Age Rule", domain: "Lending", category: "Eligibility", priority: 3, status: "Draft",
+    description: "Draft rule for max age.", owner: "Ananya Verma", rootGroup: group("AND", [cond("applicant_age", ">", "65")]),
+    actions: [{ id: cid(), type: "Reject", reasonCode: "AGE_OVER_65", message: "Applicant is over 65." }],
+    createdDaysAgo: 1, updatedDaysAgo: 0,
+  }),
   // --- DEMO RULES ---
   makeRule({
     id: "RL-DEMO-1",
@@ -1855,6 +1915,14 @@ export const AUDIT_LOG: AuditEntry[] = buildHashChain([
   { id: "A7", timestamp: daysAgo(4), user: "Ashutosh Vishwakarma", action: "Disabled Rule", entity: "BusinessRule", entityId: "RL-109", details: "Status changed Active → Inactive." },
   { id: "A13", timestamp: daysAgo(4), user: "Ananya Verma", action: "Submitted for Review", entity: "BusinessRule", entityId: "RL-513", details: "Platinum Card Utilization Alert moved to Testing and queued for review." },
   { id: "A8", timestamp: daysAgo(6), user: "Jyoti Sonani", action: "Created Rule", entity: "BusinessRule", entityId: "RL-108", details: "New Draft rule created in Compliance category." },
+  // Synthetic Audit Logs for Divya (Operations) & Vikram (System Admin)
+  { id: "A14", timestamp: daysAgo(2), user: "Vikram Chawla", action: "Updated Permissions", entity: "UserAccess", entityId: "UAM-62", details: "Granted Product Manager rule.publish access for Retail Banking." },
+  { id: "A15", timestamp: daysAgo(3), user: "Vikram Chawla", action: "System Configuration", entity: "Settings", entityId: "SYS-CFG", details: "Updated default execution settings to execute-all." },
+  { id: "A16", timestamp: daysAgo(5), user: "Divya Iyer", action: "Generated Report", entity: "Report", entityId: "RPT-COMPLIANCE", details: "Compliance daily metrics exported to PDF." },
+  { id: "A17", timestamp: daysAgo(7), user: "Divya Iyer", action: "Ran Batch Job", entity: "BatchJob", entityId: "JOB-KYC-SYNC", details: "Nightly KYC sync completed with 0 errors." },
+  { id: "A18", timestamp: daysAgo(10), user: "Kavita Rao", action: "Approved Rule", entity: "BusinessRule", entityId: "RL-601", details: "Minimum Income Requirement approved and published." },
+  { id: "A19", timestamp: daysAgo(12), user: "Rohan Mehta", action: "Updated Matrix", entity: "DecisionMatrix", entityId: "MTX-CC-01", details: "Adjusted interest rates for standard credit cards." },
+  { id: "A20", timestamp: daysAgo(15), user: "Arjun Nair", action: "Ran Simulation", entity: "Simulation", entityId: "SIM-AL-88", details: "Auto Loan stress test scenario execution." },
 ]);
 
 // Mirrors what store.ts's submitForReview() creates for a real submission —
@@ -1868,6 +1936,8 @@ export const DEFAULT_APPROVAL_REQUESTS: ApprovalRequest[] = [
   { id: "AR-3", ruleId: "RL-511", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(3) },
   { id: "AR-4", ruleId: "RL-512", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(0.2) },
   { id: "AR-5", ruleId: "RL-513", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(4) },
+  { id: "AR-6", ruleId: "RL-608", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(3) },
+  { id: "AR-7", ruleId: "RL-609", stage: "Pending Review", requestedBy: "Ananya Verma", requestedAt: daysAgo(2) },
 ];
 
 // Rejected-outcome simulation history — the "Failed Simulations" KPI
@@ -2007,6 +2077,41 @@ export const DEFAULT_SIMULATIONS: SimulationResult[] = [
     timestamp: daysAgo(0.8),
     totalDurationMs: 0.5,
   },
+  {
+    id: "SIM-DEMO-6",
+    domain: "Lending",
+    productId: "prod-auto-loan",
+    outcome: "Approved",
+    reasonCode: "APPROVED",
+    summary: "Auto loan approved after LTV validation.",
+    calculatedValues: { ltv_ratio: 80 },
+    triggeredRules: ["RL-604", "RL-201"],
+    decidingRuleId: "RL-201",
+    trace: [
+      { ruleId: "RL-604", ruleName: "Auto Loan LTV Cap", priority: 1, status: "Failed", conditionSummaries: [{ field: "ltv_ratio", operator: ">", expected: "90", actual: "80", passed: false }], actionsApplied: [], durationMs: 0.2 },
+      { ruleId: "RL-201", ruleName: "Standard Auto Approval", priority: 5, status: "Passed", branch: "then", conditionSummaries: [{ field: "credit_score", operator: ">=", expected: "700", actual: "720", passed: true }], actionsApplied: [{ id: "sim6-a1", type: "Approve", message: "Auto loan approved." }], durationMs: 0.4 },
+    ],
+    input: { credit_score: 720, loan_amount: 1500000, vehicle_value: 1875000, ltv_ratio: 80 },
+    timestamp: daysAgo(2),
+    totalDurationMs: 0.6,
+  },
+  {
+    id: "SIM-DEMO-7",
+    domain: "NBFC",
+    productId: "prod-gold-loan",
+    outcome: "Review Required",
+    reasonCode: "LOW_PURITY",
+    summary: "Gold purity requires manual review.",
+    calculatedValues: {},
+    triggeredRules: ["RL-605"],
+    decidingRuleId: "RL-605",
+    trace: [
+      { ruleId: "RL-605", ruleName: "Gold Loan Valuation", priority: 1, status: "Passed", branch: "then", conditionSummaries: [{ field: "gold_purity", operator: "<", expected: "22", actual: "18", passed: true }], actionsApplied: [{ id: "sim7-a1", type: "Flag for Review", reasonCode: "LOW_PURITY", message: "Gold purity is below 22k." }], durationMs: 0.3 },
+    ],
+    input: { gold_weight: 50, gold_purity: 18, loan_amount: 200000 },
+    timestamp: daysAgo(4),
+    totalDurationMs: 0.3,
+  },
 ];
 
 export const RECENT_DEPLOYMENTS = [
@@ -2039,6 +2144,7 @@ export const DEFAULT_PRODUCTS: Product[] = [
   { id: "prod-auto-loan", name: "Auto Loan", code: "AUTO_LOAN", domain: "Lending", description: "New/used vehicle purchase financing.", status: "Active", publishStatus: "Draft", createdAt: PRODUCT_SEED_TIMESTAMP, updatedAt: PRODUCT_SEED_TIMESTAMP },
   { id: "prod-personal-loan", name: "Personal Loan", code: "PERSONAL_LOAN", domain: "Lending", description: "Unsecured personal loan scheme.", status: "Active", publishStatus: "Draft", createdAt: PRODUCT_SEED_TIMESTAMP, updatedAt: PRODUCT_SEED_TIMESTAMP },
   { id: "prod-gold-loan", name: "Gold Loan", code: "GOLD_LOAN", domain: "NBFC", description: "Collateral-backed gold loan scheme.", status: "Active", publishStatus: "Draft", createdAt: PRODUCT_SEED_TIMESTAMP, updatedAt: PRODUCT_SEED_TIMESTAMP },
+  { id: "prod-credit-card", name: "Credit Card", code: "CREDIT_CARD", domain: "Retail Banking", description: "Standard consumer credit card.", status: "Active", publishStatus: "Draft", createdAt: PRODUCT_SEED_TIMESTAMP, updatedAt: PRODUCT_SEED_TIMESTAMP },
 ];
 
 // Seed applications for the Rule Simulator's Application-ID mode. In
@@ -2098,6 +2204,20 @@ export const DEFAULT_PRODUCT_RULE_MAPPINGS: ProductRuleMapping[] = [
   mapping("prm-hl-6", "prod-home-loan", "RL-106", 5),
   mapping("prm-hl-7", "prod-home-loan", "RL-107", 6),
   mapping("prm-hl-8", "prod-home-loan", "RL-108", 7),
+
+  mapping("prm-gl-6", "prod-gold-loan", "RL-121", 5),
+  mapping("prm-gl-7", "prod-gold-loan", "RL-124", 6),
+  mapping("prm-gl-8", "prod-gold-loan", "RL-125", 7),
+
+  // Additional New Mappings
+  mapping("prm-cc-1", "prod-credit-card", "RL-602", 0),
+  mapping("prm-cc-2", "prod-credit-card", "RL-603", 1),
+  mapping("prm-al-9", "prod-auto-loan", "RL-604", 8),
+  mapping("prm-gl-9", "prod-gold-loan", "RL-605", 8),
+  mapping("prm-hl-10", "prod-home-loan", "RL-606", 8),
+  mapping("prm-hl-11", "prod-home-loan", "RL-607", 9),
+  mapping("prm-hl-12", "prod-home-loan", "RL-608", 10),
+  mapping("prm-hl-13", "prod-home-loan", "RL-609", 11),
 
   // Auto Loan (6 rules - 0 conflicts)
   mapping("prm-al-1", "prod-auto-loan", "RL-201", 0),

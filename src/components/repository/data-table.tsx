@@ -77,7 +77,7 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, columnVisibility, rowSelection },
-    initialState: { pagination: { pageSize: 10 } },
+    initialState: { pagination: { pageSize: 6 } },
   });
 
   useEffect(() => {
@@ -88,8 +88,8 @@ export function DataTable<TData, TValue>({
   return (
     <>
       {renderTopToolbar?.(table)}
-      <div className={cn("flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
-        <div className="min-h-0 flex-1 overflow-auto">
+      <div className={cn("flex min-h-0 shrink flex-col overflow-hidden rounded-xl border bg-card shadow-sm", className)}>
+        <div className="min-h-0 flex-1 overflow-hidden [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50">
             {table.getHeaderGroups().map((hg) => (
