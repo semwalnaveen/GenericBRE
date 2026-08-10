@@ -204,7 +204,7 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
           {/* Center Text */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{totalText}</span>
-            <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#002f58] via-blue-700 to-[#2f679d]">
+            <span className="text-sm font-bold text-foreground">
               {!isNaN(Number(totalSubtext)) ? <AnimatedNumber value={Number(totalSubtext)} /> : totalSubtext}
             </span>
           </div>
@@ -215,7 +215,7 @@ export function DistributionDonutWidget({ title, totalText, totalSubtext, data, 
           {data.map((item, i) => (
             <div
               key={i}
-              className={cn("flex items-center justify-between rounded-md border border-transparent px-2 py-0.5", item.bgSoftColor)}
+              className={cn("flex items-center justify-between rounded-md border border-transparent px-2 py-0.5", item.bgSoftColor, "dark:bg-muted/30")}
             >
               <div className="flex items-center gap-1.5">
                 <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
@@ -298,7 +298,7 @@ export function ProgressDonutListWidget({
             />
           </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#002f58] via-blue-700 to-[#2f679d]">
+              <span className="text-2xl font-bold tracking-tight text-foreground">
                 {typeof circleValue === 'number' || !isNaN(Number(circleValue)) ? <AnimatedNumber value={Number(circleValue)} /> : circleValue}
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
@@ -312,7 +312,7 @@ export function ProgressDonutListWidget({
           {items.map((item, i) => (
             <div
               key={i}
-              className={cn("flex items-center justify-between rounded-xl px-3 py-1.5", item.bgSoftColor)}
+              className={cn("flex items-center justify-between rounded-xl px-3 py-1.5", item.bgSoftColor, "dark:bg-muted/30")}
             >
               <div className="flex items-center gap-2.5">
                 <span className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
@@ -456,7 +456,7 @@ interface CleanListWidgetProps {
 
 export function CleanListWidget({ title, action, items, emptyMessage = "No data available." }: CleanListWidgetProps) {
   return (
-    <div className="flex h-full w-full min-h-0 flex-col rounded-xl border border-[#D0E4F5] bg-white shadow-sm overflow-hidden">
+    <div className="flex h-full w-full min-h-0 flex-col rounded-xl premium-card overflow-hidden">
       <div className="flex shrink-0 items-center justify-between bg-slate-100/80 px-4 py-2.5 dark:bg-muted/30">
         <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/90">{title}</h3>
         {action && (

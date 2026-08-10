@@ -188,7 +188,8 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
   const [activeTab, setActiveTab] = useState("theme");
   const [previewTab, setPreviewTab] = useState<"dashboard" | "signin">("dashboard");
   const bgInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const sidebarLogoInputRef = useRef<HTMLInputElement>(null);
+  const loginLogoInputRef = useRef<HTMLInputElement>(null);
   const t = useTranslateFor(draft.language as LanguageCode);
 
   if (activeTab === "branding" && !canManageBranding) {
@@ -518,18 +519,18 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                       />
                     </section>
                     <section className="space-y-1.5">
-                      <Label className="text-sm">Logo</Label>
+                      <Label className="text-sm">Sidebar Logo</Label>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => logoInputRef.current?.click()}>
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => sidebarLogoInputRef.current?.click()}>
                           <Upload className="size-3.5" /> Upload Logo
                         </Button>
-                        {draft.logo && (
-                          <Button variant="ghost" size="sm" onClick={() => patch({ logo: null })}>
+                        {draft.sidebarLogo && (
+                          <Button variant="ghost" size="sm" onClick={() => patch({ sidebarLogo: null })}>
                             Remove
                           </Button>
                         )}
                         <input
-                          ref={logoInputRef}
+                          ref={sidebarLogoInputRef}
                           type="file"
                           accept="image/*"
                           className="hidden"
@@ -537,17 +538,50 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                             const file = e.target.files?.[0];
                             if (!file) return;
                             const dataUrl = await readFileAsDataUrl(file);
-                            patch({ logo: dataUrl });
+                            patch({ sidebarLogo: dataUrl });
                           }}
                         />
                       </div>
-                      {draft.logo && (
+                      {draft.sidebarLogo && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <Image src={draft.logo} alt="Logo preview" width={48} height={48} className="size-12 rounded-lg border object-contain p-1" />
+                        <Image src={draft.sidebarLogo} alt="Logo preview" width={48} height={48} className="size-12 rounded-lg border object-contain p-1" />
                       )}
                       <p className="text-sm text-muted-foreground">
-                        Replaces the default brand mark in the sidebar, header, and login screen.
+                        Replaces the default brand mark in the application sidebar.
                       </p>
+                    </section>
+                    <section className="space-y-1.5 pt-2 border-t">
+                      <Label className="text-sm">Login Screen Logo</Label>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => loginLogoInputRef.current?.click()}>
+                          <Upload className="size-3.5" /> Upload Logo
+                        </Button>
+                        {draft.loginLogo && (
+                          <Button variant="ghost" size="sm" onClick={() => patch({ loginLogo: null })}>
+                            Remove
+                          </Button>
+                        )}
+                        <input
+                          ref={loginLogoInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const dataUrl = await readFileAsDataUrl(file);
+                            patch({ loginLogo: dataUrl });
+                          }}
+                        />
+                      </div>
+                      {draft.loginLogo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <Image src={draft.loginLogo} alt="Logo" width={160} height={48} className="h-10 w-auto object-contain" />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Replaces the default brand mark on the login screen.
+                        </p>
+                      )}
                     </section>
                   </TabsContent>
                 )}
@@ -623,7 +657,7 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                   {draft.background.target === "app" && wallpaperLayer}
                   <div
                     className={cn(
-                      "relative isolate flex w-14 shrink-0 flex-col items-center gap-3 py-4",
+                      "relative isolate flex w-48 shrink-0 flex-col gap-4 py-4 px-3",
                       draft.background.imageData && "sidebar-glass"
                     )}
                     // Opaque background only when there's no wallpaper to
@@ -635,29 +669,49 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                     style={draft.background.imageData ? undefined : { background: "var(--sidebar)" }}
                   >
                     {draft.background.target === "sidebar" && wallpaperLayer}
-                    <div
-                      className="flex size-8 items-center justify-center overflow-hidden rounded-lg"
-                      style={{ background: "var(--sidebar-primary)", color: "var(--sidebar-primary-foreground)" }}
-                      title={draft.appName}
-                    >
-                      {draft.logo ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <Image src={draft.logo} alt="App Logo" fill className="object-contain p-1" />
-                      ) : (
-                        <Workflow className="size-4" />
-                      )}
-                    </div>
-                    {[0, 1, 2, 3, 4].map((i) => (
+                    
+                    <div className="flex items-center gap-2 mb-1 px-1">
                       <div
-                        key={i}
-                        className="size-6 rounded-md"
-                        style={
-                          i === 1
-                            ? { background: "var(--sidebar-primary)" }
-                            : { background: "color-mix(in oklch, var(--sidebar-foreground) 18%, transparent)" }
-                        }
-                      />
-                    ))}
+                        className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md"
+                        style={{ background: "var(--sidebar-primary)", color: "var(--sidebar-primary-foreground)" }}
+                        title={draft.appName}
+                      >
+                        {draft.sidebarLogo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <Image src={draft.sidebarLogo} alt="App Logo" fill className="object-contain p-0.5" />
+                        ) : (
+                          <Workflow className="size-3.5" />
+                        )}
+                      </div>
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="truncate text-xs font-semibold" style={{ color: "var(--sidebar-foreground)" }}>{draft.appName}</span>
+                        <span className="truncate text-[9px]" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 60%, transparent)" }}>Decision Platform</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-0.5">
+                      <div className="px-1 mb-1 mt-1 text-[9px] font-bold tracking-wider" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 50%, transparent)" }}>WORKSPACE</div>
+                      <div className="flex items-center gap-2 rounded-md px-2 py-1.5 shadow-sm" style={{ background: "var(--sidebar-primary)", color: "var(--sidebar-primary-foreground)" }}>
+                        <Layout className="size-3.5" />
+                        <span className="text-xs font-medium">Dashboard</span>
+                      </div>
+                      {["Products", "Rule Builder", "Rule Repository", "Decision Matrix", "Rule Simulator"].map((item) => (
+                        <div key={item} className="flex items-center gap-2 rounded-md px-2 py-1.5" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 70%, transparent)" }}>
+                          <div className="size-3.5 rounded-[3px]" style={{ background: "color-mix(in oklch, var(--sidebar-foreground) 20%, transparent)" }} />
+                          <span className="text-xs font-medium">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      <div className="px-1 mb-1 text-[9px] font-bold tracking-wider" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 50%, transparent)" }}>PLATFORM</div>
+                      {["Audit Log", "Metadata Explorer", "Configuration Studio"].map((item) => (
+                        <div key={item} className="flex items-center gap-2 rounded-md px-2 py-1.5" style={{ color: "color-mix(in oklch, var(--sidebar-foreground) 70%, transparent)" }}>
+                          <div className="size-3.5 rounded-[3px]" style={{ background: "color-mix(in oklch, var(--sidebar-foreground) 20%, transparent)" }} />
+                          <span className="text-xs font-medium">{item}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div
@@ -833,8 +887,8 @@ export function AppearanceStudio({ onClose, onOpenChange }: AppearanceStudioProp
                       <div className="w-full max-w-[240px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-col items-center text-center">
                           <div className="relative mb-2 flex h-8 w-full items-center justify-center">
-                            {draft.logo ? (
-                               <Image src={draft.logo} alt="App Logo" width={64} height={64} className="h-full w-auto object-contain brightness-0 invert" />
+                            {draft.loginLogo ? (
+                               <Image src={draft.loginLogo} alt="App Logo" width={64} height={64} className="h-full w-auto object-contain brightness-0 invert" />
                             ) : (
                                <Workflow className="size-6 text-white" />
                             )}

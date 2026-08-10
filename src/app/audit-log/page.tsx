@@ -211,9 +211,9 @@ export default function AuditLogPage() {
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-5 py-4 sm:px-6">
-          <div className="overflow-y-auto h-[320px] rounded-xl border bg-white shadow-sm">
+          <div className="overflow-y-auto h-[320px] rounded-xl border bg-card shadow-sm">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/80 text-sm text-muted-foreground border-b backdrop-blur-sm">
+              <thead className="sticky top-0 z-10 bg-slate-50/80 dark:bg-muted/80 text-sm text-muted-foreground border-b backdrop-blur-sm">
                 <tr>
                   <th className="w-7 px-2 py-2" />
                   <th className="px-3 py-2 text-left font-medium">Timestamp</th>

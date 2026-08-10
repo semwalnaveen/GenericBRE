@@ -15,8 +15,10 @@ export function HeroBanner({
 }) {
   return (
     <div
-      className="relative ml-0 mr-1 mt-2 overflow-hidden rounded-2xl border border-[#ffffff1a] text-[#f3f8fb] shadow-[0_12px_32px_-12px_rgba(2,20,50,0.4)] sm:ml-0 sm:mr-2"
-      style={{ background: "linear-gradient(90deg, #2f679d, #002f58)" }}
+      className="relative ml-0 mr-1 mt-2 overflow-hidden rounded-2xl border border-sidebar-primary/20 text-sidebar-primary-foreground shadow-md sm:ml-0 sm:mr-2"
+      style={{
+        background: "linear-gradient(90deg, color-mix(in oklch, var(--sidebar-primary) 85%, white), color-mix(in oklch, var(--sidebar-primary) 75%, black))"
+      }}
     >
       <div className="mx-auto max-w-[1400px]">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-[10px] pb-[6px] sm:px-5">
@@ -25,8 +27,8 @@ export function HeroBanner({
                 color: var(--foreground) }` rule wins over inherited color
                 regardless of the parent's text class, so without this the
                 greeting renders near-black instead of the intended off-white. */}
-            <h1 className="text-lg font-semibold tracking-tight text-[#f3f8fb] sm:text-xl">
-              Hi, <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-white to-blue-300">{name}</span> 👋
+            <h1 className="text-lg font-semibold tracking-tight text-sidebar-primary-foreground sm:text-xl">
+              Hi, <span className="font-bold opacity-90">{name}</span> 👋
             </h1>
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}

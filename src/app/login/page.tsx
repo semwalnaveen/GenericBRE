@@ -43,7 +43,7 @@ export default function LoginPage() {
   const simulations = useAppStore((s) => s.simulations);
   const appName = useAppStore((s) => s.appearance.appName);
   const tagline = useAppStore((s) => s.appearance.tagline);
-  const customLogo = useAppStore((s) => s.appearance.logo);
+  const customLogo = useAppStore((s) => s.appearance.loginLogo);
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
   const currentUserId = useAppStore((s) => s.currentUser.userId);
 
@@ -136,13 +136,13 @@ export default function LoginPage() {
       <div className="relative hidden min-w-0 flex-1 flex-col justify-between overflow-hidden px-6 py-6 text-sidebar-foreground md:flex md:px-8 md:py-8 lg:px-10 lg:py-10 xl:px-14 z-10">
         <div className="relative">
           <div className="flex items-center gap-3">
-            <LogoMark className="size-10" />
+            <LogoMark className="size-10" context="login" />
             <div>
               <p className="text-lg font-semibold tracking-tight">{appName}</p>
               <p className="text-sm text-sidebar-foreground/85">{tagline}</p>
             </div>
             <SparkleAccent className="ml-1 size-7 lg:size-9 shrink-0" />
-            <Image src={aiFoundryLogo} alt="AI Foundry" className="ml-2 h-10 w-auto object-contain brightness-0 invert opacity-80 transition-all duration-500 hover:scale-110 hover:opacity-100 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)] cursor-pointer" />
+            <Image src={aiFoundryLogo} alt="AI Foundry" className="ml-2 h-10 w-auto object-contain brightness-0 invert opacity-80 transition-all duration-500 hover:scale-110 hover:opacity-100 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
           </div>
 
           <h1 className="mt-4 max-w-3xl text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
@@ -184,7 +184,6 @@ export default function LoginPage() {
         <div className="w-full max-w-[30rem] animate-[breCardFloat_6s_ease-in-out_infinite]">
           <div className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl p-6 shadow-[0_8px_32px_rgba(0,0,0,0.3)] sm:p-8">
             <div className="flex flex-col items-center text-center">
-              <Image src={customLogo || "/custom-logo.png"} alt="Logo" width={220} height={128} className="h-32 w-auto max-w-[220px] object-contain brightness-0 invert" priority />
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">Welcome Back</h2>
               <p className="mt-1 text-sm text-white/80">Sign in to your {appName} account</p>
             </div>

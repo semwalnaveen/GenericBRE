@@ -9,7 +9,7 @@ import { useReducedMotion } from "./use-reduced-motion";
 // login hero read as "a decision engine evaluating rules in real time"
 // rather than a static screenshot. Deliberately industry-agnostic (no loan/
 // underwriting fields) — this is the generic engine, not a vertical demo.
-const PIPELINE_STEPS = ["Eligibility Check", "Risk Score", "Policy Compliance", "Conflict Check"];
+const PIPELINE_STEPS = ["Eligibility Check", "Risk Score", "Compliance", "Conflict Check"];
 
 // Three outcomes, rotated cycle-to-cycle rather than randomized — a fixed
 // rotation is just as visually "different every time" as true randomness

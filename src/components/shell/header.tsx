@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { LogoLockup } from "./logo";
 import aiFoundryLogoBlack from "@/assets/AI-Foundry-Black.png";
+import aiFoundryLogoWhite from "@/assets/AI-Foundry.png";
 import { GlobalFilterBar, MobileFilterButton } from "./global-filter-bar";
 import { HelpDesk } from "./help-desk";
 import { UserMenu } from "./user-menu";
@@ -66,7 +67,12 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
           <Image 
             src={aiFoundryLogoBlack} 
             alt="AI Foundry" 
-            className="h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)] cursor-pointer" 
+            className="dark:hidden h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]" 
+          />
+          <Image 
+            src={aiFoundryLogoWhite} 
+            alt="AI Foundry" 
+            className="hidden dark:block h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]" 
           />
         </div>
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">

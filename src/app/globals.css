@@ -83,14 +83,14 @@
   --chart-4: #F59E0B;
   --chart-5: #EF4444;
   --radius: 0.625rem;
-  --sidebar: #FFFFFF;
+  --sidebar: color-mix(in oklch, var(--primary) 3%, white);
   --sidebar-foreground: #334155;
-  --sidebar-primary: #2563EB;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: color-mix(in oklch, var(--primary) 8%, white);
   --sidebar-accent-foreground: #0F172A;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #3B82F6;
+  --sidebar-border: color-mix(in oklch, var(--primary) 12%, white);
+  --sidebar-ring: var(--ring);
 }
 
 .dark {
@@ -119,14 +119,14 @@
   --chart-3: #10B981;
   --chart-4: #F59E0B;
   --chart-5: #EF4444;
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #334155;
-  --sidebar-primary: #2563EB;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #0F172A;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #3B82F6;
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: var(--ring);
 }
 
 @layer base {
@@ -290,17 +290,17 @@ html[data-bg-target="sidebar"] .bg-scoped-layer--sidebar {
    var (higher specificity than the card's own inline utility so it wins);
    font scale controls base text size independently of density. */
 html[data-density="compact"] [data-slot="card"] {
-  --card-spacing: --spacing(3);
+  --card-spacing: --spacing(3) !important;
 }
 html[data-density="spacious"] [data-slot="card"] {
-  --card-spacing: --spacing(5);
+  --card-spacing: --spacing(5) !important;
 }
 
-html[data-font-scale="sm"] main {
-  font-size: 0.75rem;
+html[data-font-scale="sm"] {
+  font-size: 14px;
 }
-html[data-font-scale="lg"] main {
-  font-size: 0.9375rem;
+html[data-font-scale="lg"] {
+  font-size: 18px;
 }
 
 html[data-high-contrast="true"] {
@@ -440,6 +440,10 @@ html[data-large-targets="true"] [role="menuitem"] {
 
 .bg-bre-custom {
   background: radial-gradient(ellipse 90% 55% at 100% -10%, rgba(4, 102, 200, 0.06), transparent 50%), radial-gradient(ellipse 70% 45% at 0% 0%, rgba(148, 163, 184, 0.14), transparent 48%), linear-gradient(180deg, #E8EDF3 0%, #EEF2F6 45%, #F1F5F9 100%);
+}
+
+.dark .bg-bre-custom {
+  background: var(--background);
 }
 
 

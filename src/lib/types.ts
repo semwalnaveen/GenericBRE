@@ -892,7 +892,8 @@ export interface AppearanceSettings {
   highContrast: boolean;
   largeClickTargets: boolean;
   showInsights: boolean;
-  logo: string | null; // data URI, overrides default brand mark
+  sidebarLogo: string | null; // data URI, overrides default brand mark in sidebar
+  loginLogo: string | null; // data URI, overrides default brand mark on login screen
   /** Org/product name shown in the sidebar lockup, login screen, and browser tab. Admin-only (Appearance Studio's Branding tab). */
   appName: string;
   /** Short tagline shown under appName in the sidebar lockup and login screen. Admin-only. */

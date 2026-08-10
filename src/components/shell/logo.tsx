@@ -5,8 +5,8 @@ import { useAppStore } from "@/lib/store";
 import { Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function LogoMark({ className }: { className?: string }) {
-  const logo = useAppStore((s) => s.appearance.logo);
+export function LogoMark({ className, context = "sidebar" }: { className?: string; context?: "sidebar" | "login" }) {
+  const logo = useAppStore((s) => context === "login" ? s.appearance.loginLogo : s.appearance.sidebarLogo);
   if (logo) {
     return <Image src={logo} alt="Client logo" width={32} height={32} className={cn("size-8 rounded-md object-contain", className)} priority />;
   }

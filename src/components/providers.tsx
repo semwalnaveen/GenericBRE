@@ -18,6 +18,17 @@ export function applyAppearance(appearance: ReturnType<typeof useAppStore.getSta
     root.classList.toggle("dark", isDark);
     root.classList.toggle("glass-mode", !!appearance.background.imageData);
 
+    // Clean up any old sidebar variables from previous themes that were previously
+    // hardcoded, so they cleanly fall back to globals.css cascading inheritance.
+    const legacyVars = [
+      "--sidebar", "--sidebar-foreground", "--sidebar-primary",
+      "--sidebar-primary-foreground", "--sidebar-accent", 
+      "--sidebar-accent-foreground", "--sidebar-border"
+    ];
+    for (const v of legacyVars) {
+      root.style.removeProperty(v);
+    }
+
     const def = getThemeDefinition(appearance.preset);
     const vars = isDark ? def.dark : def.light;
     for (const [key, value] of Object.entries(vars)) {
