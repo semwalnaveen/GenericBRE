@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "sonner";
 import { useAppStore } from "@/lib/store";
-import { getThemeDefinition } from "@/lib/theme-presets";
+import { getThemeDefinition, THEME_PRESETS } from "@/lib/theme-presets";
 
 function systemPrefersDark() {
   return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -27,6 +27,11 @@ export function applyAppearance(appearance: ReturnType<typeof useAppStore.getSta
     ];
     for (const v of legacyVars) {
       root.style.removeProperty(v);
+    }
+
+    for (const preset of THEME_PRESETS) {
+      for (const k of Object.keys(preset.light)) root.style.removeProperty(k);
+      for (const k of Object.keys(preset.dark)) root.style.removeProperty(k);
     }
 
     const def = getThemeDefinition(appearance.preset);

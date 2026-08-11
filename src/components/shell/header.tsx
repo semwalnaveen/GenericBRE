@@ -51,19 +51,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
           <LogoLockup collapsed />
         </div>
 
-        <button
-          onClick={() => setPaletteOpen(true)}
-          aria-label="Search"
-          className="group relative ml-1 flex h-9 w-9 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full border bg-card/50 text-sm text-muted-foreground transition-all duration-300 ease-out hover:bg-card hover:shadow-sm hover:ring-1 hover:ring-primary/20 sm:ml-3 sm:w-60 sm:justify-start sm:px-3"
-        >
-          <Search className="size-4 shrink-0 transition-transform duration-300 group-hover:text-primary" />
-          <span className="hidden whitespace-nowrap sm:inline">{t("header.searchPlaceholder")}</span>
-          <kbd className="absolute right-1.5 top-1.5 hidden h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
-            ⌘K
-          </kbd>
-        </button>
-
-        <div className="hidden lg:flex flex-1 items-center justify-center group">
+        <div className="hidden lg:flex items-center group">
           <Image 
             src={aiFoundryLogoBlack} 
             alt="AI Foundry" 
@@ -75,7 +63,20 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
             className="hidden dark:block h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]" 
           />
         </div>
+
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Search"
+            className="group relative flex h-9 w-9 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-full border bg-card/50 text-sm text-muted-foreground transition-all duration-300 ease-out hover:bg-card hover:shadow-sm hover:ring-1 hover:ring-primary/20 sm:w-60 sm:justify-start sm:px-3"
+          >
+            <Search className="size-4 shrink-0 transition-transform duration-300 group-hover:text-primary" />
+            <span className="hidden whitespace-nowrap sm:inline">{t("header.searchPlaceholder")}</span>
+            <kbd className="absolute right-1.5 top-1.5 hidden h-6 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
+              ⌘K
+            </kbd>
+          </button>
+          
           {isDashboard && (
             <>
               <MobileFilterButton />

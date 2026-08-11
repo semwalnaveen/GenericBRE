@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { buildColumns } from "@/components/repository/columns";
 import { DataTable } from "@/components/repository/data-table";
-import { downloadCsv, parseCsv } from "@/lib/csv";
+import { downloadCsv } from "@/lib/csv";
 import { emptyGroup } from "@/lib/condition-tree";
 import { BusinessRule } from "@/lib/types";
 import { detectProductRuleConflicts, ProductConflictFinding } from "@/lib/product-conflict-detection";
@@ -88,7 +88,7 @@ function RepositoryContent() {
   const [deleteConfirm, setDeleteConfirm] = useState<BusinessRule | null>(null);
   const [selectedRows, setSelectedRows] = useState<BusinessRule[]>([]);
   const [resetSelectionSignal, setResetSelectionSignal] = useState(0);
-  const importRef = useRef<HTMLInputElement>(null);
+
 
   // Product-Level Rule Conflict Detection — evaluate all mapped products
   const productConflicts = useMemo(() => {
@@ -126,44 +126,6 @@ function RepositoryContent() {
     toast.success(`Exported ${exportData.length} rules`);
   };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-      const data = parseCsv(text);
-      let importedCount = 0;
-      data.forEach((row: any) => {
-        const taken = new Set(useAppStore.getState().rules.map((r) => r.id));
-        const id = nextRuleId(useAppStore.getState().rules, taken);
-
-        let actions = [];
-        let elseActions = undefined;
-        let rootGroup: any = { operator: "AND", conditions: [] };
-        try { actions = row.actions ? JSON.parse(row.actions) : []; } catch { }
-        try { elseActions = row.elseActions ? JSON.parse(row.elseActions) : undefined; } catch { }
-        try { rootGroup = row.rootGroup ? JSON.parse(row.rootGroup) : { operator: "AND", conditions: [] }; } catch { }
-
-        const newRule: BusinessRule = {
-          ...row,
-          id,
-          name: `${row.name || "Imported"} (Copy)`,
-          status: "Draft",
-          actions,
-          elseActions,
-          rootGroup,
-        };
-        addRule(newRule);
-        importedCount++;
-      });
-      toast.success(`Imported ${importedCount} rules as Drafts`);
-      if (importRef.current) importRef.current.value = "";
-    };
-    reader.readAsText(file);
-  };
 
   const filtered = useMemo(() => {
     return rules.filter((r) => {
@@ -257,10 +219,7 @@ function RepositoryContent() {
           <p className="mt-0.5 text-sm text-muted-foreground">Searchable catalogue of every configured business rule</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input type="file" accept=".csv" className="hidden" ref={importRef} onChange={handleImport} />
-          <Button variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={() => importRef.current?.click()}>
-            <Upload className="size-3.5" /> Import
-          </Button>
+
           <Button variant="outline" size="sm" className="gap-1.5 shadow-xs" onClick={handleExport}>
             <Download className="size-3.5" /> Export {selectedRows.length > 0 ? `(${selectedRows.length})` : ""}
           </Button>

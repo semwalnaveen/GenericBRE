@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, GripVertical } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { RecentRulesPanel, RecentActivityPanel, RecentDeploymentsPanel } from "@/components/dashboard/recent-panels";
@@ -73,7 +74,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const t = useTranslate();
   const rules = useAppStore((s) => s.rules);
-  const showInsights = useAppStore((s) => s.appearance.showInsights);
+  const appearance = useAppStore((s) => s.appearance);
+  const showInsights = appearance.showInsights;
+  const hasWallpaper = !!appearance.background.imageData;
   const currentUser = useAppStore((s) => s.currentUser);
   const userId = currentUser.userId;
   const dashboardConfigs = useAppStore((s) => s.dashboardConfigs);
@@ -132,7 +135,7 @@ export default function DashboardPage() {
   const criticalDrafts = rules.filter((r) => r.status === "Draft" && r.priority === 1).length;
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className={cn("flex h-full flex-col", hasWallpaper ? "bg-transparent" : "bg-background")}>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <HeroBanner
           name={currentUser.name.split(" ")[0]}

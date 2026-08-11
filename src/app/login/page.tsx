@@ -113,6 +113,15 @@ export default function LoginPage() {
           DOM order keeps it behind both z-10 panels. */}
       <NetworkBackground className="pointer-events-none absolute inset-0 h-full w-full" />
 
+      <div className="absolute top-6 right-6 lg:top-8 lg:right-10 z-20 hidden md:flex items-center gap-2">
+        <Image 
+          src={aiFoundryLogo} 
+          alt="AI Foundry" 
+          className="h-8 w-auto object-contain brightness-0 invert" 
+          style={{ animation: 'logoPulseGlow 3s ease-in-out infinite' }}
+        />
+      </div>
+
       {/* Compact brand banner — mobile only (<768px). Replaces the old
           logo-only fallback so the trust story survives on phones instead
           of vanishing entirely. */}
@@ -142,7 +151,6 @@ export default function LoginPage() {
               <p className="text-sm text-sidebar-foreground/85">{tagline}</p>
             </div>
             <SparkleAccent className="ml-1 size-7 lg:size-9 shrink-0" />
-            <Image src={aiFoundryLogo} alt="AI Foundry" className="ml-2 h-10 w-auto object-contain brightness-0 invert opacity-80 transition-all duration-500 hover:scale-110 hover:opacity-100 hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]" />
           </div>
 
           <h1 className="mt-4 max-w-3xl text-3xl leading-tight font-bold tracking-tight lg:text-4xl">

@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Search, Download, Upload, AlertTriangle, Link2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Plus, Trash2, Pencil, Search, Download, Upload, AlertTriangle, Link2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { BusinessField, FieldDataType } from "@/lib/types";
 import { fieldUsage } from "@/lib/condition-tree";
@@ -71,7 +71,7 @@ export function FieldCatalogManager() {
   const [page, setPage] = useState(1);
   const importRef = useRef<HTMLInputElement>(null);
 
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 4;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -285,25 +285,42 @@ export function FieldCatalogManager() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/30 border-b border-border/50">
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Label & Key</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Type & Entity</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Status</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Used By</TableHead>
-              <TableHead className="w-20 text-right text-[11px] uppercase tracking-wider font-bold text-foreground h-10">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedFields.map((f) => {
+      <div className="flex min-h-0 shrink flex-col overflow-hidden rounded-xl border bg-card shadow-sm">
+        <div className="min-h-0 flex-1 overflow-hidden [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[200px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                  <div className="flex items-center gap-1.5">Label <ArrowUpDown className="size-3.5 opacity-50" /></div>
+                </TableHead>
+                <TableHead className="w-[180px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                  <div className="flex items-center gap-1.5">Key <ArrowUpDown className="size-3.5 opacity-50" /></div>
+                </TableHead>
+                <TableHead className="w-[140px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                  <div className="flex items-center gap-1.5">Type <ArrowUpDown className="size-3.5 opacity-50" /></div>
+                </TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                  <div className="flex items-center gap-1.5">Entity <ArrowUpDown className="size-3.5 opacity-50" /></div>
+                </TableHead>
+                <TableHead className="w-[120px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                  <div className="flex items-center gap-1.5">Status <ArrowUpDown className="size-3.5 opacity-50" /></div>
+                </TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground h-10">Used By</TableHead>
+                <TableHead className="w-20 text-right text-[13px] font-semibold text-muted-foreground h-10">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedFields.map((f, index) => {
               const usage = fieldUsage(f.key, rules);
               const entityName = entities.find((e) => e.id === f.entity)?.name;
 
               return (
-                <TableRow key={f.key} className="hover:bg-muted/50 transition-colors group/row border-border/50">
-                  <TableCell className="py-2.5">
+                <TableRow 
+                  key={f.key} 
+                  className="text-[13px] transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:bg-muted/50 hover:z-10 relative animate-in fade-in slide-in-from-bottom-2 border-border/50" 
+                  style={{ animationDuration: '400ms', animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
+                >
+                  <TableCell className="py-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-sm text-foreground tracking-tight">{f.label}</span>
                       {f.computed && (
@@ -312,26 +329,26 @@ export function FieldCatalogManager() {
                         </Badge>
                       )}
                     </div>
-                    <p className="mt-0.5 font-mono text-sm text-muted-foreground">{f.key}</p>
-                    {f.businessName && <p className="text-sm text-muted-foreground/70">{f.businessName}</p>}
+                    {f.businessName && <p className="mt-0.5 text-xs text-muted-foreground/70">{f.businessName}</p>}
                   </TableCell>
-                  <TableCell className="py-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-primary/5 text-primary border-primary/20">
-                        {f.type}
-                      </Badge>
-                      {entityName && (
-                        <span className="text-sm text-muted-foreground">· {entityName}</span>
-                      )}
-                    </div>
+                  <TableCell className="py-1.5 font-mono text-sm text-muted-foreground">
+                    {f.key}
                   </TableCell>
-                  <TableCell className="py-2.5">
+                  <TableCell className="py-1.5">
+                    <Badge variant="outline" className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-primary/5 text-primary border-primary/20">
+                      {f.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-1.5 text-sm text-muted-foreground">
+                    {entityName || <span className="text-muted-foreground/50">—</span>}
+                  </TableCell>
+                  <TableCell className="py-1.5">
                     <span className={`inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider ${STATUS_TONE[f.status ?? "Active"]}`}>
                       <span className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
                       {f.status ?? "Active"}
                     </span>
                   </TableCell>
-                  <TableCell className="py-2.5">
+                  <TableCell className="py-1.5">
                     {usage.count === 0 ? (
                       <span className="text-sm text-muted-foreground/60 italic">Unused</span>
                     ) : (
@@ -366,7 +383,7 @@ export function FieldCatalogManager() {
                       </Popover>
                     )}
                   </TableCell>
-                  <TableCell className="py-2.5 text-right">
+                  <TableCell className="py-1.5 text-right">
                     <div className="flex justify-end gap-0.5">
                       <Button variant="ghost" size="icon-sm" className="size-7" onClick={() => startEdit(f)} title="Edit Field">
                         <Pencil className="size-3.5 text-muted-foreground hover:text-foreground" />
@@ -387,72 +404,46 @@ export function FieldCatalogManager() {
             })}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="h-32 text-center text-[13px] text-muted-foreground">
                   No fields match the current filters.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Pagination Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/50 px-4 py-3 text-sm text-muted-foreground bg-muted/10">
-          <div>
-            Showing <span className="font-semibold text-foreground">{filtered.length > 0 ? (safePage - 1) * PAGE_SIZE + 1 : 0}</span> to{" "}
-            <span className="font-semibold text-foreground">{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of{" "}
-            <span className="font-semibold text-foreground">{filtered.length}</span> fields
-            {filtered.length !== fieldCatalog.length && (
-              <span className="text-muted-foreground/70"> (filtered from {fieldCatalog.length} total)</span>
-            )}
+        <div className="flex items-center justify-between border-t px-3 py-2 bg-card">
+          <div className="flex items-center gap-2">
+            <span className="ml-2 text-[13px] text-muted-foreground whitespace-nowrap">
+              Total {filtered.length} field{filtered.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-3">
+            <span className="text-[13px] text-muted-foreground">
+              Page {safePage} of {totalPages}
+            </span>
+            <div className="flex gap-1">
               <Button
                 variant="outline"
                 size="icon-sm"
-                className="size-7"
-                disabled={safePage <= 1}
-                onClick={() => setPage(1)}
-                title="First Page"
-              >
-                <ChevronsLeft className="size-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="size-7"
-                disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                title="Previous Page"
+                disabled={safePage <= 1}
               >
                 <ChevronLeft className="size-3.5" />
               </Button>
-              <span className="px-2 text-sm font-medium text-foreground">
-                Page {safePage} of {totalPages}
-              </span>
               <Button
                 variant="outline"
                 size="icon-sm"
-                className="size-7"
-                disabled={safePage >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                title="Next Page"
+                disabled={safePage >= totalPages}
               >
                 <ChevronRight className="size-3.5" />
               </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="size-7"
-                disabled={safePage >= totalPages}
-                onClick={() => setPage(totalPages)}
-                title="Last Page"
-              >
-                <ChevronsRight className="size-3.5" />
-              </Button>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

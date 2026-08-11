@@ -46,7 +46,7 @@ const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", 
 // catalogue charts every other role gets — those describe content he can't
 // author, these describe what he actually produced. Execution Logs, Decision
 // Lookup, and Batch Runs have no chart equivalent worth forcing.
-const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "execution-timeline", "pending-applications", "decision-lookup", "batch-runs"]);
+const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "decision-lookup", "execution-logs", "recent-activity", "rule-status"]);
 // Pending Approvals / Draft Rules dropped — this persona can't approve or
 // author, so both would only ever read as noise. Rule Executions (simulation
 // count) takes their place as the one number that's actually this role's own

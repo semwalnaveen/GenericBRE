@@ -427,6 +427,10 @@ html[data-large-targets="true"] [role="menuitem"] {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }
 }
+@keyframes logoPulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 0px rgba(255,255,255,0)); }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 15px rgba(255,255,255,0.5)); }
+}
 
 /* Belt-and-suspenders with the JS-level prefers-reduced-motion check in
    rule-pipeline.tsx (which stops driving new steps): this freezes any
