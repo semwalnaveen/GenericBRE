@@ -80,16 +80,16 @@ export function WorkflowBuilderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
-        <DialogHeader className="shrink-0 pb-1">
-          <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
-            <Workflow className="size-4 text-primary" /> {isNew ? "Create Workflow" : `Edit — ${workflow.name}`}
+      <DialogContent className="flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden sm:max-w-none !rounded-none border-none p-4 sm:p-6 md:p-8">
+        <DialogHeader className="shrink-0 pb-2">
+          <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+            <Workflow className="size-5 text-primary" /> {isNew ? "Create Workflow" : `Edit — ${workflow.name}`}
           </DialogTitle>
           <DialogDescription className="text-sm">Define trigger, conditions, and automated actions.</DialogDescription>
         </DialogHeader>
 
         {/* Scrollable Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3 my-1">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 my-2">
           <div className="space-y-2.5 rounded-xl border p-3.5 bg-card">
             <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">Workflow Details</p>
             <div className="space-y-1.5">
@@ -231,13 +231,13 @@ export function WorkflowBuilderDialog({
           </Button>
         </div>
 
-        <DialogFooter className="shrink-0 pt-2 border-t">
-          <DialogClose render={<Button variant="outline" size="sm" />}>Cancel</DialogClose>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => save("draft")}>
-            <Save className="size-3.5" /> Save as Draft
+        <DialogFooter className="shrink-0 pt-4 border-t mt-auto">
+          <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+          <Button variant="outline" className="gap-2" onClick={() => save("draft")}>
+            <Save className="size-4" /> Save as Draft
           </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => save("activate")} disabled={!draft.name.trim()}>
-            <Rocket className="size-3.5" /> Activate
+          <Button className="gap-2" onClick={() => save("activate")} disabled={!draft.name.trim()}>
+            <Rocket className="size-4" /> Activate
           </Button>
         </DialogFooter>
       </DialogContent>

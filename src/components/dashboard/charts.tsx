@@ -82,14 +82,11 @@ export function DomainDistributionChart() {
   }
 
   const PRODUCT_COLORS = [
-    "#3b82f6", // blue-500
-    "#10b981", // emerald-500
-    "#06b6d4", // cyan-500
-    "#f59e0b", // amber-500
-    "#ef4444", // red-500
-    "#8b5cf6", // violet-500
-    "#ec4899", // pink-500
-    "#f97316", // orange-500
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
   ];
 
   const totalMappings = data.reduce((acc, d) => acc + d.value, 0);
@@ -137,20 +134,20 @@ export function RuleStatusChart() {
   }
 
   const STATUS_COLORS_HEX: Record<RuleStatus, string> = {
-    Published: "#10b981", // emerald-500
-    Approved: "#8b5cf6", // violet-500
-    Draft: "#3b82f6", // blue-500
-    "Pending Approval": "#f59e0b", // amber-500
-    Rejected: "#ef4444", // red-500
-    Inactive: "#94a3b8", // slate-400
-    Archived: "#64748b", // slate-500
-    "Pending Deletion": "#f97316", // orange-500
+    Published: "var(--chart-1)",
+    Approved: "var(--chart-2)",
+    Draft: "var(--chart-3)",
+    "Pending Approval": "var(--chart-4)",
+    Rejected: "var(--chart-5)",
+    Inactive: "var(--muted-foreground)",
+    Archived: "var(--muted)",
+    "Pending Deletion": "var(--destructive)",
   };
 
   const donutData = data.map((d) => ({
     name: d.name,
     value: d.value,
-    color: STATUS_COLORS_HEX[d.name as RuleStatus] || "#94a3b8",
+    color: STATUS_COLORS_HEX[d.name as RuleStatus] || "var(--muted)",
     bgSoftColor: "bg-slate-50",
     percentage: `${Math.round((d.value / rules.length) * 100)}%`,
     absoluteText: d.value.toString()
@@ -179,9 +176,9 @@ export function SimulationResultsChart() {
   const hasData = filtered.length > 0;
 
   const COLORS: Record<string, string> = {
-    "Approved": "#10b981", // emerald-500
-    "Rejected": "#ef4444", // red-500
-    "Review Required": "#f59e0b" // amber-500
+    "Approved": "var(--chart-1)",
+    "Rejected": "var(--chart-5)",
+    "Review Required": "var(--chart-3)"
   };
   const BG_COLORS: Record<string, string> = {
     "Approved": "bg-emerald-50",
@@ -309,12 +306,12 @@ export function MonthlyRulesChart() {
             <BarChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.4}/>
                 </linearGradient>
                 <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.4}/>
+                  <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0.4}/>
                 </linearGradient>
                 <filter id="bar-glow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="2" result="blur" />
@@ -380,8 +377,8 @@ export function RulesPublishedPerProductChart() {
             <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 20 }}>
               <defs>
                 <linearGradient id="colorPublished" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={1}/>
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1}/>
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.4}/>
                 </linearGradient>
                 <filter id="bar-glow-pub" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="2" result="blur" />

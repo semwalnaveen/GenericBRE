@@ -51,16 +51,18 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
           <LogoLockup collapsed />
         </div>
 
-        <div className="hidden lg:flex items-center group">
+        <div className="hidden lg:flex items-center group cursor-pointer">
           <Image 
             src={aiFoundryLogoBlack} 
             alt="AI Foundry" 
-            className="dark:hidden h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]" 
+            className="dark:hidden h-6 w-auto object-contain opacity-80" 
+            style={{ animation: 'topbarLogoPulseLight 4s ease-in-out infinite' }}
           />
           <Image 
             src={aiFoundryLogoWhite} 
             alt="AI Foundry" 
-            className="hidden dark:block h-6 w-auto object-contain opacity-70 transition-all duration-500 ease-out group-hover:scale-[1.12] group-hover:opacity-100 group-hover:drop-shadow-[0_4px_10px_rgba(0,0,0,0.12)]" 
+            className="hidden dark:block h-6 w-auto object-contain opacity-80" 
+            style={{ animation: 'topbarLogoPulseDark 4s ease-in-out infinite' }}
           />
         </div>
 
@@ -83,7 +85,7 @@ export function Header({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
               <GlobalFilterBar />
             </>
           )}
-          <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary bg-white shadow-sm border border-[#D0E4F5]" onClick={() => setSwitcherOpen(true)}>
+          <Button variant="secondary" size="sm" className="h-9 gap-1.5 hidden md:flex font-semibold text-primary dark:text-foreground bg-white dark:bg-card shadow-sm border border-[#D0E4F5] dark:border-border hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary dark:hover:text-primary-foreground transition-colors" onClick={() => setSwitcherOpen(true)}>
             <ShieldCheck className="size-3.5" />
             <span className="hidden lg:inline">Switch User</span>
           </Button>

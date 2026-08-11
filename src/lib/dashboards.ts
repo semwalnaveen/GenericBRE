@@ -38,7 +38,7 @@ const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", 
 // to stay — it's the actual work she does every day, and no chart replaces
 // "here's what's waiting on me."
 const RULE_APPROVER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "approval-queue", "product-conflict-summary", "quick-actions"]);
-const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "active-products"];
+const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", "active-products", "draft-rules"];
 
 // Rule Tester (usr-arjun-nair): simulate-only persona — rule.view + rule.simulate,
 // no rule.create/edit/publish. Its "charts" are already the simulator's own
@@ -46,12 +46,12 @@ const RULE_APPROVER_KPIS = ["total-rules", "pending-approvals", "active-rules", 
 // catalogue charts every other role gets — those describe content he can't
 // author, these describe what he actually produced. Execution Logs, Decision
 // Lookup, and Batch Runs have no chart equivalent worth forcing.
-const RULE_TESTER_WIDGETS = widgets(["kpis", "quick-actions", "simulation-results", "decision-lookup", "execution-logs", "recent-activity", "rule-status"]);
+const RULE_TESTER_WIDGETS = widgets(["kpis", "domain-distribution", "monthly-activity", "simulation-results", "execution-logs", "rule-status", "quick-actions"]);
 // Pending Approvals / Draft Rules dropped — this persona can't approve or
 // author, so both would only ever read as noise. Rule Executions (simulation
 // count) takes their place as the one number that's actually this role's own
 // output.
-const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "rule-executions"];
+const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "draft-rules", "pending-approvals"];
 
 // Rule Viewer (usr-divya-iyer) — read-only: dashboards, rules, approval
 // history, audit logs. Charts suit a pure observer even better than a lists —
@@ -59,11 +59,11 @@ const RULE_TESTER_KPIS = ["total-rules", "active-rules", "active-products", "rul
 // Distribution/Monthly Activity read as the org-wide picture she's here to
 // watch. Recent Activity + Execution Logs cover her two audit-trail
 // responsibilities (approval history, audit logs) — no chart replaces those.
-const RULE_VIEWER_WIDGETS = widgets(["kpis", "rule-status", "domain-distribution", "monthly-activity", "recent-activity", "execution-logs", "quick-actions"]);
+const RULE_VIEWER_WIDGETS = widgets(["kpis", "rule-status", "monthly-activity", "domain-distribution", "recent-activity", "execution-logs", "quick-actions"]);
 // Inactive & Archived stands in for the org-wide health number a read-only
 // observer cares about, in place of Pending Approvals (not her queue) or
 // Draft Rules (not her output).
-const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "inactive-archived-rules"];
+const RULE_VIEWER_KPIS = ["total-rules", "active-rules", "active-products", "inactive-archived-rules", "draft-rules"];
 
 // System Administrator (usr-vikram-chawla, and usr-ved-prakash as the same
 // role reached by name-fallback in dashboard/page.tsx) — user/access/product/

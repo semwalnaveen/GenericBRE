@@ -22,7 +22,7 @@ export function applyAppearance(appearance: ReturnType<typeof useAppStore.getSta
     // hardcoded, so they cleanly fall back to globals.css cascading inheritance.
     const legacyVars = [
       "--sidebar", "--sidebar-foreground", "--sidebar-primary",
-      "--sidebar-primary-foreground", "--sidebar-accent", 
+      "--sidebar-primary-foreground", "--sidebar-accent",
       "--sidebar-accent-foreground", "--sidebar-border"
     ];
     for (const v of legacyVars) {
@@ -103,7 +103,26 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider delay={200}>
       <div className="h-full" style={{ visibility: hydrated ? "visible" : "hidden" }}>{children}</div>
-      <Toaster position="top-right" richColors closeButton expand={false} />
+      <Toaster
+        position="top-right"
+        expand={false}
+        closeButton
+        duration={3500}
+        toastOptions={{
+          classNames: {
+            toast: "group font-sans shadow-2xl backdrop-blur-xl rounded-2xl !bg-background/95 dark:!bg-muted/95 !border !border-border/50 overflow-hidden relative animate-toast-drift",
+            title: "text-sm font-semibold tracking-tight !text-foreground dark:!text-foreground dark:[text-shadow:0_0_12px_rgba(255,255,255,0.4)]",
+            description: "text-sm !text-muted-foreground dark:!text-muted-foreground",
+            actionButton: "bg-primary text-primary-foreground font-semibold rounded-lg",
+            cancelButton: "bg-muted text-muted-foreground rounded-lg",
+            success: "!bg-emerald-50/95 dark:!bg-emerald-900/95 !border-emerald-200 dark:!border-emerald-700 !text-emerald-700 dark:!text-emerald-300 dark:[text-shadow:0_0_12px_rgba(110,231,183,0.6)] [&_svg]:!text-emerald-600 dark:[&_svg]:!text-emerald-300 dark:[&_svg]:[filter:drop-shadow(0_0_6px_rgba(110,231,183,0.6))]",
+            error: "!bg-red-50/95 dark:!bg-red-900/95 !border-red-200 dark:!border-red-700 !text-red-700 dark:!text-red-300 dark:[text-shadow:0_0_12px_rgba(252,165,165,0.6)] [&_svg]:!text-red-600 dark:[&_svg]:!text-red-300 dark:[&_svg]:[filter:drop-shadow(0_0_6px_rgba(252,165,165,0.6))]",
+            info: "!bg-blue-50/95 dark:!bg-blue-900/95 !border-blue-200 dark:!border-blue-700 !text-blue-700 dark:!text-blue-300 dark:[text-shadow:0_0_12px_rgba(147,197,253,0.6)] [&_svg]:!text-blue-600 dark:[&_svg]:!text-blue-300 dark:[&_svg]:[filter:drop-shadow(0_0_6px_rgba(147,197,253,0.6))]",
+            warning: "!bg-amber-50/95 dark:!bg-amber-900/95 !border-amber-200 dark:!border-amber-700 !text-amber-700 dark:!text-amber-300 dark:[text-shadow:0_0_12px_rgba(252,211,77,0.6)] [&_svg]:!text-amber-600 dark:[&_svg]:!text-amber-300 dark:[&_svg]:[filter:drop-shadow(0_0_6px_rgba(252,211,77,0.6))]",
+            closeButton: "!left-auto !right-2 !top-1/2 !-translate-y-1/2 !translate-x-0 opacity-100 !bg-transparent hover:!bg-foreground/5 !border-transparent text-foreground transition-colors"
+          }
+        }}
+      />
     </TooltipProvider>
   );
 }

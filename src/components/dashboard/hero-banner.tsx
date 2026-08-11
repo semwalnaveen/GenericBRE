@@ -15,9 +15,9 @@ export function HeroBanner({
 }) {
   return (
     <div
-      className="relative ml-0 mr-1 mt-2 overflow-hidden rounded-2xl border border-sidebar-primary/20 text-sidebar-primary-foreground shadow-md sm:ml-0 sm:mr-2"
+      className="relative ml-0 mr-1 mt-2 overflow-hidden rounded-2xl border border-white/20 text-sidebar-primary-foreground shadow-lg backdrop-blur-xl sm:ml-0 sm:mr-2 transition-colors duration-500"
       style={{
-        background: "linear-gradient(90deg, color-mix(in oklch, var(--sidebar-primary) 85%, white), color-mix(in oklch, var(--sidebar-primary) 75%, black))"
+        background: "linear-gradient(135deg, color-mix(in oklch, var(--sidebar-primary) 85%, transparent) 0%, color-mix(in oklch, var(--sidebar-primary) 65%, transparent) 100%)"
       }}
     >
       <div className="mx-auto max-w-[1400px]">

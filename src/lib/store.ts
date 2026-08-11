@@ -1652,9 +1652,58 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 71,
+      version: 78,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v77 -> v78: Swap Product Distribution and Monthly Activity widgets for Operations dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-divya-iyer"]) {
+            s.dashboardConfigs["usr-divya-iyer"] = DEFAULT_DASHBOARD_CONFIGS["usr-divya-iyer"];
+          }
+        }
+        // v76 -> v77: Add Drafts KPI to Credit/Risk dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-kavita-rao"]) {
+            s.dashboardConfigs["usr-kavita-rao"] = DEFAULT_DASHBOARD_CONFIGS["usr-kavita-rao"];
+          }
+        }
+        // v75 -> v76: Add Drafts KPI to Operations dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-divya-iyer"]) {
+            s.dashboardConfigs["usr-divya-iyer"] = DEFAULT_DASHBOARD_CONFIGS["usr-divya-iyer"];
+          }
+        }
+        // v74 -> v75: Reorder widgets in Underwriter dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
+        // v73 -> v74: Add Product Distribution widget to Underwriter dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
+        // v72 -> v73: Add Drafts and Pending Approvals KPIs, and Monthly Activity widget to Underwriter dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
+        // v71 -> v72: Remove Rule Executions KPI and Recent Activity & Decision Lookup widgets from Underwriter dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-arjun-nair"]) {
+            s.dashboardConfigs["usr-arjun-nair"] = DEFAULT_DASHBOARD_CONFIGS["usr-arjun-nair"];
+          }
+        }
         // v70 -> v71: Reset Arjun Nair's dashboard so he gets the new "Pending Applications" widget
         {
           const s = persistedState as Partial<AppState>;
