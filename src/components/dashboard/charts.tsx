@@ -391,6 +391,7 @@ export function RulesPublishedPerProductChart() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 11, fill: "#64748b" }}
+                tickFormatter={(val) => val.replace(/^prod-/i, '').split(/[\s-]+/).map((w: string) => w.charAt(0).toUpperCase()).join('')}
                 dy={10}
                 interval={0}
               />
