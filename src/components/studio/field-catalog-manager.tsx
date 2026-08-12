@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -69,7 +70,7 @@ export function FieldCatalogManager() {
   const [typeFilters, setTypeFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const importRef = useRef<HTMLInputElement>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   const PAGE_SIZE = 4;
 
@@ -151,9 +152,10 @@ export function FieldCatalogManager() {
   };
 
   const exportCsv = () => {
+    const dataToExport = selectedKeys.size > 0 ? filtered.filter(f => selectedKeys.has(f.key)) : filtered;
     downloadCsv(
       "field_catalog",
-      filtered.map((f) => ({
+      dataToExport.map((f) => ({
         Key: f.key,
         Label: f.label,
         "Business Name": f.businessName ?? "",
@@ -166,47 +168,7 @@ export function FieldCatalogManager() {
         "Rule Usage": fieldUsage(f.key, rules).count,
       }))
     );
-    toast.success(`Exported ${filtered.length} field${filtered.length === 1 ? "" : "s"}.`);
-  };
-
-  const handleImportFile = (file: File) => {
-    file.text().then((text) => {
-      const rows = parseCsv(text);
-      let added = 0;
-      let updated = 0;
-      const skipped: string[] = [];
-      for (const [i, row] of rows.entries()) {
-        const key = row.Key?.trim();
-        const label = row.Label?.trim();
-        const domain = row.Industry?.trim();
-        const type = row.Type?.trim() as FieldDataType;
-        if (!key || !label || !domain || !FIELD_TYPES.includes(type)) {
-          skipped.push(`Row ${i + 2}: missing/invalid Key, Label, Industry or Type`);
-          continue;
-        }
-        const field: BusinessField = {
-          key,
-          label,
-          businessName: row["Business Name"] || undefined,
-          domain,
-          entity: row.Entity || undefined,
-          type,
-          unit: row.Unit || undefined,
-          sourceSystem: row["Source System"] || undefined,
-          status: (row.Status as BusinessField["status"]) || "Active",
-        };
-        if (fieldCatalog.some((f) => f.key === key)) {
-          updateField(key, field);
-          updated++;
-        } else {
-          addField(field);
-          added++;
-        }
-      }
-      toast.success(`Import complete: ${added} added, ${updated} updated${skipped.length ? `, ${skipped.length} skipped` : ""}.`, {
-        description: skipped.length ? skipped.slice(0, 5).join(" · ") + (skipped.length > 5 ? " …" : "") : undefined,
-      });
-    });
+    toast.success(`Exported ${dataToExport.length} field${dataToExport.length === 1 ? "" : "s"}.`);
   };
 
   return (
@@ -262,20 +224,6 @@ export function FieldCatalogManager() {
         </div>
 
         <div className="flex shrink-0 gap-1.5">
-          <input
-            ref={importRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleImportFile(file);
-              e.target.value = "";
-            }}
-          />
-          <Button variant="outline" size="sm" className="gap-1.5 shadow-2xs text-sm" onClick={() => importRef.current?.click()}>
-            <Upload className="size-3.5" /> Import
-          </Button>
           <Button variant="outline" size="sm" className="gap-1.5 shadow-2xs text-sm" onClick={exportCsv}>
             <Download className="size-3.5" /> Export
           </Button>
@@ -290,7 +238,24 @@ export function FieldCatalogManager() {
           <Table>
             <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md shadow-sm border-b border-border/50">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[200px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
+                <TableHead className="w-10 px-4">
+                  <Checkbox 
+                    checked={paginatedFields.length > 0 && paginatedFields.every(f => selectedKeys.has(f.key))}
+                    onCheckedChange={(c) => {
+                      if (c) {
+                        const next = new Set(selectedKeys);
+                        paginatedFields.forEach(f => next.add(f.key));
+                        setSelectedKeys(next);
+                      } else {
+                        const next = new Set(selectedKeys);
+                        paginatedFields.forEach(f => next.delete(f.key));
+                        setSelectedKeys(next);
+                      }
+                    }}
+                    aria-label="Select all on page"
+                  />
+                </TableHead>
+                <TableHead className="w-[200px] pl-6 text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
                   <div className="flex items-center gap-1.5">Label <ArrowUpDown className="size-3.5 opacity-50" /></div>
                 </TableHead>
                 <TableHead className="w-[180px] text-[13px] font-semibold text-muted-foreground h-10 cursor-pointer hover:text-foreground select-none">
@@ -306,7 +271,7 @@ export function FieldCatalogManager() {
                   <div className="flex items-center gap-1.5">Status <ArrowUpDown className="size-3.5 opacity-50" /></div>
                 </TableHead>
                 <TableHead className="text-[13px] font-semibold text-muted-foreground h-10">Used By</TableHead>
-                <TableHead className="w-20 text-right text-[13px] font-semibold text-muted-foreground h-10">Actions</TableHead>
+                <TableHead className="w-20 text-right pr-4 text-[13px] font-semibold text-muted-foreground h-10">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -320,7 +285,19 @@ export function FieldCatalogManager() {
                   className="text-[13px] transition-all duration-200 hover:-translate-y-px hover:shadow-md hover:bg-muted/50 hover:z-10 relative animate-in fade-in slide-in-from-bottom-2 border-border/50" 
                   style={{ animationDuration: '400ms', animationDelay: `${index * 30}ms`, animationFillMode: 'backwards' }}
                 >
-                  <TableCell className="py-1.5">
+                  <TableCell className="w-10 px-4">
+                    <Checkbox
+                      checked={selectedKeys.has(f.key)}
+                      onCheckedChange={(c) => {
+                        const next = new Set(selectedKeys);
+                        if (c) next.add(f.key);
+                        else next.delete(f.key);
+                        setSelectedKeys(next);
+                      }}
+                      aria-label={`Select ${f.label}`}
+                    />
+                  </TableCell>
+                  <TableCell className="py-1.5 pl-6">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-sm text-foreground tracking-tight">{f.label}</span>
                       {f.computed && (

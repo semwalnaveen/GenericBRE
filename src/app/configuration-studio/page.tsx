@@ -192,7 +192,7 @@ function ConfigurationStudioContent() {
         <ConfigStudioNav groups={visibleGroups} roadmap={[]} activeSection={activeSection} onSelect={setSection} />
 
         <ScrollArea className="min-h-0 min-w-0 flex-1">
-          <div className="mx-auto max-w-6xl space-y-3 px-5 py-3 sm:px-6 w-full">
+          <div className="mx-auto max-w-7xl space-y-3 px-5 py-3 sm:px-6 w-full">
             {activeSection !== "users" && activeSection !== "notifyx" && (
               <div>
                 <h2 className="text-sm font-semibold">{[...NAV_GROUPS.flatMap((g) => g.items)].find((i) => i.id === activeSection)?.label}</h2>

@@ -7,6 +7,7 @@ import { useAppStore, useUserScope, isRuleInScope } from "@/lib/store";
 import { AuditEntry, BusinessRule, Product, SimulationResult } from "@/lib/types";
 import { verifyAuditChain, AuditIntegrityResult } from "@/lib/audit-chain";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -115,15 +116,15 @@ export default function AuditLogPage() {
     setUsers([]);
   };
 
-  const ITEMS_PER_PAGE = 8;
+  const [itemsPerPage, setItemsPerPage] = useState(6);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, actions, entityTypes, domains, users]);
+  }, [search, actions, entityTypes, domains, users, itemsPerPage]);
 
-  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedData = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <RouteGuard requiredCapability="config.manage" moduleLabel="the Audit Log">
@@ -211,8 +212,9 @@ export default function AuditLogPage() {
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-5 py-4 sm:px-6">
-          <div className="overflow-y-auto h-[320px] rounded-xl border bg-card shadow-sm">
-            <table className="w-full text-sm">
+          <div className="flex flex-col rounded-xl border bg-card shadow-sm">
+            <div className="overflow-y-auto max-h-[600px]">
+              <table className="w-full text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50/80 dark:bg-muted/80 text-sm text-muted-foreground border-b backdrop-blur-sm">
                 <tr>
                   <th className="w-7 px-2 py-2" />
@@ -328,35 +330,53 @@ export default function AuditLogPage() {
               </tbody>
             </table>
           </div>
-          
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4">
-              <span className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} entries
+          <div className="flex items-center justify-between border-t px-4 py-2 bg-slate-50/50 dark:bg-muted/10">
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] text-muted-foreground">Rows per page</span>
+              <Select
+                value={String(itemsPerPage)}
+                onValueChange={(v) => setItemsPerPage(Number(v))}
+              >
+                <SelectTrigger size="sm" className="h-7 w-16">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[6, 10, 20, 50].map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="ml-2 text-[13px] text-muted-foreground whitespace-nowrap">
+                Total {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
               </span>
-              <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] text-muted-foreground">
+                Page {currentPage} of {Math.max(1, totalPages)}
+              </span>
+              <div className="flex gap-1">
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  size="icon-sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="mr-1 size-3.5" /> Previous
+                  <ChevronLeft className="size-3.5" />
                 </Button>
-                <div className="text-sm font-medium px-2">
-                  Page {currentPage} of {totalPages}
-                </div>
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  size="icon-sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
                 >
-                  Next <ChevronRight className="ml-1 size-3.5" />
+                  <ChevronRight className="size-3.5" />
                 </Button>
               </div>
             </div>
-          )}
+            </div>
+          </div>
         </div>
       </ScrollArea>
     </div>
