@@ -29,7 +29,7 @@ const RULE_CREATOR_KPIS = ["total-rules", "active-rules", "active-products", "pe
 // his two real operational surfaces: Recent Deployments (what just shipped)
 // and Rule Conflicts (what to resolve before mapping).
 const PRODUCT_MANAGER_WIDGETS = widgets(["kpis", "domain-distribution", "rule-status", "monthly-activity", "rule-conflicts", "recent-deployments", "quick-actions"]);
-const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", "pending-approvals"];
+const PRODUCT_MANAGER_KPIS = ["total-rules", "active-products", "active-rules", "pending-approvals", "draft-rules", "inactive-archived-rules"];
 
 // Rule Approver (usr-kavita-rao) — Checker: reviews and approves/rejects
 // what Makers submit, can't create or modify business rules herself. Monthly

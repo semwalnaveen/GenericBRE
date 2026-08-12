@@ -1652,9 +1652,16 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "bre-prototype-store",
-      version: 78,
+      version: 79,
       skipHydration: true,
       migrate: (persistedState, version) => {
+        // v78 -> v79: Add Drafts and Inactive/Archived KPIs to Product Manager dashboard
+        {
+          const s = persistedState as Partial<AppState>;
+          if (s?.dashboardConfigs?.["usr-rohan-mehta"]) {
+            s.dashboardConfigs["usr-rohan-mehta"] = DEFAULT_DASHBOARD_CONFIGS["usr-rohan-mehta"];
+          }
+        }
         // v77 -> v78: Swap Product Distribution and Monthly Activity widgets for Operations dashboard
         {
           const s = persistedState as Partial<AppState>;

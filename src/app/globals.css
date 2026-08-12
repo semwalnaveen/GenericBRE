@@ -4,6 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Root scaling for responsive fluid layouts on high-res monitors */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 1600px) {
+  html {
+    font-size: 18px; /* Scales the ENTIRE UI up by ~12.5% */
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 20px; /* Scales the ENTIRE UI up by 25% */
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
