@@ -22,7 +22,8 @@ import {
   FolderPlus,
   Trash2,
   Network,
-  Variable
+  Variable,
+  Sparkles
 } from "lucide-react";
 import { useAppStore, useHasCapability, useUserScope, isRuleInScope } from "@/lib/store";
 import { BusinessField, BusinessRule, CaseWhenClause, Condition, ConditionGroup, RuleAction, RuleTemplate } from "@/lib/types";
@@ -62,6 +63,8 @@ import { CaseBuilder } from "@/components/rule-builder/case-builder";
 import { RulePreviewPanel } from "@/components/rule-builder/rule-preview-panel";
 import { InlineTestPanel } from "@/components/rule-builder/inline-test-panel";
 import { TemplatePicker } from "@/components/rule-builder/template-picker";
+import { AiRuleDialog } from "@/components/rule-builder/ai-rule-dialog";
+import { AiRuleDraft, draftToRuleParts } from "@/lib/ai-rule";
 import { SampleJsonPanel } from "@/components/rule-builder/sample-json-panel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -231,6 +234,7 @@ function RuleBuilderContent() {
   }, [rule, rules]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [showElseBranch, setShowElseBranch] = useState(() => !!existingRule?.elseActions?.length);
   // Additive CASE Builder visibility — independent of the ELSE branch above
   // (that one belongs to the normal condition tree; this one to the CASE block).
@@ -330,6 +334,25 @@ function RuleBuilderContent() {
     }));
     setTemplatePickerOpen(false);
     toast.success(`"${template.name}" applied`, { description: "Fully editable below — adjust fields and values as needed." });
+  };
+
+  // Same path as applyTemplate (one undoable commit), so Ctrl+Z reverts an AI
+  // draft in one step. Only fills the name if the user hasn't typed one.
+  const applyAiDraft = (draft: AiRuleDraft) => {
+    const parts = draftToRuleParts(draft);
+    commitRule((r) => ({
+      ...r,
+      name: r.name.trim() ? r.name : draft.name,
+      rootGroup: parts.rootGroup,
+      actions: parts.actions,
+      elseActions: parts.elseActions.length ? parts.elseActions : undefined,
+      caseWhens: undefined,
+      caseElseActions: undefined,
+    }));
+    setShowElseBranch(parts.elseActions.length > 0);
+    setCaseBuilderOpen(false);
+    setAiDialogOpen(false);
+    toast.success("AI draft applied", { description: "Review every condition below before submitting. Ctrl+Z undoes it." });
   };
 
   const updateTreeNode = (id: string, patch: Partial<Condition | ConditionGroup>) =>
@@ -759,6 +782,9 @@ function RuleBuilderContent() {
               <Copy className="size-3.5" /> Duplicate
             </Button>
           )}
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setAiDialogOpen(true)}>
+            <Sparkles className="size-3.5" /> Describe with AI
+          </Button>
           {!existingRule && (
             <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setTemplatePickerOpen(true)}>
               <LayoutTemplate className="size-3.5" /> Use Template
@@ -780,6 +806,14 @@ function RuleBuilderContent() {
         industries={industries}
         categories={ruleCategories}
         onUse={applyTemplate}
+      />
+
+      <AiRuleDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        domain={industries.find((i) => i.id === rule.domain)?.name ?? rule.domain}
+        fields={fieldsForDomain(fieldCatalog, rule.domain)}
+        onApply={applyAiDraft}
       />
 
       <ScrollArea className="min-h-0 flex-1">
